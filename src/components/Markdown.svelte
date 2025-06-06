@@ -3,6 +3,7 @@
   import matter from "@radicle/gray-matter";
   import { afterUpdate } from "svelte";
   import { toDom } from "hast-util-to-dom";
+  import mermaid from "mermaid";
 
   import * as router from "@app/lib/router";
   import * as modal from "@app/lib/modal";
@@ -100,6 +101,12 @@
   }
 
   afterUpdate(async () => {
+    // Initialize mermaid with error handling configuration
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'loose',
+    });
+
     for (const e of container.querySelectorAll("a")) {
       try {
         const url = new URL(e.href);
@@ -210,7 +217,7 @@
 
     // Replaces code blocks in the background with highlighted code.
     const prefix = "language-";
-    const nodes = Array.from(document.body.querySelectorAll("pre code"));
+    const nodes = Array.from(container.querySelectorAll("pre code"));
 
     const treeChanges: Promise<void>[] = [];
 
@@ -231,8 +238,36 @@
       );
       if (!className) continue;
 
+      const language = className.slice(prefix.length);
+      
+      // Handle mermaid diagrams
+      if (language === 'mermaid') {
+        const mermaidCode = node.textContent || '';
+        try {
+          // First, validate the syntax without rendering
+          const isValid = await mermaid.parse(mermaidCode, { suppressErrors: true });
+          
+          if (isValid) {
+            // Generate a unique id for this diagram
+            const diagramId = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
+            
+            // Try to render the mermaid diagram
+            const { svg } = await mermaid.render(diagramId, mermaidCode);
+            
+            // Replace the code block with the rendered diagram
+            const mermaidDiv = document.createElement('div');
+            mermaidDiv.innerHTML = svg;
+            mermaidDiv.classList.add('mermaid-diagram');
+            preWrapper.replaceWith(mermaidDiv);
+          }
+        } catch (error) {
+          // On any error, keep the raw text visible (do nothing, let it render as code)
+        }
+        continue;
+      }
+
       treeChanges.push(
-        highlight(node.textContent ?? "", className.slice(prefix.length))
+        highlight(node.textContent ?? "", language)
           .then(tree => {
             if (tree) {
               node.replaceChildren(toDom(tree, { fragment: true }));
@@ -499,6 +534,16 @@
   }
   .markdown :global(dl dd) {
     margin: 0 0 0 2rem;
+  }
+
+  .markdown :global(.mermaid-diagram) {
+    margin: 1rem 0;
+    text-align: center;
+  }
+
+  .markdown :global(.mermaid-diagram svg) {
+    max-width: 100%;
+    height: auto;
   }
 </style>
 

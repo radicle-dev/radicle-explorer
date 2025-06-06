@@ -125,6 +125,23 @@ test("math", async ({ page }) => {
   await expect(page).toHaveScreenshot({ fullPage: true });
 });
 
+test("mermaid diagram", async ({ page }) => {
+  await page.goto(`${markdownUrl}/tree/main/mermaid.md`, {
+    waitUntil: "networkidle",
+  });
+  await expect(page.locator(".mermaid-diagram svg")).toBeVisible();
+  await expect(page).toHaveScreenshot({ fullPage: true });
+});
+
+test("broken mermaid falls back to code block", async ({ page }) => {
+  await page.goto(`${markdownUrl}/tree/main/mermaid-broken.md`, {
+    waitUntil: "networkidle",
+  });
+  await expect(page.locator("pre code.language-mermaid")).toBeVisible();
+  await expect(page.locator(".mermaid-diagram")).toHaveCount(0);
+  await expect(page).toHaveScreenshot({ fullPage: true });
+});
+
 test("relative image not able to being loaded", async ({ page }) => {
   await page.goto(`${markdownUrl}/tree/main/loading-image.md`, {
     waitUntil: "networkidle",
