@@ -36,6 +36,7 @@
     border-radius: var(--border-radius-small);
     background-color: var(--color-background-float);
     padding: 0.75rem 1rem;
+    overflow: hidden;
     position: relative;
     display: flex;
     flex-direction: column;
