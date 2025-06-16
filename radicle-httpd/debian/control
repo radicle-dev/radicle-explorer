@@ -1,0 +1,15 @@
+Source: radicle-httpd
+Maintainer: The Radicle Team <team@radicle.xyz>
+Uploaders: Sebastian Martinez <sebastian@rhizoma.dev>
+Section: vcs
+Priority: optional
+Standards-Version: 4.6.2
+Build-Depends: debhelper (>= 10~),
+  asciidoctor
+Homepage: https://radicle.xyz/
+
+Package: radicle-httpd
+Architecture: any
+Depends: ${misc:Depends}, ${shlibs:Depends}, git
+Description: A Radicle HTTP daemon exposing a JSON HTTP API that allows
+someone to browse local repositories on a Radicle node via their web browser.

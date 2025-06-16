@@ -1,0 +1,17 @@
+#!/usr/bin/make -f
+
+DEB_BUILD_OPTIONS=nostrip
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	asciidoctor --doctype manpage --backend manpage --destination-dir . *.adoc
+
+override_dh_auto_install:
+	mkdir -p debian/radicle/usr
+	cargo install --offline --locked --root=debian/radicle-httpd/usr
+	find debian/radicle-httpd -name '.crates*' -delete
+
+override_dh_auto_test:
+	echo tests are disabled, for now
