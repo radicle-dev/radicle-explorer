@@ -42,6 +42,17 @@ There are several ways to deploy the UI publicly. Here are two common options:
 1. Fork this repository to create your own version
 2. Configure your Vercel account to deploy the forked repository
 
+**Add Rewrite Rules for Client-Side Routing**
+
+The explorer is a single-page application (SPA). To ensure that all routes are handled correctly, add a rewrite rule to your web server configuration. For example:
+
+Caddy:
+
+```
+example.com {
+    rewrite * /index.html
+}
+```
 
 ## Configuration
 
