@@ -45,7 +45,7 @@ export function determineSeed() {
     get(selectedSeed) ??
     config.preferredSeeds[0] ?? {
       schema: "https",
-      hostname: "seed.radicle.xyz",
+      hostname: "iris.radicle.xyz",
       port: 443,
     }
   );

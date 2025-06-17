@@ -126,11 +126,11 @@ The UI is distributed under the terms of GPLv3. See [LICENSE][lic] for details.
 [con]: ./CONTRIBUTING.md
 [def]: ./config/default.json
 [env]: ./config/custom-environment-variables.json
-[iss]: https://app.radicle.xyz/nodes/seed.radicle.garden/rad:z4V1sjrXqjvFdnCUbxPFqd5p4DtH5/issues
+[iss]: https://app.radicle.xyz/nodes/iris.radicle.xyz/rad:z4V1sjrXqjvFdnCUbxPFqd5p4DtH5/issues
 [lic]: ./LICENSE
 [nco]: https://github.com/node-config/node-config/wiki/Configuration-Files
 [nod]: https://nodejs.org
 [npm]: https://www.npmjs.com
-[pat]: https://app.radicle.xyz/nodes/seed.radicle.garden/rad:z4V1sjrXqjvFdnCUbxPFqd5p4DtH5/patches
+[pat]: https://app.radicle.xyz/nodes/iris.radicle.xyz/rad:z4V1sjrXqjvFdnCUbxPFqd5p4DtH5/patches
 [rad]: https://radicle.xyz
 [zul]: https://radicle.zulipchat.com/#narrow/stream/369278-web
