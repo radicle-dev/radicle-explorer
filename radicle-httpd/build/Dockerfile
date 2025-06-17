@@ -20,6 +20,7 @@ RUN apk update && apk add --no-cache git musl-dev xz asciidoctor zig
 # non-reproducible information, such as version numbers.
 RUN asciidoctor --doctype manpage --backend manpage --destination-dir . *.1.adoc && \
     find . -maxdepth 1 -type f -name '*.1' -exec sed -i '/^.\\\"/d' '{}' \;
+RUN echo "{ "name": "radicle-httpd", "version": "${RADICLE_VERSION}", "commit": "${GIT_HEAD}", "timestamp": ${SOURCE_DATE_EPOCH} }" > /src/radicle-httpd.json
 # Add cargo targets.
 RUN rustup target add \
     x86_64-unknown-linux-musl \
@@ -54,6 +55,9 @@ FROM alpine:3.21 as packager
 ARG RADICLE_VERSION
 ARG SOURCE_DATE_EPOCH
 
+COPY --from=builder \
+    /src/radicle-httpd.json \
+    /builds/
 COPY --from=builder \
     /src/target/x86_64-unknown-linux-musl/release/radicle-httpd \
     /builds/x86_64-unknown-linux-musl/bin/

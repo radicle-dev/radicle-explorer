@@ -19,6 +19,7 @@ main() {
   ssh -i $SSH_KEY $SSH_ADDRESS mkdir -p /mnt/radicle/files/releases/radicle-httpd/$version
   # Copy files over.
   scp -i $SSH_KEY build/artifacts/radicle-httpd-$version* $SSH_ADDRESS:/mnt/radicle/files/releases/radicle-httpd/$version
+  scp -i $SSH_KEY build/artifacts/radicle-httpd.json $SSH_ADDRESS:/mnt/radicle/files/releases/radicle-httpd/$version
 
   for target in $(cat build/TARGETS); do
     archive=/mnt/radicle/files/releases/radicle-httpd/$version/radicle-httpd-$version-$target.tar.xz
