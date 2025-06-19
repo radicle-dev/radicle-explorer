@@ -11,5 +11,7 @@ Homepage: https://radicle.xyz/
 Package: radicle-httpd
 Architecture: any
 Depends: ${misc:Depends}, ${shlibs:Depends}, git
-Description: A Radicle HTTP daemon exposing a JSON HTTP API that allows
-someone to browse local repositories on a Radicle node via their web browser.
+Description: HTTP API daemon for Radicle peer-to-peer code collaboration
+ This package provides a standalone HTTP API service for interacting with
+ Radicle's distributed storage and peer-to-peer network. It enables external
+ tools and applications to access, query, and manage Radicle data over HTTP.
