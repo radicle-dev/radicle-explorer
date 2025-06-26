@@ -4,4 +4,4 @@ set -e
 npx tsc --noEmit
 npx svelte-check --tsconfig tsconfig.json --fail-on-warnings --compiler-warnings options_missing_custom_element:ignore
 npx eslint --cache --cache-location node_modules/.cache/eslint --max-warnings 0 .
-npx prettier "**/*.@(ts|js|svelte|json|css|html|yml)" --ignore-path .gitignore --check --cache
+npx prettier "**/*.@(ts|js|svelte|json|css|html|yml)" --ignore-path .gitignore --ignore-path .prettierignore --check --cache
