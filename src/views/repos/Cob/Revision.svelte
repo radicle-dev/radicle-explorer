@@ -525,6 +525,12 @@
               </div>
             </CommentComponent>
           </div>
+          {#if review.threads.length > 0}
+            {#each review.threads as thread}
+              <div class="connector"></div>
+              <Thread {baseUrl} {thread} rawPath={rawPath(revisionBase)} />
+            {/each}
+          {/if}
         {/if}
       {/each}
     {/if}

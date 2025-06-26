@@ -15,8 +15,12 @@
     replies: Comment[];
   }
 
+  interface ReviewWithThreads extends Review {
+    threads: Thread[];
+  }
+
   interface TimelineReview {
-    inner: [string, Review];
+    inner: [string, ReviewWithThreads];
     type: "review";
     timestamp: number;
   }
@@ -186,11 +190,21 @@
       revisionDescription: rev.description,
     },
     [
-      ...rev.reviews.map<TimelineReview>(review => ({
-        timestamp: review.timestamp,
-        type: "review",
-        inner: [review.author.id, review],
-      })),
+      ...rev.reviews.map<TimelineReview>(review => {
+        const reviewThreads: Thread[] = review.comments
+          .filter(comment => !comment.replyTo)
+          .map(thread => ({
+            root: thread,
+            replies: review.comments
+              .filter(comment => comment.replyTo === thread.id)
+              .sort((a, b) => a.timestamp - b.timestamp),
+          }));
+        return {
+          timestamp: review.timestamp,
+          type: "review",
+          inner: [review.author.id, { ...review, threads: reviewThreads }],
+        };
+      }),
       ...patch.merges
         .filter(merge => merge.revision === rev.id)
         .map<TimelineMerge>(inner => ({
