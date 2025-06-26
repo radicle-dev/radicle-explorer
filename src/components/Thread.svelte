@@ -50,6 +50,7 @@
       lastEdit={root.edits.length > 1 ? root.edits.at(-1) : undefined}
       authorId={root.author.id}
       authorAlias={root.author.alias}
+      location={root.location}
       reactions={root.reactions}
       timestamp={root.timestamp}
       body={root.body}>

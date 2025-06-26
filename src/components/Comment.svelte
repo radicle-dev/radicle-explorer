@@ -3,6 +3,10 @@
 
   import * as utils from "@app/lib/utils";
 
+  type Side = "left" | "right";
+  type SelectionAnchor = { side: Side; lineNumber: number };
+  type SelectionRange = { start: SelectionAnchor; end?: SelectionAnchor };
+
   import Id from "@app/components/Id.svelte";
   import Markdown from "@app/components/Markdown.svelte";
   import NodeId from "@app/components/NodeId.svelte";
@@ -14,12 +18,28 @@
   export let baseUrl: BaseUrl;
   export let body: string;
   export let reactions: Comment["reactions"] | undefined = undefined;
+  export let location: Comment["location"] | undefined = undefined;
   export let caption = "commented";
   export let rawPath: string;
   export let timestamp: number;
   export let isReply: boolean = false;
   export let isLastReply: boolean = false;
   export let lastEdit: Comment["edits"][0] | undefined = undefined;
+
+  function rangeAnchorsFromCodeLocation(
+    location: Comment["location"] | null,
+  ): SelectionRange | undefined {
+    if (location?.old?.type === "lines") {
+      return {
+        start: { side: "left", lineNumber: location.old.range.start },
+      };
+    } else if (location?.new?.type === "lines") {
+      return {
+        start: { side: "right", lineNumber: location.new.range.start },
+      };
+    }
+  }
+  $: selectionRange = rangeAnchorsFromCodeLocation(location);
 </script>
 
 <style>
@@ -41,6 +61,13 @@
     min-height: 1.5rem;
     gap: 0.5rem;
     font-size: var(--font-size-small);
+  }
+  .code-location {
+    font-family: var(--font-family-monospace);
+    background-color: var(--color-fill-ghost);
+    font-size: var(--font-size-tiny);
+    border-radius: var(--border-radius-tiny);
+    padding: 0.125rem 0.25rem;
   }
   .reply-dot {
     border-radius: var(--border-radius-round);
@@ -108,6 +135,25 @@
       <NodeId {baseUrl} nodeId={authorId} alias={authorAlias} />
       <slot name="caption">{caption}</slot>
       <Id {id} />
+      {#if location}
+        on change
+        <div class="code-location">
+          {#if location.path && selectionRange}
+            <div class="comment-header">
+              {location.path.split("/").length > 1 ? "…/" : ""}{location.path
+                .split("/")
+                .slice(-1)}:{selectionRange.start.side === "left"
+                ? "L"
+                : "R"}{selectionRange.start.lineNumber}
+              {#if selectionRange.end}
+                ->
+                {selectionRange.end.side === "left" ? "L" : "R"}{selectionRange
+                  .end.lineNumber}
+              {/if}
+            </div>
+          {/if}
+        </div>
+      {/if}
       <span class="timestamp" title={utils.absoluteTimestamp(timestamp)}>
         {utils.formatTimestamp(timestamp)}
       </span>
