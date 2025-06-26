@@ -16,6 +16,8 @@
   }>();
 
   function navigateToRoute(event: MouseEvent): void {
+    event.stopPropagation();
+
     if (disabled) {
       event.preventDefault();
       return;

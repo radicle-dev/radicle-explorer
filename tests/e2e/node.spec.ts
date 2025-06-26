@@ -104,9 +104,6 @@ test("edit seed bookmarks", async ({ page }) => {
   await expect(page.getByText("seed.example.tld").first()).toBeVisible();
 
   // Test removing a bookmark.
-  await page
-    .getByRole("button", { name: "Toggle seed selector dropdown" })
-    .click();
   await page.getByRole("button", { name: "Remove bookmark" }).nth(1).click();
   await expect(page.locator(".dropdown > .dropdown-item")).toHaveCount(1);
 
