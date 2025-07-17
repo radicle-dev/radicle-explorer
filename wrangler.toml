@@ -1,0 +1,7 @@
+name = "explorer"
+compatibility_date = "2025-04-03"
+account_id = "dcd58b4607e42dafa1592d13077a60bc"
+
+[assets]
+directory = "build"
+not_found_handling = "single-page-application"
