@@ -43,7 +43,7 @@ export async function loadUserRoute({
       },
     };
   }
-  const parsedDid = utils.parseNodeId(did);
+  const parsedDid = utils.parseNodeId(decodeURIComponent(did));
   if (!parsedDid) {
     return {
       resource: "error",
