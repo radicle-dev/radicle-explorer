@@ -13,7 +13,7 @@ use crate::axum_extra::{Path, Query};
 
 pub fn router(ctx: Context) -> Router {
     Router::new()
-        .route("/delegates/:did/repos", get(delegates_repos_handler))
+        .route("/delegates/{did}/repos", get(delegates_repos_handler))
         .with_state(ctx)
 }
 

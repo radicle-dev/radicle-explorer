@@ -21,9 +21,12 @@ pub fn router(ctx: Context) -> Router {
     Router::new()
         .route("/node", get(node_handler))
         .route("/node/policies/repos", get(node_policies_repos_handler))
-        .route("/node/policies/repos/:rid", get(node_policies_repo_handler))
-        .route("/nodes/:nid", get(nodes_handler))
-        .route("/nodes/:nid/inventory", get(nodes_inventory_handler))
+        .route(
+            "/node/policies/repos/{rid}",
+            get(node_policies_repo_handler),
+        )
+        .route("/nodes/{nid}", get(nodes_handler))
+        .route("/nodes/{nid}/inventory", get(nodes_inventory_handler))
         .with_state(ctx)
 }
 

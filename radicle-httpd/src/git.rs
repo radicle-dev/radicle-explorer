@@ -24,7 +24,7 @@ use crate::error::GitError as Error;
 
 pub fn router(profile: Arc<Profile>, aliases: HashMap<String, RepoId>) -> Router {
     Router::new()
-        .route("/:rid/*request", any(git_handler))
+        .route("/{rid}/{*request}", any(git_handler))
         .with_state((profile, aliases))
 }
 

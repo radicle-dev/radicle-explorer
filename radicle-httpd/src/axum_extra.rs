@@ -4,14 +4,13 @@ use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 use axum::http::{header, StatusCode};
 use axum::response::IntoResponse;
-use axum::{async_trait, Json};
+use axum::Json;
 
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
 pub struct Path<T>(pub T);
 
-#[async_trait]
 impl<S, T> FromRequestParts<S> for Path<T>
 where
     T: DeserializeOwned + Send,
@@ -53,7 +52,6 @@ where
 #[derive(Default)]
 pub struct Query<T>(pub T);
 
-#[async_trait]
 impl<S, T> FromRequestParts<S> for Query<T>
 where
     T: DeserializeOwned + Send,

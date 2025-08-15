@@ -26,11 +26,11 @@ const ARCHIVE_SUFFIX: &str = ".tar.gz";
 
 pub fn router(profile: Arc<Profile>) -> Router {
     Router::new()
-        .route("/:rid/:sha", get(commit_handler))
-        .route("/:rid/:sha/*path", get(file_by_commit_handler))
-        .route("/:rid/head/*path", get(file_by_canonical_head_handler))
-        .route("/:rid/archive/*refname", get(archive_by_refname_handler))
-        .route("/:rid/blobs/:oid", get(file_by_oid_handler))
+        .route("/{rid}/{sha}", get(commit_handler))
+        .route("/{rid}/{sha}/{*path}", get(file_by_commit_handler))
+        .route("/{rid}/head/{*path}", get(file_by_canonical_head_handler))
+        .route("/{rid}/archive/{*refname}", get(archive_by_refname_handler))
+        .route("/{rid}/blobs/{oid}", get(file_by_oid_handler))
         .with_state(profile)
 }
 
