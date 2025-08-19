@@ -68,7 +68,7 @@
 
 <style>
   svg {
-    display: flex;
+    display: inline-flex;
     flex-shrink: 0;
   }
 </style>

@@ -347,11 +347,12 @@
   }
 
   .markdown :global(li.task-item) {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-left: -1.2rem;
+    list-style-type: none;
     color: var(--color-foreground-dim);
+  }
+  .markdown :global(li.task-item radicle-icon-small) {
+    margin-right: 0.2rem;
+    vertical-align: middle;
   }
   .markdown :global(li.task-item:not(:last-child)) {
     margin-bottom: 0.25rem;
@@ -460,7 +461,6 @@
 
   .markdown :global(ul) {
     line-height: 1.625;
-    list-style-type: inherit;
     padding-left: 1.25rem;
     margin-bottom: 1rem;
   }
