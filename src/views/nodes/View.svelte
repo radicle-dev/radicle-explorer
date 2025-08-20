@@ -1,12 +1,8 @@
 <script lang="ts">
   import type { BaseUrl, Node, NodeStats } from "@http-client";
 
-  import * as router from "@app/lib/router";
   import dompurify from "dompurify";
   import { markdown } from "@app/lib/markdown";
-  import { baseUrlToString } from "@app/lib/utils";
-  import { fetchRepoInfos } from "@app/components/RepoCard";
-  import { handleError } from "@app/views/nodes/error";
 
   import Settings from "@app/App/Settings.svelte";
 
@@ -16,11 +12,9 @@
   import Icon from "@app/components/Icon.svelte";
   import IconButton from "@app/components/IconButton.svelte";
   import Link from "@app/components/Link.svelte";
-  import Loading from "@app/components/Loading.svelte";
   import MobileFooter from "@app/App/MobileFooter.svelte";
-  import Placeholder from "@app/components/Placeholder.svelte";
   import Popover from "@app/components/Popover.svelte";
-  import RepoCard from "@app/components/RepoCard.svelte";
+  import ReposView from "./ReposView.svelte";
 
   import PolicyExplainer from "./PolicyExplainer.svelte";
   import SeedSelector from "./SeedSelector.svelte";
@@ -138,32 +132,6 @@
     height: 2rem;
   }
 
-  .subtitle {
-    font-size: var(--font-size-small);
-    color: var(--color-foreground-dim);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    width: 100%;
-    margin-top: 1rem;
-  }
-  .repos {
-    margin-top: 0;
-  }
-  .repo-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(21rem, 1fr));
-    gap: 1rem;
-  }
-  .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    height: 35vh;
-    font-size: var(--font-size-small);
-  }
   .box {
     font-size: var(--font-size-small);
     line-height: 1.625rem;
@@ -219,9 +187,6 @@
     }
     .container {
       padding: 0;
-    }
-    .repos {
-      margin-top: 3rem;
     }
     .mobile-footer {
       margin-top: auto;
@@ -418,35 +383,7 @@
             </div>
           {/if}
 
-          <div class="repos">
-            {#await fetchRepoInfos( baseUrl, { show: "pinned", perPage: stats.repos.total }, )}
-              <div style:height="35vh">
-                <Loading small center />
-              </div>
-            {:then repoInfos}
-              {#if repoInfos.length > 0}
-                <div class="repo-grid">
-                  {#each repoInfos as repoInfo}
-                    <RepoCard {baseUrl} {repoInfo} />
-                  {/each}
-                </div>
-                <div class="subtitle">
-                  {repoInfos.length}
-                  pinned {repoInfos.length === 1
-                    ? "repository"
-                    : "repositories"}
-                </div>
-              {:else}
-                <div class="empty-state">
-                  <Placeholder
-                    iconName="desert"
-                    caption="This node doesn't have any pinned repositories." />
-                </div>
-              {/if}
-            {:catch error}
-              {router.push(handleError(error, baseUrlToString(baseUrl)))}
-            {/await}
-          </div>
+          <ReposView {baseUrl} {stats} />
         </div>
       </div>
     </div>
