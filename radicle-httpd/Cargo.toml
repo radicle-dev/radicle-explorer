@@ -30,6 +30,7 @@ hyper = { version = "1.6.0", default-features = false }
 infer = { version = "0.19.0" }
 lexopt = { version = "0.3.1" }
 lru = { version = "0.16.0" }
+mime_guess = { version = "2.0.5" }
 nonempty = { version = "0.12.0", features = ["serialize"] }
 radicle = { version = "0.18.0" }
 radicle-surf = { version = "0.22.0", default-features = false, features = ["serde"] }

@@ -74,7 +74,7 @@ async fn file_by_commit_handler(
     let repo: Repository = repo.backend.into();
     let blob = repo.blob(sha, &path)?;
 
-    blob_response(blob)
+    blob_response(blob, &path)
 }
 
 async fn archive_by_refname_handler(
@@ -173,22 +173,24 @@ async fn file_by_canonical_head_handler(
     let repo: Repository = repo.backend.into();
     let blob = repo.blob(sha, &path)?;
 
-    blob_response(blob)
+    blob_response(blob, &path)
 }
 
-fn blob_response(blob: Blob<BlobRef>) -> Result<(StatusCode, HeaderMap, Vec<u8>), Error> {
+fn blob_response(
+    blob: Blob<BlobRef>,
+    path: &str,
+) -> Result<(StatusCode, HeaderMap, Vec<u8>), Error> {
     let mut response_headers = HeaderMap::new();
     if blob.size() > MAX_BLOB_SIZE {
         return Ok::<_, Error>((StatusCode::PAYLOAD_TOO_LARGE, response_headers, vec![]));
     }
 
-    let content = blob.content();
-    let mime = infer::get(content).map(|i| i.mime_type().to_string());
+    let mime = mime_guess::from_path(path)
+        .first_raw()
+        .or_else(|| infer::get(blob.content()).map(|i| i.mime_type()))
+        .unwrap_or("application/octet-stream");
 
-    response_headers.insert(
-        header::CONTENT_TYPE,
-        HeaderValue::from_str(&mime.unwrap_or("application/octet-stream".to_string()))?,
-    );
+    response_headers.insert(header::CONTENT_TYPE, HeaderValue::from_str(mime)?);
 
     Ok::<_, Error>((StatusCode::OK, response_headers, blob.content().to_owned()))
 }
