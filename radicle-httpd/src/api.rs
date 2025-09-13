@@ -22,8 +22,9 @@ pub(crate) mod query;
 mod v1;
 
 use crate::api::error::Error;
+use crate::auth::HttpClientInfo;
 use crate::cache::Cache;
-use crate::Options;
+use crate::{AccessPolicy, Options};
 
 pub const RADICLE_VERSION: &str = env!("RADICLE_VERSION");
 // This version has to be updated on every breaking change to the radicle-httpd API.
@@ -69,6 +70,7 @@ pub struct Context {
     profile: Arc<Profile>,
     cache: Option<Cache>,
     web_config: WebConfig,
+    access_policy: Arc<AccessPolicy>,
 }
 
 impl Context {
@@ -77,6 +79,7 @@ impl Context {
             profile: profile.clone(),
             cache: options.cache.map(Cache::new),
             web_config,
+            access_policy: Arc::clone(&options.access_policy),
         }
     }
 
@@ -139,14 +142,17 @@ impl Context {
 
     /// Get a repository by RID, checking to make sure we're allowed to view it.
     #[allow(clippy::result_large_err)]
-    pub fn repo(&self, rid: RepoId) -> Result<(Repository, DocAt), error::Error> {
+    pub fn repo(
+        &self,
+        rid: RepoId,
+        client_info: &HttpClientInfo,
+    ) -> Result<(Repository, DocAt), error::Error> {
         let repo = self.profile.storage.repository(rid)?;
         let doc = repo.identity_doc()?;
-        // Don't allow accessing private repos.
-        if doc.visibility().is_private() {
-            return Err(Error::NotFound);
-        }
-        Ok((repo, doc))
+        self.access_policy
+            .check(client_info.with_repo(rid, &doc))
+            .then_some((repo, doc))
+            .ok_or(Error::NotFound)
     }
 
     /// Returns a reference to the thread-safe web configuration.
@@ -332,9 +338,6 @@ mod search {
             db: &Database,
             aliases: &Aliases,
         ) -> Option<Self> {
-            if info.doc.visibility().is_private() {
-                return None;
-            }
             let Ok(Some(index)) = info.doc.project().map(|p| p.name().find(q)) else {
                 return None;
             };
@@ -584,6 +587,7 @@ mod tests {
         use radicle::identity::RepoId;
         use radicle::storage::{ReadRepository, ReadStorage};
 
+        use crate::auth::HttpClientInfo;
         use crate::test;
 
         fn r(s: &str) -> &RefStr {
@@ -610,7 +614,7 @@ mod tests {
             let ctx = test::seed(tmp.path());
             let rid = RepoId::from_str(test::RID).unwrap();
 
-            let (repo, doc) = ctx.repo(rid).unwrap();
+            let (repo, doc) = ctx.repo(rid, &HttpClientInfo::default()).unwrap();
             let info = ctx.repo_info(&repo, doc).unwrap();
 
             assert!(info.refs.tags.is_empty());

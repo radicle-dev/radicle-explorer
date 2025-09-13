@@ -21,8 +21,10 @@ use tokio::process::Command;
 use tokio_util::io::ReaderStream;
 
 use crate::api::query::RawQuery;
+use crate::auth::HttpClientInfo;
 use crate::axum_extra::Path;
 use crate::error::RawError as Error;
+use crate::AccessPolicy;
 
 const MAX_BLOB_SIZE: usize = 10_485_760;
 
@@ -104,27 +106,39 @@ enum Committish<'a> {
     Ref(&'a str),
 }
 
-pub fn router(profile: Arc<Profile>) -> Router {
+#[derive(Debug, Clone)]
+struct Context {
+    profile: Arc<Profile>,
+    access_policy: Arc<AccessPolicy>,
+}
+
+pub fn router(profile: Arc<Profile>, access_policy: Arc<AccessPolicy>) -> Router {
     Router::new()
         .route("/{rid}/{sha}", get(commit_handler))
         .route("/{rid}/{sha}/{*path}", get(file_by_commit_handler))
         .route("/{rid}/head/{*path}", get(file_by_canonical_head_handler))
         .route("/{rid}/archive/{*refname}", get(archive_by_refname_handler))
         .route("/{rid}/blobs/{oid}", get(file_by_oid_handler))
-        .with_state(profile)
+        .with_state(Context {
+            profile,
+            access_policy,
+        })
 }
 
 async fn commit_handler(
     method: Method,
     Path((rid, sha)): Path<(RepoId, String)>,
     Query(q): Query<PrefixQuery>,
-    State(profile): State<Arc<Profile>>,
+    State(ctx): State<Context>,
+    client_info: HttpClientInfo,
 ) -> Result<Response<Body>, Error> {
-    let storage = &profile.storage;
+    let storage = &ctx.profile.storage;
     let repo = storage.repository(rid)?;
 
-    // Do not allow accessing private repos.
-    if repo.identity_doc()?.visibility().is_private() {
+    if !ctx
+        .access_policy
+        .check(client_info.with_repo(rid, &*repo.identity_doc()?))
+    {
         return Err(Error::NotFound);
     }
 
@@ -136,18 +150,30 @@ async fn commit_handler(
         return Err(Error::BadRequest);
     };
 
-    archive_by_committish(method, rid, Committish::Oid(oid), q.prefix, format, profile).await
+    archive_by_committish(
+        method,
+        rid,
+        Committish::Oid(oid),
+        q.prefix,
+        format,
+        ctx,
+        client_info,
+    )
+    .await
 }
 
 async fn file_by_commit_handler(
     Path((rid, sha, path)): Path<(RepoId, Oid, String)>,
-    State(profile): State<Arc<Profile>>,
+    State(ctx): State<Context>,
+    client_info: HttpClientInfo,
 ) -> impl IntoResponse {
-    let storage = &profile.storage;
+    let storage = &ctx.profile.storage;
     let repo = storage.repository(rid)?;
 
-    // Don't allow downloading raw files for private repos.
-    if repo.identity_doc()?.visibility().is_private() {
+    if !ctx
+        .access_policy
+        .check(client_info.with_repo(rid, &*repo.identity_doc()?))
+    {
         return Err(Error::NotFound);
     }
 
@@ -164,7 +190,8 @@ async fn archive_by_refname_handler(
     method: Method,
     Path((rid, refname)): Path<(RepoId, String)>,
     Query(q): Query<PrefixQuery>,
-    State(profile): State<Arc<Profile>>,
+    State(ctx): State<Context>,
+    client_info: HttpClientInfo,
 ) -> Result<Response<Body>, Error> {
     let (refname, format) = ArchiveFormat::detect(&refname);
     archive_by_committish(
@@ -173,7 +200,8 @@ async fn archive_by_refname_handler(
         Committish::Ref(refname),
         q.prefix,
         format.unwrap_or_default(),
-        profile,
+        ctx,
+        client_info,
     )
     .await
 }
@@ -184,13 +212,16 @@ async fn archive_by_committish(
     committish: Committish<'_>,
     use_prefix: bool,
     format: ArchiveFormat,
-    profile: Arc<Profile>,
+    ctx: Context,
+    client_info: HttpClientInfo,
 ) -> Result<Response<Body>, Error> {
-    let storage = &profile.storage;
+    let storage = &ctx.profile.storage;
     let repo = storage.repository(rid)?;
 
-    // Do not allow downloading tarballs for private repos.
-    if repo.identity_doc()?.visibility().is_private() {
+    if !ctx
+        .access_policy
+        .check(client_info.with_repo(rid, &*repo.identity_doc()?))
+    {
         return Err(Error::NotFound);
     }
 
@@ -280,13 +311,16 @@ async fn archive_by_committish(
 
 async fn file_by_canonical_head_handler(
     Path((rid, path)): Path<(RepoId, String)>,
-    State(profile): State<Arc<Profile>>,
+    State(ctx): State<Context>,
+    client_info: HttpClientInfo,
 ) -> impl IntoResponse {
-    let storage = &profile.storage;
+    let storage = &ctx.profile.storage;
     let repo = storage.repository(rid)?;
 
-    // Don't allow downloading raw files for private repos.
-    if repo.identity_doc()?.visibility().is_private() {
+    if !ctx
+        .access_policy
+        .check(client_info.with_repo(rid, &*repo.identity_doc()?))
+    {
         return Err(Error::NotFound);
     }
 
@@ -321,14 +355,17 @@ fn blob_response(
 
 async fn file_by_oid_handler(
     Path((rid, oid)): Path<(RepoId, Oid)>,
-    State(profile): State<Arc<Profile>>,
+    State(ctx): State<Context>,
     Query(_qs): Query<RawQuery>,
+    client_info: HttpClientInfo,
 ) -> impl IntoResponse {
-    let storage = &profile.storage;
+    let storage = &ctx.profile.storage;
     let repo = storage.repository(rid)?;
 
-    // Don't allow downloading raw files for private repos.
-    if repo.identity_doc()?.visibility().is_private() {
+    if !ctx
+        .access_policy
+        .check(client_info.with_repo(rid, &*repo.identity_doc()?))
+    {
         return Err(Error::NotFound);
     }
 
@@ -360,7 +397,7 @@ mod routes {
     async fn test_file_handler() {
         let tmp = tempfile::tempdir().unwrap();
         let ctx = test::seed(tmp.path());
-        let app = super::router(ctx.profile().to_owned());
+        let app = super::router(ctx.profile().to_owned(), Default::default());
 
         let response = get(&app, format!("/{RID}/head/dir1/README")).await;
 

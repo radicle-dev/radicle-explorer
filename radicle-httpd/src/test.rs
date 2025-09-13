@@ -329,9 +329,11 @@ fn seed_with_signer<G: Signer<Signature>>(
     profile.add_inventory(rid, node_handle).unwrap();
 
     let options = crate::Options {
-        aliases: std::collections::HashMap::new(),
+        aliases: Default::default(),
         listen: axum_listener::DualAddr::Tcp(std::net::SocketAddr::from(([0, 0, 0, 0], 8080))),
         cache: Some(crate::DEFAULT_CACHE_SIZE),
+        access_policy: Default::default(),
+        real_ip_header_name: Default::default(),
     };
 
     let web_config = crate::api::WebConfig::from_profile(&profile);

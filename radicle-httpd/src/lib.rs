@@ -18,7 +18,7 @@ use axum::body::Body;
 use axum::http::Request;
 use axum::response::IntoResponse;
 use axum::routing::get;
-use axum::{middleware, Json, Router};
+use axum::{middleware, Extension, Json, Router};
 use axum_listener::{DualAddr, DualListener};
 use hyper::body::Body as _;
 use hyper::header::CONTENT_TYPE;
@@ -34,7 +34,10 @@ use radicle::Profile;
 use crate::api::RADICLE_VERSION;
 use crate::tracing_extra::{tracing_middleware, ColoredStatus, Paint, RequestId, TracingInfo};
 
+pub use crate::auth::AccessPolicy;
+
 mod api;
+mod auth;
 mod axum_extra;
 mod cache;
 mod git;
@@ -48,10 +51,15 @@ pub const DEFAULT_CACHE_SIZE: NonZeroUsize = NonZeroUsize::new(100).unwrap();
 
 #[derive(Debug, Clone)]
 pub struct Options {
-    pub aliases: HashMap<String, RepoId>,
+    pub aliases: Arc<HashMap<String, RepoId>>,
     pub listen: DualAddr,
     pub cache: Option<NonZeroUsize>,
+    pub access_policy: Arc<AccessPolicy>,
+    pub real_ip_header_name: RealIpHeaderName,
 }
+
+#[derive(Debug, Clone, Default)]
+pub struct RealIpHeaderName(pub Option<Arc<str>>);
 
 /// Run the Server.
 pub async fn run(options: Options) -> anyhow::Result<()> {
@@ -151,8 +159,12 @@ pub async fn run(options: Options) -> anyhow::Result<()> {
 /// Create a router consisting of other sub-routers.
 fn router(options: Options, profile: Arc<Profile>, ctx: api::Context) -> anyhow::Result<Router> {
     let api_router = api::router(ctx);
-    let git_router = git::router(profile.clone(), options.aliases);
-    let raw_router = raw::router(profile);
+    let git_router = git::router(
+        profile.clone(),
+        options.aliases,
+        Arc::clone(&options.access_policy),
+    );
+    let raw_router = raw::router(profile, options.access_policy);
 
     let app = Router::new()
         .route("/", get(root_index_handler))
@@ -165,7 +177,8 @@ fn router(options: Options, profile: Arc<Profile>, ctx: api::Context) -> anyhow:
                 .allow_origin(cors::Any)
                 .allow_methods([Method::GET])
                 .allow_headers([CONTENT_TYPE]),
-        );
+        )
+        .layer(Extension(options.real_ip_header_name));
 
     Ok(app)
 }
@@ -235,7 +248,6 @@ pub mod logger {
 
 #[cfg(test)]
 mod routes {
-    use std::collections::HashMap;
     use std::net::SocketAddr;
 
     use axum::extract::connect_info::MockConnectInfo;
@@ -248,9 +260,11 @@ mod routes {
     async fn test_invalid_route_returns_404() {
         let tmp = tempfile::tempdir().unwrap();
         let options = super::Options {
-            aliases: HashMap::new(),
+            aliases: Default::default(),
             listen: DualAddr::Tcp(SocketAddr::from(([0, 0, 0, 0], 8080))),
             cache: None,
+            access_policy: Default::default(),
+            real_ip_header_name: Default::default(),
         };
         let profile = test::profile(tmp.path(), [0xff; 32]);
         let web_config = crate::api::WebConfig::from_profile(&profile);

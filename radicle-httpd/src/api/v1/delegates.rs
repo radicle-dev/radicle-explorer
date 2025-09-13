@@ -9,6 +9,7 @@ use radicle::storage::ReadStorage;
 use crate::api::error::Error;
 use crate::api::query::{PaginationQuery, RepoQuery};
 use crate::api::Context;
+use crate::auth::HttpClientInfo;
 use crate::axum_extra::{Path, Query};
 
 pub fn router(ctx: Context) -> Router {
@@ -23,6 +24,7 @@ async fn delegates_repos_handler(
     State(ctx): State<Context>,
     Path(did): Path<Did>,
     Query(qs): Query<PaginationQuery>,
+    client_info: HttpClientInfo,
 ) -> impl IntoResponse {
     let PaginationQuery {
         show,
@@ -35,31 +37,25 @@ async fn delegates_repos_handler(
     let web_config = ctx.web_config().read().await;
     let pinned = &web_config.pinned;
     let mut repos = match show {
-        RepoQuery::All => storage
-            .repositories()?
-            .into_iter()
-            .filter(|repo| repo.doc.visibility().is_public())
-            .filter(|repo| repo.doc.delegates().iter().any(|d| *d == did))
-            .collect::<Vec<_>>(),
+        RepoQuery::All => storage.repositories()?,
         RepoQuery::Pinned => storage
             .repositories_by_id(pinned.repositories.iter())
-            .filter_map(|result| match result {
-                Ok(repo) => Some(repo),
-                Err(e) => {
-                    tracing::warn!("Failed to load pinned repository: {}", e);
-                    None
-                }
+            .filter_map(|result| {
+                result
+                    .inspect_err(|err| {
+                        tracing::warn!("Failed to load pinned repository: {err}");
+                    })
+                    .ok()
             })
-            .filter(|repo| repo.doc.visibility().is_public())
-            .filter(|repo| repo.doc.delegates().iter().any(|d| *d == did))
-            .collect::<Vec<_>>(),
+            .collect(),
     };
     repos.sort_by_key(|p| p.rid);
 
     let infos = repos
         .into_iter()
+        .filter(|repo| repo.doc.delegates().iter().any(|d| *d == did))
         .filter_map(|id| {
-            let Ok((repo, doc)) = ctx.repo(id.rid) else {
+            let Ok((repo, doc)) = ctx.repo(id.rid, &client_info) else {
                 return None;
             };
             let Ok(repo_info) = ctx.repo_info(&repo, doc) else {

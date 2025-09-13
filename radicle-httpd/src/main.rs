@@ -1,10 +1,11 @@
 use std::num::NonZeroUsize;
+use std::path::PathBuf;
 use std::{collections::HashMap, process};
 
 use axum_listener::DualAddr;
 use radicle::prelude::RepoId;
 use radicle::version::Version;
-use radicle_httpd as httpd;
+use radicle_httpd::{self as httpd, AccessPolicy, RealIpHeaderName};
 
 pub const VERSION: Version = Version {
     name: "radicle-httpd",
@@ -20,14 +21,16 @@ Usage
 
 Options
 
-    --listen       <address>         Address to listen on: TCP address (e.g., 127.0.0.1:8080)
-                                     or Unix socket path (e.g., /tmp/radicle.sock)
-                                     (default: 0.0.0.0:8080)
-    --alias, -a    <alias> <rid>     Provide alias and RID pairs to shorten git clone commands for repositories,
-                                     e.g. heartwood and rad:z3gqcJUoA1n9HaHKufZs5FCSGazv5 to produce https://seed.radicle.dev/heartwood.git
-    --cache        <number>          Max amount of items in cache for /tree endpoints (default: 100)
-    --version, -v                    Print program version
-    --help, -h                       Print help
+    --listen         <address>         Address to listen on: TCP address (e.g., 127.0.0.1:8080)
+                                       or Unix socket path (e.g., /tmp/radicle.sock)
+                                       (default: 0.0.0.0:8080)
+    --alias, -a      <alias> <rid>     Provide alias and RID pairs to shorten git clone commands for repositories,
+                                       e.g. heartwood and rad:z3gqcJUoA1n9HaHKufZs5FCSGazv5 to produce https://seed.radicle.dev/heartwood.git
+    --cache          <number>          Max amount of items in cache for /tree endpoints (default: 100)
+    --access-policy  <path>            Access policy file path
+    --real-ip-header <name>
+    --version, -v                      Print program version
+    --help, -h                         Print help
 "#;
 
 #[tokio::main]
@@ -57,6 +60,8 @@ fn parse_options() -> Result<httpd::Options, lexopt::Error> {
     let mut listen = None;
     let mut aliases = HashMap::new();
     let mut cache = Some(httpd::DEFAULT_CACHE_SIZE);
+    let mut access_policy = None;
+    let mut real_ip_header_name = RealIpHeaderName::default();
 
     while let Some(arg) = parser.next()? {
         match arg {
@@ -98,6 +103,27 @@ fn parse_options() -> Result<httpd::Options, lexopt::Error> {
                 let size = parser.value()?.parse()?;
                 cache = NonZeroUsize::new(size);
             }
+            Long("access-policy") => {
+                if access_policy.is_some() {
+                    eprintln!("Only one access policy can be specified.");
+                    process::exit(1);
+                }
+                let path = parser.value()?.parse::<PathBuf>()?;
+                match AccessPolicy::try_from_path(&path) {
+                    Ok(policy) => access_policy = Some(policy),
+                    Err(err) => {
+                        eprintln!(
+                            "Failed to load access policy from {}: {err}",
+                            path.display()
+                        );
+                        process::exit(1);
+                    }
+                }
+            }
+            Long("real-ip-header") => {
+                let name = parser.value()?.parse::<String>()?;
+                real_ip_header_name = RealIpHeaderName(Some(name.into()));
+            }
             Long("help") | Short('h') => {
                 println!("{HELP_MSG}");
                 process::exit(0);
@@ -106,8 +132,10 @@ fn parse_options() -> Result<httpd::Options, lexopt::Error> {
         }
     }
     Ok(httpd::Options {
-        aliases,
+        aliases: aliases.into(),
         listen: listen.unwrap_or_else(|| DualAddr::Tcp(([0, 0, 0, 0], 8080).into())),
         cache,
+        access_policy: access_policy.unwrap_or_default().into(),
+        real_ip_header_name,
     })
 }

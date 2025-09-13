@@ -25,6 +25,7 @@ use crate::api::query::{CobsQuery, PaginationQuery, RepoQuery};
 use crate::api::search::{SearchQueryString, SearchResult};
 use crate::api::Context;
 use crate::api::PeelToCommit;
+use crate::auth::HttpClientInfo;
 use crate::axum_extra::{cached_response, immutable_response, Path, Query};
 
 const MAX_BODY_LIMIT: usize = 4_194_304;
@@ -59,6 +60,7 @@ pub fn router(ctx: Context) -> Router {
 async fn repo_root_handler(
     State(ctx): State<Context>,
     Query(qs): Query<PaginationQuery>,
+    client_info: HttpClientInfo,
 ) -> impl IntoResponse {
     let PaginationQuery {
         show,
@@ -76,22 +78,17 @@ async fn repo_root_handler(
     let policies = ctx.profile.policies()?;
 
     let mut repos = match show {
-        RepoQuery::All => storage
-            .repositories()?
-            .into_iter()
-            .filter(|repo| repo.doc.visibility().is_public())
-            .collect::<Vec<_>>(),
+        RepoQuery::All => storage.repositories()?,
         RepoQuery::Pinned => storage
             .repositories_by_id(pinned.repositories.iter())
-            .filter_map(|result| match result {
-                Ok(repo) => Some(repo),
-                Err(e) => {
-                    tracing::warn!("Failed to load pinned repository: {}", e);
-                    None
-                }
+            .filter_map(|result| {
+                result
+                    .inspect_err(|err| {
+                        tracing::warn!("Failed to load pinned repository: {err}");
+                    })
+                    .ok()
             })
-            .filter(|repo| repo.doc.visibility().is_public())
-            .collect::<Vec<_>>(),
+            .collect(),
     };
     repos.sort_by_key(|p| p.rid);
 
@@ -101,7 +98,7 @@ async fn repo_root_handler(
             if !policies.is_seeding(&info.rid).unwrap_or_default() {
                 return None;
             }
-            let Ok((repo, doc)) = ctx.repo(info.rid) else {
+            let Ok((repo, doc)) = ctx.repo(info.rid, &client_info) else {
                 return None;
             };
             let Ok(repo_info) = ctx.repo_info(&repo, doc) else {
@@ -131,6 +128,7 @@ async fn repo_root_handler(
 async fn repo_search_handler(
     State(ctx): State<Context>,
     Query(SearchQueryString { q, per_page, page }): Query<SearchQueryString>,
+    client_info: HttpClientInfo,
 ) -> impl IntoResponse {
     let q = q.unwrap_or_default();
     let page = page.unwrap_or(0);
@@ -141,6 +139,10 @@ async fn repo_search_handler(
     let found_repos = storage
         .repositories()?
         .into_iter()
+        .filter(|info| {
+            ctx.access_policy
+                .check(client_info.with_repo(info.rid, &info.doc))
+        })
         .filter_map(|info| SearchResult::new(&q, info, db, aliases))
         .collect::<BTreeSet<SearchResult>>();
 
@@ -155,8 +157,12 @@ async fn repo_search_handler(
 
 /// Get repo metadata.
 /// `GET /repos/:rid`
-async fn repo_handler(State(ctx): State<Context>, Path(rid): Path<RepoId>) -> impl IntoResponse {
-    let (repo, doc) = ctx.repo(rid)?;
+async fn repo_handler(
+    State(ctx): State<Context>,
+    Path(rid): Path<RepoId>,
+    client_info: HttpClientInfo,
+) -> impl IntoResponse {
+    let (repo, doc) = ctx.repo(rid, &client_info)?;
     let info = ctx.repo_info(&repo, doc)?;
 
     Ok::<_, Error>(Json(info))
@@ -178,8 +184,9 @@ async fn history_handler(
     State(ctx): State<Context>,
     Path(rid): Path<RepoId>,
     Query(qs): Query<CommitsQueryString>,
+    client_info: HttpClientInfo,
 ) -> impl IntoResponse {
-    let (repo, _) = ctx.repo(rid)?;
+    let (repo, _) = ctx.repo(rid, &client_info)?;
     let (_, head) = repo.head()?;
     let CommitsQueryString {
         since,
@@ -238,8 +245,9 @@ async fn history_handler(
 async fn commit_handler(
     State(ctx): State<Context>,
     Path((rid, sha)): Path<(RepoId, Oid)>,
+    client_info: HttpClientInfo,
 ) -> impl IntoResponse {
-    let (repo, _) = ctx.repo(rid)?;
+    let (repo, _) = ctx.repo(rid, &client_info)?;
     let repo = Repository::open(repo.path())?;
     let commit = repo.commit(sha)?;
 
@@ -304,8 +312,9 @@ async fn commit_handler(
 async fn diff_handler(
     State(ctx): State<Context>,
     Path((rid, base, oid)): Path<(RepoId, Oid, Oid)>,
+    client_info: HttpClientInfo,
 ) -> impl IntoResponse {
-    let (repo, _) = ctx.repo(rid)?;
+    let (repo, _) = ctx.repo(rid, &client_info)?;
     let repo = Repository::open(repo.path())?;
     let base = repo.commit(base)?;
     let commit = repo.commit(oid)?;
@@ -371,8 +380,9 @@ async fn diff_handler(
 async fn activity_handler(
     State(ctx): State<Context>,
     Path(rid): Path<RepoId>,
+    client_info: HttpClientInfo,
 ) -> impl IntoResponse {
-    let (repo, _) = ctx.repo(rid)?;
+    let (repo, _) = ctx.repo(rid, &client_info)?;
     let current_date = chrono::Utc::now().timestamp();
     // SAFETY: The number of weeks is static and not out of bounds.
     #[allow(clippy::unwrap_used)]
@@ -400,8 +410,9 @@ async fn activity_handler(
 async fn tree_handler_root(
     State(ctx): State<Context>,
     Path((rid, sha)): Path<(RepoId, Oid)>,
+    client_info: HttpClientInfo,
 ) -> impl IntoResponse {
-    tree_handler(State(ctx), Path((rid, sha, String::new()))).await
+    tree_handler(State(ctx), Path((rid, sha, String::new())), client_info).await
 }
 
 /// Get repo source tree.
@@ -409,8 +420,9 @@ async fn tree_handler_root(
 async fn tree_handler(
     State(ctx): State<Context>,
     Path((rid, sha, path)): Path<(RepoId, Oid, String)>,
+    client_info: HttpClientInfo,
 ) -> impl IntoResponse {
-    let (repo, _) = ctx.repo(rid)?;
+    let (repo, _) = ctx.repo(rid, &client_info)?;
 
     if let Some(ref cache) = ctx.cache {
         let cache = &mut cache.tree.lock().await;
@@ -436,8 +448,9 @@ async fn tree_handler(
 async fn stats_tree_handler(
     State(ctx): State<Context>,
     Path((rid, sha)): Path<(RepoId, Oid)>,
+    client_info: HttpClientInfo,
 ) -> impl IntoResponse {
-    let (repo, _) = ctx.repo(rid)?;
+    let (repo, _) = ctx.repo(rid, &client_info)?;
     let repo = Repository::open(repo.path())?;
     let stats = repo.stats_from(&sha)?;
 
@@ -446,8 +459,12 @@ async fn stats_tree_handler(
 
 /// Get all repo remotes.
 /// `GET /repos/:rid/remotes`
-async fn remotes_handler(State(ctx): State<Context>, Path(rid): Path<RepoId>) -> impl IntoResponse {
-    let (repo, doc) = ctx.repo(rid)?;
+async fn remotes_handler(
+    State(ctx): State<Context>,
+    Path(rid): Path<RepoId>,
+    client_info: HttpClientInfo,
+) -> impl IntoResponse {
+    let (repo, doc) = ctx.repo(rid, &client_info)?;
     let delegates = doc.delegates();
     let aliases = &ctx.profile.aliases();
 
@@ -465,8 +482,9 @@ async fn remotes_handler(State(ctx): State<Context>, Path(rid): Path<RepoId>) ->
 async fn remote_handler(
     State(ctx): State<Context>,
     Path((rid, node_id)): Path<(RepoId, NodeId)>,
+    client_info: HttpClientInfo,
 ) -> impl IntoResponse {
-    let (repo, doc) = ctx.repo(rid)?;
+    let (repo, doc) = ctx.repo(rid, &client_info)?;
     let delegates = doc.delegates();
     let aliases = &ctx.profile.aliases();
     let remote = repo.remote(&node_id)?;
@@ -600,8 +618,9 @@ fn remote_info(
 async fn blob_handler(
     State(ctx): State<Context>,
     Path((rid, sha, path)): Path<(RepoId, Oid, String)>,
+    client_info: HttpClientInfo,
 ) -> impl IntoResponse {
-    let (repo, _) = ctx.repo(rid)?;
+    let (repo, _) = ctx.repo(rid, &client_info)?;
     let repo = Repository::open(repo.path())?;
     let blob = repo.blob(sha, &path)?;
 
@@ -625,8 +644,9 @@ async fn blob_handler(
 async fn readme_handler(
     State(ctx): State<Context>,
     Path((rid, sha)): Path<(RepoId, Oid)>,
+    client_info: HttpClientInfo,
 ) -> impl IntoResponse {
-    let (repo, _) = ctx.repo(rid)?;
+    let (repo, _) = ctx.repo(rid, &client_info)?;
     let repo = Repository::open(repo.path())?;
     let paths = [
         "README",
@@ -671,8 +691,9 @@ async fn issues_handler(
     State(ctx): State<Context>,
     Path(rid): Path<RepoId>,
     Query(qs): Query<CobsQuery<api::query::IssueStatus>>,
+    client_info: HttpClientInfo,
 ) -> impl IntoResponse {
-    let (repo, _) = ctx.repo(rid)?;
+    let (repo, _) = ctx.repo(rid, &client_info)?;
     let CobsQuery {
         page,
         per_page,
@@ -707,8 +728,9 @@ async fn issues_handler(
 async fn issue_handler(
     State(ctx): State<Context>,
     Path((rid, issue_id)): Path<(RepoId, Oid)>,
+    client_info: HttpClientInfo,
 ) -> impl IntoResponse {
-    let (repo, _) = ctx.repo(rid)?;
+    let (repo, _) = ctx.repo(rid, &client_info)?;
     let issue = ctx
         .profile
         .issues(&repo)?
@@ -727,8 +749,9 @@ async fn patches_handler(
     State(ctx): State<Context>,
     Path(rid): Path<RepoId>,
     Query(qs): Query<CobsQuery<api::query::PatchStatus>>,
+    client_info: HttpClientInfo,
 ) -> impl IntoResponse {
-    let (repo, _) = ctx.repo(rid)?;
+    let (repo, _) = ctx.repo(rid, &client_info)?;
     let CobsQuery {
         page,
         per_page,
@@ -762,8 +785,9 @@ async fn patches_handler(
 async fn patch_handler(
     State(ctx): State<Context>,
     Path((rid, patch_id)): Path<(RepoId, Oid)>,
+    client_info: HttpClientInfo,
 ) -> impl IntoResponse {
-    let (repo, _) = ctx.repo(rid)?;
+    let (repo, _) = ctx.repo(rid, &client_info)?;
     let patches = ctx.profile.patches(&repo)?;
     let patch = patches.get(&(&*patch_id).into())?.ok_or(Error::NotFound)?;
     let aliases = ctx.profile.aliases();

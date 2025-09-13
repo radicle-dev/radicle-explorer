@@ -23,24 +23,42 @@ use tokio::process::Command;
 use tokio_util::io::{ReaderStream, StreamReader};
 use tower_http::decompression::RequestDecompressionLayer;
 
+use crate::auth::HttpClientInfo;
 use crate::error::GitError as Error;
+use crate::AccessPolicy;
 
-pub fn router(profile: Arc<Profile>, aliases: HashMap<String, RepoId>) -> Router {
+#[derive(Debug, Clone)]
+struct Context {
+    profile: Arc<Profile>,
+    aliases: Arc<HashMap<String, RepoId>>,
+    access_policy: Arc<AccessPolicy>,
+}
+
+pub fn router(
+    profile: Arc<Profile>,
+    aliases: Arc<HashMap<String, RepoId>>,
+    access_policy: Arc<AccessPolicy>,
+) -> Router {
     Router::new()
         .route(
             "/{rid}/{*path}",
             any(git_handler).layer(RequestDecompressionLayer::new()),
         )
-        .with_state((profile, aliases))
+        .with_state(Context {
+            profile,
+            aliases,
+            access_policy,
+        })
 }
 
 async fn git_handler(
-    State((profile, aliases)): State<(Arc<Profile>, HashMap<String, RepoId>)>,
+    State(ctx): State<Context>,
     AxumPath((repository, path)): AxumPath<(String, String)>,
     method: Method,
     headers: HeaderMap,
     ConnectInfo(remote): ConnectInfo<DualAddr>,
     query: RawQuery,
+    client_info: HttpClientInfo,
     request: Request,
 ) -> impl IntoResponse {
     let query = query.0.unwrap_or_default();
@@ -48,7 +66,7 @@ async fn git_handler(
     let rid: RepoId = match name.parse() {
         Ok(rid) => rid,
         Err(_) => {
-            let Some(rid) = aliases.get(name) else {
+            let Some(rid) = ctx.aliases.get(name) else {
                 return Err(Error::NotFound);
             };
             *rid
@@ -64,7 +82,16 @@ async fn git_handler(
     };
 
     let (status, headers, body) = git_http_backend(
-        &profile, method, headers, request, remote, rid, nid, path, query,
+        &ctx,
+        method,
+        headers,
+        request,
+        remote,
+        rid,
+        nid,
+        path,
+        client_info,
+        query,
     )
     .await?;
 
@@ -80,7 +107,7 @@ async fn git_handler(
 }
 
 async fn git_http_backend(
-    profile: &Profile,
+    ctx: &Context,
     method: Method,
     headers: HeaderMap,
     request: Request,
@@ -88,17 +115,19 @@ async fn git_http_backend(
     id: RepoId,
     nid: Option<NodeId>,
     path: &str,
+    client_info: HttpClientInfo,
     query: String,
 ) -> Result<(StatusCode, HashMap<String, Vec<String>>, Body), Error> {
-    let git_dir = radicle::storage::git::paths::repository(&profile.storage, &id);
+    let git_dir = radicle::storage::git::paths::repository(&ctx.profile.storage, &id);
     let content_type = headers
         .get("Content-Type")
         .and_then(|x| x.to_str().ok())
         .unwrap_or_default();
 
-    // Don't allow cloning of private repositories.
-    let doc = profile.storage.repository(id)?.identity_doc()?;
-    if doc.visibility().is_private() {
+    if !ctx
+        .access_policy
+        .check(client_info.with_repo(id, &*ctx.profile.storage.repository(id)?.identity_doc()?))
+    {
         return Err(Error::NotFound);
     }
 
@@ -208,9 +237,15 @@ mod routes {
     async fn test_info_request() {
         let tmp = tempfile::tempdir().unwrap();
         let ctx = test::seed(tmp.path());
-        let app = super::router(ctx.profile().to_owned(), HashMap::new()).layer(MockConnectInfo(
-            DualAddr::Tcp(SocketAddr::from(([0, 0, 0, 0], 8080))),
-        ));
+        let app = super::router(
+            ctx.profile().to_owned(),
+            Default::default(),
+            Default::default(),
+        )
+        .layer(MockConnectInfo(DualAddr::Tcp(SocketAddr::from((
+            [0, 0, 0, 0],
+            8080,
+        )))));
 
         let response = get(&app, format!("/{RID}.git/info/refs")).await;
 
@@ -223,7 +258,9 @@ mod routes {
         let ctx = test::seed(tmp.path());
         let app = super::router(
             ctx.profile().to_owned(),
-            HashMap::from_iter([(String::from("heartwood"), RepoId::from_str(RID).unwrap())]),
+            HashMap::from_iter([(String::from("heartwood"), RepoId::from_str(RID).unwrap())])
+                .into(),
+            Default::default(),
         )
         .layer(MockConnectInfo(DualAddr::Tcp(SocketAddr::from((
             [0, 0, 0, 0],

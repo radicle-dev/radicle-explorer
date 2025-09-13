@@ -12,6 +12,7 @@ use radicle_job::JobId;
 
 use crate::api::error::Error as ApiError;
 use crate::api::Context;
+use crate::auth::HttpClientInfo;
 use crate::axum_extra::Path;
 
 #[derive(Clone, Serialize, Debug)]
@@ -108,11 +109,12 @@ pub trait FindJobs {
 pub struct JobsSource<'a> {
     ctx: &'a Context,
     rid: RepoId,
+    client_info: &'a HttpClientInfo,
 }
 
 impl FindJobs for JobsSource<'_> {
     fn find_by_commit(&self, oid: Oid) -> Result<Vec<(JobId, radicle_job::Job)>, ApiError> {
-        let (repo, _) = self.ctx.repo(self.rid)?;
+        let (repo, _) = self.ctx.repo(self.rid, self.client_info)?;
         let store = radicle_job::Jobs::open(&repo, radicle::cob::store::access::ReadOnly)?;
         let iter = radicle_job::Jobs::find_by_commit(&store, oid)?;
 
@@ -125,9 +127,15 @@ impl FindJobs for JobsSource<'_> {
 pub async fn handler(
     State(ctx): State<Context>,
     Path((rid, sha)): Path<(RepoId, Oid)>,
+    client_info: HttpClientInfo,
 ) -> impl IntoResponse {
     let aliases = ctx.profile.aliases();
-    let jobs = JobsSource { ctx: &ctx, rid }.jobs_by_commit(sha, &aliases)?;
+    let jobs = JobsSource {
+        ctx: &ctx,
+        rid,
+        client_info: &client_info,
+    }
+    .jobs_by_commit(sha, &aliases)?;
 
     Ok::<_, ApiError>(Json(jobs))
 }
