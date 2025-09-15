@@ -22,7 +22,7 @@ test("node metadata", async ({ page, peerManager }) => {
   await page.goto(peer.uiUrl());
 
   await expect(page.getByText(shortNodeRemote).first()).toBeVisible();
-  await expect(page.getByText(/\/radicle:\d.\d.\d\//)).toBeVisible();
+  await expect(page.getByText(/\/radicle:\d\//)).toBeVisible();
 });
 
 test("node repos", async ({ page }) => {
