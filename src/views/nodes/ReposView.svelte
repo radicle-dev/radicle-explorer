@@ -14,8 +14,16 @@
   export let stats: NodeStats;
 
   let listState: "pinned" | "all" = "pinned";
-
   let page = 0;
+  let hasPinnedRepos = true;
+
+  // Reset state when baseUrl changes
+  $: if (baseUrl) {
+    listState = "pinned";
+    page = 0;
+    hasPinnedRepos = true;
+  }
+
   $: perPage = listState === "pinned" ? stats.repos.total : 24;
   $: totalPages = Math.ceil(stats.repos.total / perPage);
 
@@ -23,8 +31,31 @@
     listState = "pinned";
     page = 0;
   }
+
   function showAll() {
     listState = "all";
+    page = 0;
+  }
+
+  async function fetchRepos(
+    show: "pinned" | "all",
+    perPage: number,
+    page: number,
+  ) {
+    const repos = await fetchRepoInfos(baseUrl, { show, perPage, page });
+
+    if (
+      hasPinnedRepos &&
+      show === "pinned" &&
+      page === 0 &&
+      repos.length === 0
+    ) {
+      hasPinnedRepos = false;
+      listState = "all";
+      return [];
+    }
+
+    return repos;
   }
 </script>
 
@@ -93,7 +124,7 @@
 </style>
 
 <div class="repos">
-  {#await fetchRepoInfos(baseUrl, { show: listState, perPage, page })}
+  {#await fetchRepos(listState, perPage, page)}
     <div style:height="35vh">
       <Loading small center />
     </div>
@@ -114,39 +145,44 @@
         {:else}
           <div class="subtitle">
             {stats.repos.total.toLocaleString()}
-            seeded {stats.repos.total === 1 ? "repository" : "repositories"} ·
-            <button class="text-button" on:click={showPinned}>
-              See pinned
-            </button>
-          </div>
-
-          <div class="pagination">
-            {#if page !== 0}
-              <button class="text-button" on:click={() => (page = page - 1)}>
-                Previous
-              </button>
+            seeded {stats.repos.total === 1 ? "repository" : "repositories"}
+            {#if hasPinnedRepos}
               ·
-            {/if}
-
-            {#each Array.from({ length: Math.min(totalPages, 7) }) as _, i}
-              {@const startPage = Math.max(page - 3, 0)}
-              {@const pageNumber = startPage + i}
-              <button
-                class="text-button"
-                class:current-page={page === pageNumber}
-                on:click={() => (page = pageNumber)}
-                disabled={page === pageNumber}>
-                {pageNumber + 1}
-              </button>
-            {/each}
-
-            {#if page !== totalPages - 1}
-              ·
-              <button class="text-button" on:click={() => (page = page + 1)}>
-                Next
+              <button class="text-button" on:click={showPinned}>
+                See pinned
               </button>
             {/if}
           </div>
+
+          {#if totalPages > 1}
+            <div class="pagination">
+              {#if page !== 0}
+                <button class="text-button" on:click={() => (page = page - 1)}>
+                  Previous
+                </button>
+                ·
+              {/if}
+
+              {#each Array.from({ length: Math.min(totalPages, 7) }) as _, i}
+                {@const startPage = Math.max(page - 3, 0)}
+                {@const pageNumber = startPage + i}
+                <button
+                  class="text-button"
+                  class:current-page={page === pageNumber}
+                  on:click={() => (page = pageNumber)}
+                  disabled={page === pageNumber}>
+                  {pageNumber + 1}
+                </button>
+              {/each}
+
+              {#if page !== totalPages - 1}
+                ·
+                <button class="text-button" on:click={() => (page = page + 1)}>
+                  Next
+                </button>
+              {/if}
+            </div>
+          {/if}
         {/if}
       </div>
     {:else}
