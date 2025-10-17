@@ -123,6 +123,22 @@
         <CommitAuthorship {header}>
           <Id id={header.id} style="commit" ariaLabel="commit-id" />
         </CommitAuthorship>
+        <span class="txt-small">
+          {header.parents.length === 1 ? "Parent" : "Parents"}:
+          {#each header.parents as parent, i}
+            {i > 0 ? " + " : ""}
+            <Link
+              styleHoverState
+              route={{
+                resource: "repo.commit",
+                repo: repo.rid,
+                node: baseUrl,
+                commit: parent,
+              }}>
+              <span class="global-commit">{formatObjectId(parent)}</span>
+            </Link>
+          {/each}
+        </span>
       </div>
       {#if header.description}
         <pre class="description txt-small">{@html dompurify.sanitize(
