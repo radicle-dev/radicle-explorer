@@ -28,7 +28,7 @@ impl RequestId {
 
 #[derive(Clone)]
 pub struct TracingInfo {
-    pub connect_info: ConnectInfo<SocketAddr>,
+    pub connect_info: Option<ConnectInfo<SocketAddr>>,
     pub method: Method,
     pub version: Version,
     pub uri: Uri,
@@ -48,10 +48,10 @@ impl fmt::Display for ColoredStatus {
 }
 
 pub async fn tracing_middleware(request: Request<Body>, next: Next) -> impl IntoResponse {
-    let connect_info = *request
+    let connect_info = request
         .extensions()
         .get::<ConnectInfo<std::net::SocketAddr>>()
-        .unwrap();
+        .copied();
 
     let method = request.method().clone();
     let version = request.version();

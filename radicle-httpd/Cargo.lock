@@ -2026,6 +2026,7 @@ dependencies = [
  "chrono",
  "flate2",
  "hyper",
+ "hyper-util",
  "infer",
  "lexopt",
  "lru",
@@ -2041,6 +2042,7 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.14",
  "tokio",
+ "tower 0.4.13",
  "tower 0.5.2",
  "tower-http",
  "tracing",
@@ -2828,6 +2830,7 @@ dependencies = [
  "tokio",
  "tower-layer",
  "tower-service",
+ "tracing",
 ]
 
 [[package]]
