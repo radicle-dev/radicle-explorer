@@ -16,14 +16,14 @@ main() {
   fi
 
   # Create remote folder.
-  ssh -i $SSH_KEY $SSH_ADDRESS mkdir -p /mnt/radicle/files/releases/radicle-httpd/$version
+  ssh -i $SSH_KEY $SSH_ADDRESS mkdir -p /var/www/files.radicle.xyz/releases/radicle-httpd/$version
   # Copy files over.
-  scp -i $SSH_KEY build/artifacts/radicle-httpd-$version* $SSH_ADDRESS:/mnt/radicle/files/releases/radicle-httpd/$version
-  scp -i $SSH_KEY build/artifacts/radicle-httpd.json $SSH_ADDRESS:/mnt/radicle/files/releases/radicle-httpd/$version
+  scp -i $SSH_KEY build/artifacts/radicle-httpd-$version* $SSH_ADDRESS:/var/www/files.radicle.xyz/releases/radicle-httpd/$version
+  scp -i $SSH_KEY build/artifacts/radicle-httpd.json $SSH_ADDRESS:/var/www/files.radicle.xyz/releases/radicle-httpd/$version
 
   for target in $(cat build/TARGETS); do
-    archive=/mnt/radicle/files/releases/radicle-httpd/$version/radicle-httpd-$version-$target.tar.xz
-    symlink=/mnt/radicle/files/releases/radicle-httpd/$version/radicle-httpd-$target.tar.xz
+    archive=/var/www/files.radicle.xyz/releases/radicle-httpd/$version/radicle-httpd-$version-$target.tar.xz
+    symlink=/var/www/files.radicle.xyz/releases/radicle-httpd/$version/radicle-httpd-$target.tar.xz
 
     echo "Creating symlinks for $target.."
 
@@ -34,7 +34,7 @@ main() {
 
   if git describe --exact-match --match='v*' 2>/dev/null; then
     echo "Creating 'latest' symlink.."
-    ssh -i $SSH_KEY $SSH_ADDRESS ln -snf /mnt/radicle/files/releases/radicle-httpd/$version /mnt/radicle/files/releases/radicle-httpd/latest
+    ssh -i $SSH_KEY $SSH_ADDRESS ln -snf /var/www/files.radicle.xyz/releases/radicle-httpd/$version /var/www/files.radicle.xyz/releases/radicle-httpd/latest
   else
     echo "Skipping 'latest' symlink creation for development build."
   fi
