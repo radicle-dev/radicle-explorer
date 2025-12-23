@@ -326,7 +326,7 @@ fn seed_with_signer<G: Signer<Signature>>(
 
     let options = crate::Options {
         aliases: std::collections::HashMap::new(),
-        listen: std::net::SocketAddr::from(([0, 0, 0, 0], 8080)),
+        listen: axum_listener::DualAddr::Tcp(std::net::SocketAddr::from(([0, 0, 0, 0], 8080))),
         cache: Some(crate::DEFAULT_CACHE_SIZE),
     };
 

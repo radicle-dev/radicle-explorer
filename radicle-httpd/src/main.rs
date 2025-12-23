@@ -1,7 +1,7 @@
 use std::num::NonZeroUsize;
-use std::path::PathBuf;
 use std::{collections::HashMap, process};
 
+use axum_listener::DualAddr;
 use radicle::prelude::RepoId;
 use radicle::version::Version;
 use radicle_httpd as httpd;
@@ -32,12 +32,12 @@ Options
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let options = parse_options()?;
-
     // SAFETY: The logger is only initialized once.
     httpd::logger::init().unwrap();
     tracing::info!("starting http daemon..");
     tracing::info!("version {} ({})", env!("RADICLE_VERSION"), env!("GIT_HEAD"));
+
+    let options = parse_options()?;
 
     match httpd::run(options).await {
         Ok(()) => {}
@@ -61,9 +61,23 @@ fn parse_options() -> Result<httpd::Options, lexopt::Error> {
     while let Some(arg) = parser.next()? {
         match arg {
             Long("listen") => {
-                let value = parser.value()?;
-                let addr = parse_listen_address(&value.to_string_lossy())
-                    .map_err(|e| lexopt::Error::from(e.to_string()))?;
+                let addr: DualAddr = parser.value()?.parse()?;
+
+                // Get socket path and remove it if existing
+                if let DualAddr::Uds(socket_path) = &addr {
+                    if let Some(path) = socket_path.as_pathname() {
+                        if path.exists() {
+                            tracing::info!("Removing existing socket path at {}", path.display());
+                            if let Err(e) = std::fs::remove_file(path) {
+                                tracing::error!("{e}");
+                            }
+                        }
+                    } else {
+                        tracing::error!("Provided socket address isn't a valid path.");
+                        process::exit(0);
+                    }
+                }
+
                 listen = Some(addr);
             }
             Long("alias") | Short('a') => {
@@ -74,7 +88,7 @@ fn parse_options() -> Result<httpd::Options, lexopt::Error> {
             }
             Long("version") | Short('v') => {
                 if let Err(e) = VERSION.write(std::io::stdout()) {
-                    eprintln!("error: {e}");
+                    tracing::error!("{e}");
                     process::exit(1);
                 };
                 process::exit(0);
@@ -92,22 +106,7 @@ fn parse_options() -> Result<httpd::Options, lexopt::Error> {
     }
     Ok(httpd::Options {
         aliases,
-        listen: listen.unwrap_or_else(|| httpd::ListenAddress::Tcp(([0, 0, 0, 0], 8080).into())),
+        listen: listen.unwrap_or_else(|| DualAddr::Tcp(([0, 0, 0, 0], 8080).into())),
         cache,
     })
-}
-
-fn parse_listen_address(value: &str) -> Result<httpd::ListenAddress, Box<dyn std::error::Error>> {
-    // Check if it's a Unix socket path (contains '/' and no ':' port separator)
-    if value.contains('/') && !value.contains(':') {
-        Ok(httpd::ListenAddress::Unix(PathBuf::from(value)))
-    } else if value.starts_with("unix:") {
-        // Support explicit unix: prefix
-        let path = value.strip_prefix("unix:").unwrap();
-        Ok(httpd::ListenAddress::Unix(PathBuf::from(path)))
-    } else {
-        // Try to parse as TCP address
-        let addr = value.parse()?;
-        Ok(httpd::ListenAddress::Tcp(addr))
-    }
 }

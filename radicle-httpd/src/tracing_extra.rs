@@ -1,5 +1,4 @@
 use std::fmt;
-use std::net::SocketAddr;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
@@ -9,6 +8,7 @@ use axum::http::Request;
 use axum::middleware::Next;
 use axum::response::IntoResponse;
 use axum::Extension;
+use axum_listener::DualAddr;
 use hyper::{Method, StatusCode, Uri, Version};
 
 pub use radicle_term::ansi::Paint;
@@ -28,7 +28,7 @@ impl RequestId {
 
 #[derive(Clone)]
 pub struct TracingInfo {
-    pub connect_info: Option<ConnectInfo<SocketAddr>>,
+    pub connect_info: ConnectInfo<DualAddr>,
     pub method: Method,
     pub version: Version,
     pub uri: Uri,
@@ -50,8 +50,9 @@ impl fmt::Display for ColoredStatus {
 pub async fn tracing_middleware(request: Request<Body>, next: Next) -> impl IntoResponse {
     let connect_info = request
         .extensions()
-        .get::<ConnectInfo<std::net::SocketAddr>>()
-        .copied();
+        .get::<ConnectInfo<DualAddr>>()
+        .unwrap()
+        .clone();
 
     let method = request.method().clone();
     let version = request.version();

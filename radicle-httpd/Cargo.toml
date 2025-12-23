@@ -23,11 +23,11 @@ path = "src/main.rs"
 [dependencies]
 anyhow = { version = "1" }
 axum = { version = "0.8.4", default-features = false, features = ["json", "query", "tokio", "http1"] }
+axum-listener = { version = "0.2.0" }
 base64 = { version = "0.22.1" }
 chrono = { version = "0.4.41", default-features = false, features = ["clock"] }
 flate2 = { version = "1" }
-hyper = { version = "1.6.0", default-features = false, features = ["server", "http1"] }
-hyper-util = { version = "0.1.7", features = ["tokio", "server", "service"] }
+hyper = { version = "1.6.0", default-features = false }
 infer = { version = "0.19.0" }
 lexopt = { version = "0.3.1" }
 lru = { version = "0.16.0" }
@@ -40,7 +40,6 @@ serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }
 thiserror = { version = "2" }
 tokio = { version = "1.47.1", default-features = false, features = ["macros", "rt-multi-thread"] }
-tower = { version = "0.4.13", features = ["util"] }
 tower-http = { version = "0.6.6", default-features = false, features = ["trace", "cors", "set-header"] }
 tracing = { version = "0.1.41", default-features = false, features = ["std", "log"] }
 tracing-logfmt = { version = "0.3.5", optional = true }
