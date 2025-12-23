@@ -22,6 +22,7 @@ one sub-directory per build target.
 Note that it will use `git describe` to get a version number for the build.
 You *must* have a commit tagged with a version in your history or the build
 will fail, eg. `v1.0.0`.
+Make sure to create a release commit where you update the `version` field in the `Cargo.toml` file and tag the commit with a version e.g. `build/tag 0.21.0`. 
 
 When the build completes, the SHA-256 checksums of the artifacts are output.
 For a given Radicle version and source tree, the same set of checksums should
@@ -38,6 +39,10 @@ Here's an example output for a development version of Radicle:
 
 A script is included in `build/checksums` to output these checksums after
 the artifacts are built.
+
+Once you have the build artifacts and you have a user on our files.radicle.xyz you can upload them with the following command.
+
+    SSH_LOGIN=<username> build/upload
 
 ## Requirements
 
