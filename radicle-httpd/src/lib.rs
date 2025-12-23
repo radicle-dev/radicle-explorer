@@ -18,7 +18,7 @@ use axum::routing::get;
 use axum::{middleware, Json, Router};
 use axum_listener::{DualAddr, DualListener};
 use hyper::body::Body as _;
-use hyper::header::{CONTENT_TYPE, FORWARDED};
+use hyper::header::CONTENT_TYPE;
 use hyper::Method;
 use tower_http::cors;
 use tower_http::cors::CorsLayer;
