@@ -226,7 +226,10 @@ mod routes {
             test::profile(tmp.path(), [0xff; 32]),
         )
         .unwrap()
-        .layer(MockConnectInfo(SocketAddr::from(([0, 0, 0, 0], 8080))));
+        .layer(MockConnectInfo(DualAddr::Tcp(SocketAddr::from((
+            [0, 0, 0, 0],
+            8080,
+        )))));
 
         let response = test::get(&app, "/aa/a").await;
 

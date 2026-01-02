@@ -1,10 +1,9 @@
 use std::collections::HashMap;
 use std::io::prelude::*;
-use std::net::SocketAddr;
 use std::path::Path;
 use std::process::{Command, Stdio};
 use std::sync::Arc;
-use std::{io, net, str};
+use std::{io, str};
 
 use axum::body::Bytes;
 use axum::extract::{ConnectInfo, Path as AxumPath, RawQuery, State};
@@ -13,6 +12,7 @@ use axum::http::{HeaderMap, Method, StatusCode};
 use axum::response::IntoResponse;
 use axum::routing::any;
 use axum::Router;
+use axum_listener::DualAddr;
 use flate2::write::GzDecoder;
 use hyper::body::Buf as _;
 
@@ -33,7 +33,7 @@ async fn git_handler(
     AxumPath((repository, request)): AxumPath<(String, String)>,
     method: Method,
     headers: HeaderMap,
-    ConnectInfo(remote): ConnectInfo<SocketAddr>,
+    ConnectInfo(remote): ConnectInfo<DualAddr>,
     query: RawQuery,
     body: Bytes,
 ) -> impl IntoResponse {
@@ -70,7 +70,7 @@ async fn git_http_backend(
     method: Method,
     headers: HeaderMap,
     mut body: Bytes,
-    remote: net::SocketAddr,
+    remote: DualAddr,
     id: RepoId,
     path: &str,
     query: String,
@@ -101,7 +101,7 @@ async fn git_http_backend(
     tracing::debug!("headers: {:?}", headers);
     tracing::debug!("path: {:?}", path);
     tracing::debug!("method: {:?}", method.as_str());
-    tracing::debug!("remote: {:?}", remote.to_string());
+    tracing::debug!("remote: {:?}", remote);
 
     let mut cmd = Command::new("git");
     let mut child = cmd
@@ -221,6 +221,7 @@ mod routes {
 
     use axum::extract::connect_info::MockConnectInfo;
     use axum::http::StatusCode;
+    use axum_listener::DualAddr;
     use radicle::identity::RepoId;
 
     use crate::test::{self, get, RID};
@@ -229,8 +230,9 @@ mod routes {
     async fn test_info_request() {
         let tmp = tempfile::tempdir().unwrap();
         let ctx = test::seed(tmp.path());
-        let app = super::router(ctx.profile().to_owned(), HashMap::new())
-            .layer(MockConnectInfo(SocketAddr::from(([0, 0, 0, 0], 8080))));
+        let app = super::router(ctx.profile().to_owned(), HashMap::new()).layer(MockConnectInfo(
+            DualAddr::Tcp(SocketAddr::from(([0, 0, 0, 0], 8080))),
+        ));
 
         let response = get(&app, format!("/{RID}.git/info/refs")).await;
 
@@ -245,7 +247,10 @@ mod routes {
             ctx.profile().to_owned(),
             HashMap::from_iter([(String::from("heartwood"), RepoId::from_str(RID).unwrap())]),
         )
-        .layer(MockConnectInfo(SocketAddr::from(([0, 0, 0, 0], 8080))));
+        .layer(MockConnectInfo(DualAddr::Tcp(SocketAddr::from((
+            [0, 0, 0, 0],
+            8080,
+        )))));
 
         let response = get(&app, "/woodheart.git/info/refs").await;
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
