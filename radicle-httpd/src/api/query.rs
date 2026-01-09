@@ -1,8 +1,6 @@
 use serde::{Deserialize, Serialize};
 
 use radicle::cob::{issue, patch};
-use radicle::node::policy::Scope;
-use radicle::node::NodeId;
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -33,14 +31,6 @@ pub struct CobsQuery<T> {
     pub page: Option<usize>,
     pub per_page: Option<usize>,
     pub status: Option<T>,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct PoliciesQuery {
-    /// The NID from which to fetch from after tracking a repo.
-    pub from: Option<NodeId>,
-    pub scope: Option<Scope>,
 }
 
 #[derive(Default, Serialize, Deserialize, Clone)]
