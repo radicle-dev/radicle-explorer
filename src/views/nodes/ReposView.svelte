@@ -15,7 +15,7 @@
 
   let listState: "pinned" | "all" = "pinned";
 
-  $: page = 0;
+  let page = 0;
   $: perPage = listState === "pinned" ? stats.repos.total : 24;
   $: totalPages = Math.ceil(stats.repos.total / perPage);
 
