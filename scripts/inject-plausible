@@ -1,0 +1,23 @@
+#!/usr/bin/env node
+
+import fs from "fs";
+
+const file = "build/index.html";
+const snippet = `<script defer="" data-domain="app.radicle.xyz" src="https://plausible.io/js/script.js"></script>`;
+
+const html = fs.readFileSync(file, "utf8");
+
+if (html.includes(snippet)) {
+  console.log("ℹ️ Script already present, skipping");
+  process.exit(0);
+}
+
+if (!html.includes("</head>")) {
+  console.error("❌ </head> not found in index.html");
+  process.exit(1);
+}
+
+const updated = html.replace("</head>", `  ${snippet}\n  </head>`);
+
+fs.writeFileSync(file, updated);
+console.log("✅ Plausible script injected");

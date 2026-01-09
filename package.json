@@ -13,7 +13,8 @@
     "test:unit": "TZ='UTC' vitest run",
     "test:e2e": "NODE_CONFIG_ENV='test' TZ='UTC' playwright test",
     "test:http-client:unit": "NODE_CONFIG_ENV='test' TZ='UTC' vitest run --config http-client/vite.config.ts --reporter verbose",
-    "test:radicle-httpd": "cd radicle-httpd && cargo test --all-features"
+    "test:radicle-httpd": "cd radicle-httpd && cargo test --all-features",
+    "deploy": "rimraf build && npm clean-install && npm run build && scripts/inject-plausible && npx wrangler deploy"
   },
   "type": "module",
   "engines": {
@@ -42,6 +43,7 @@
     "happy-dom": "^17.4.7",
     "prettier": "^3.5.3",
     "prettier-plugin-svelte": "^3.4.0",
+    "rimraf": "^6.1.2",
     "svelte-check": "^4.2.1",
     "svelte-eslint-parser": "^1.2.0",
     "typescript": "^5.8.3",
