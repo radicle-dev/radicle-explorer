@@ -5,7 +5,5 @@ test("exceptions in production build", async ({ page }) => {
   // Wait for scripts to finish executing, there might be exceptions that
   // happen after the page has been painted.
   await page.waitForTimeout(2000);
-  await expect(
-    page.getByText("Local node browsing not supported"),
-  ).toBeVisible();
+  await expect(page.getByText("Node not found")).toBeVisible();
 });

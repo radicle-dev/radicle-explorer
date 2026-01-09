@@ -13,7 +13,7 @@
     selectedSeed,
   } from "./SeedSelector";
   import { closeFocused } from "@app/components/Popover.svelte";
-  import { push } from "@app/lib/router";
+  import { extractBaseUrl, push } from "@app/lib/router";
 
   import DropdownList from "@app/components/DropdownList.svelte";
   import DropdownListItem from "@app/components/DropdownList/DropdownListItem.svelte";
@@ -45,11 +45,7 @@
 
   async function navigateToSeed() {
     loading = true;
-    const seed = {
-      hostname: seedAddressInput.trim(),
-      port: config.nodes.defaultHttpdPort,
-      scheme: config.nodes.defaultHttpdScheme,
-    };
+    const seed = extractBaseUrl(seedAddressInput.trim());
     validationMessage = await validateInput(seed);
     if (validationMessage === undefined) {
       closeFocused();

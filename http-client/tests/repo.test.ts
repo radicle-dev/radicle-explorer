@@ -1,18 +1,18 @@
 import { describe, test } from "vitest";
 
 import { HttpdClient } from "@http-client";
+import config from "@app/lib/config";
 import {
   aliceMainHead,
   aliceRemote,
   cobRid,
-  defaultHttpdPort,
   sourceBrowsingRid,
 } from "@tests/support/fixtures.js";
 
 describe("repo", () => {
   const api = new HttpdClient({
     hostname: "127.0.0.1",
-    port: defaultHttpdPort,
+    port: config.nodes.defaultHttpdPort,
     scheme: "http",
   });
 

@@ -145,37 +145,31 @@ export async function replace(newRoute: Route): Promise<void> {
   await navigate("replace", newRoute);
 }
 
-function extractBaseUrl(hostAndPort: string): BaseUrl {
-  if (
-    hostAndPort === "radicle.local" ||
-    hostAndPort === `radicle.local:${config.nodes.defaultHttpdPort}` ||
-    hostAndPort === "0.0.0.0" ||
-    hostAndPort === `0.0.0.0:${config.nodes.defaultHttpdPort}` ||
-    hostAndPort === "127.0.0.1" ||
-    hostAndPort === `127.0.0.1:${config.nodes.defaultHttpdPort}`
-  ) {
-    return {
-      hostname: "127.0.0.1",
-      port: config.nodes.defaultHttpdPort,
-      scheme: "http",
-    };
-  } else if (hostAndPort.includes(":")) {
-    const [hostname, port] = hostAndPort.split(":");
-    return {
-      hostname,
-      port: Number(port),
-      scheme:
-        utils.isLocal(hostname) || utils.isOnion(hostname)
-          ? "http"
-          : config.nodes.defaultHttpdScheme,
-    };
+export function extractBaseUrl(hostAndPort: string): BaseUrl {
+  const [hostname, portString] = decodeURIComponent(hostAndPort).split(":");
+
+  let port;
+
+  if (portString !== undefined) {
+    port = Number(portString);
+  } else if (globalThis.__PLAYWRIGHT__ === true) {
+    port = config.nodes.defaultHttpdPort;
   } else {
-    return {
-      hostname: hostAndPort,
-      port: config.nodes.defaultHttpdPort,
-      scheme: config.nodes.defaultHttpdScheme,
-    };
+    port = utils.isLocal(hostname)
+      ? config.nodes.defaultLocalHttpdPort
+      : config.nodes.defaultHttpdPort;
   }
+
+  const scheme =
+    utils.isLocal(hostname) || utils.isOnion(hostname)
+      ? "http"
+      : config.nodes.defaultHttpdScheme;
+
+  return {
+    hostname,
+    port,
+    scheme,
+  };
 }
 
 function urlToRoute(url: URL): Route | null {

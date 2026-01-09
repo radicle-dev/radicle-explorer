@@ -205,11 +205,7 @@ export function isMarkdownPath(path: string): boolean {
 
 // Check whether the given address is a localhost address.
 export function isLocal(addr: string): boolean {
-  return (
-    addr.startsWith("127.0.0.1") ||
-    addr.startsWith("0.0.0.0") ||
-    addr.startsWith("radicle.local")
-  );
+  return addr.startsWith("127.0.0.1") || addr.startsWith("localhost");
 }
 
 // Check whether the given domain name is an onion domain name.

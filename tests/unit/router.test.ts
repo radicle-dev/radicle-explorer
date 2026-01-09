@@ -1,6 +1,6 @@
-import { defaultHttpdPort } from "@tests/support/fixtures.js";
 import { describe, expect, test } from "vitest";
 import { testExports, type Route } from "@app/lib/router";
+import config from "@tests/support/config.js";
 
 // Defining the window.origin value, since vitest doesn't provide one.
 window.origin = "http://localhost:3000";
@@ -217,7 +217,7 @@ describe("pathToRoute", () => {
         baseUrl: {
           hostname: "example.node.tld",
           scheme: "http",
-          port: defaultHttpdPort,
+          port: config.nodes.defaultHttpdPort,
         },
         repoPageIndex: 0,
       },
@@ -232,7 +232,7 @@ describe("pathToRoute", () => {
         node: {
           hostname: "example.node.tld",
           scheme: "http",
-          port: defaultHttpdPort,
+          port: config.nodes.defaultHttpdPort,
         },
         repo: "rad:zKtT7DmF9H34KkvcKj9PHW19WzjT",
         route: "",
@@ -248,7 +248,7 @@ describe("pathToRoute", () => {
         node: {
           hostname: "example.node.tld",
           scheme: "http",
-          port: defaultHttpdPort,
+          port: config.nodes.defaultHttpdPort,
         },
         repo: "rad:zKtT7DmF9H34KkvcKj9PHW19WzjT",
         route: "",

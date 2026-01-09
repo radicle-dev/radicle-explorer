@@ -12,9 +12,9 @@ import {
   createCobsFixture,
   createMarkdownFixture,
   createSourceBrowsingFixture,
-  defaultHttpdPort,
   gitOptions,
 } from "@tests/support/fixtures.js";
+import config from "@tests/support/config.js";
 import { createPeerManager } from "@tests/support/peerManager.js";
 
 const heartwoodBinaryPath = Path.join(
@@ -87,7 +87,7 @@ export default async function globalSetup(): Promise<() => void> {
         alias: "palm",
       },
     });
-    await palm.startHttpd(defaultHttpdPort);
+    await palm.startHttpd(config.nodes.defaultHttpdPort);
 
     try {
       console.log("Creating source-browsing fixture");
@@ -108,7 +108,7 @@ export default async function globalSetup(): Promise<() => void> {
     }
     await palm.stopNode();
   } else {
-    await palm.startHttpd(defaultHttpdPort);
+    await palm.startHttpd(config.nodes.defaultHttpdPort);
   }
 
   return async () => {

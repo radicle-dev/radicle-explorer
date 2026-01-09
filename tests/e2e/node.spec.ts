@@ -26,7 +26,7 @@ test("node metadata", async ({ page, peerManager }) => {
 });
 
 test("node repos", async ({ page }) => {
-  await page.goto("/nodes/radicle.local");
+  await page.goto("/nodes/localhost");
   const repo = page
     .locator(".repo-card", { hasText: "source-browsing" })
     .nth(0);

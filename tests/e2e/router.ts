@@ -24,7 +24,7 @@ test("navigate between landing and repo page", async ({ page }) => {
 });
 
 test("navigation between node and repo pages", async ({ page }) => {
-  await page.goto("/nodes/radicle.local");
+  await page.goto("/nodes/localhost");
 
   const repo = page
     .locator(".repo-card", { hasText: "source-browsing" })
@@ -32,7 +32,7 @@ test("navigation between node and repo pages", async ({ page }) => {
   await repo.click();
   await expect(page).toHaveURL(sourceBrowsingUrl);
 
-  await expectBackAndForwardNavigationWorks("/nodes/radicle.local", page);
+  await expectBackAndForwardNavigationWorks("/nodes/localhost", page);
   await expectUrlPersistsReload(page);
 
   await page.getByRole("link", { name: "Local Node" }).click();

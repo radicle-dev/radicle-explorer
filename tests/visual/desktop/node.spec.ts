@@ -2,7 +2,7 @@ import { test, expect } from "@tests/support/fixtures.js";
 
 test("node page", async ({ page }) => {
   await page.clock.setFixedTime(new Date("November 24 2022 12:00:00"));
-  await page.goto("/nodes/radicle.local", { waitUntil: "networkidle" });
+  await page.goto("/nodes/localhost", { waitUntil: "networkidle" });
   await expect(page).toHaveScreenshot();
 });
 
@@ -38,7 +38,7 @@ test("response parse error", async ({ page }) => {
     });
   });
 
-  await page.goto("/nodes/radicle.local", {
+  await page.goto("/nodes/localhost", {
     waitUntil: "networkidle",
   });
   await expect(page).toHaveScreenshot();
@@ -51,7 +51,7 @@ test("response error", async ({ page }) => {
     });
   });
 
-  await page.goto("/nodes/radicle.local", {
+  await page.goto("/nodes/localhost", {
     waitUntil: "networkidle",
   });
   await expect(page).toHaveScreenshot();

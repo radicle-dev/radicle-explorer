@@ -2,7 +2,6 @@ import type { BaseUrl, NodeIdentity, NodeStats } from "@http-client";
 import type { ErrorRoute, NotFoundRoute } from "@app/lib/router/definitions";
 
 import * as utils from "@app/lib/utils";
-import config from "@app/lib/config";
 import { HttpdClient } from "@http-client";
 import { ResponseError, ResponseParseError } from "@http-client/lib/fetcher";
 import { handleError } from "@app/views/nodes/error";
@@ -30,19 +29,6 @@ export async function loadUserRoute({
   did,
   baseUrl,
 }: UserRoute): Promise<UserLoadedRoute | NotFoundRoute | ErrorRoute> {
-  if (
-    import.meta.env.PROD &&
-    utils.isLocal(`${baseUrl.hostname}:${baseUrl.port}`)
-  ) {
-    return {
-      resource: "error",
-      params: {
-        icon: "device",
-        title: "Local node browsing not supported",
-        description: `You're trying to access a local node from your browser, we are currently working on a desktop app specific for this use case. Join our <strong>#desktop</strong> channel on <radicle-external-link href="${config.supportWebsite}">${config.supportWebsite}</radicle-external-link> for more information.`,
-      },
-    };
-  }
   const parsedDid = utils.parseNodeId(decodeURIComponent(did));
   if (!parsedDid) {
     return {

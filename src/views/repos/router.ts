@@ -29,7 +29,7 @@ import { HttpdClient } from "@http-client";
 import { ResponseError, ResponseParseError } from "@http-client/lib/fetcher";
 import { cached } from "@app/lib/cache";
 import { handleError, unreachableError } from "@app/views/repos/error";
-import { isLocal, unreachable } from "@app/lib/utils";
+import { unreachable } from "@app/lib/utils";
 import { nodePath } from "@app/views/nodes/router";
 
 export const PATCHES_PER_PAGE = 10;
@@ -262,19 +262,6 @@ export async function loadRepoRoute(
   route: RepoRoute,
   previousLoaded: LoadedRoute,
 ): Promise<RepoLoadedRoute | ErrorRoute | NotFoundRoute> {
-  if (
-    import.meta.env.PROD &&
-    isLocal(`${route.node.hostname}:${route.node.port}`)
-  ) {
-    return {
-      resource: "error",
-      params: {
-        icon: "device",
-        title: "Local node browsing not supported",
-        description: `You're trying to access a repository on a local node from your browser, we are currently working on a desktop app specific for this use case. Join our <strong>#desktop</strong> channel on <radicle-external-link href="${config.supportWebsite}">${config.supportWebsite}</radicle-external-link> for more information.`,
-      },
-    };
-  }
   const api = new HttpdClient(route.node);
 
   try {

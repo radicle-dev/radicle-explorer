@@ -30,6 +30,13 @@ export const test = base.extend<{
 }>({
   forAllTests: [
     async ({ outputLog, page }, use) => {
+      // Flag that tests are running so the app uses the test httpd port
+      // (8081 from config.test.json) instead of the production default (8080)
+      // for /nodes/localhost requests.
+      await page.addInitScript(() => {
+        globalThis.__PLAYWRIGHT__ = true;
+      });
+
       const browserLabel = logLabel.logPrefix("browser");
       page.on("console", msg => {
         // Ignore common console logs that we don't care about.
@@ -602,11 +609,10 @@ export const shortBobHead = formatCommit(bobHead);
 export const sourceBrowsingRid = "rad:z4BwwjPCFNVP27FwVbDFgwVwkjcir";
 export const cobRid = "rad:z3fpY7nttPPa6MBnAv2DccHzQJnqe";
 export const markdownRid = "rad:z2tchH2Ti4LxRKdssPQYs6VHE5rsg";
-export const sourceBrowsingUrl = `/nodes/127.0.0.1/${sourceBrowsingRid}`;
-export const cobUrl = `/nodes/127.0.0.1/${cobRid}`;
-export const markdownUrl = `/nodes/127.0.0.1/${markdownRid}`;
+export const sourceBrowsingUrl = `/nodes/localhost/${sourceBrowsingRid}`;
+export const cobUrl = `/nodes/localhost/${cobRid}`;
+export const markdownUrl = `/nodes/localhost/${markdownRid}`;
 export const shortNodeRemote = "z6MktU…1xB22S";
-export const defaultHttpdPort = 8081;
 export const gitOptions = {
   alice: {
     GIT_AUTHOR_NAME: "Alice Liddell",
