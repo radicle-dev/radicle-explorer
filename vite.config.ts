@@ -79,6 +79,8 @@ export default defineConfig({
       "@wooorm/starry-night/source.toml",
       "@wooorm/starry-night/source.tsx",
       "@wooorm/starry-night/source.zig",
+      "@wooorm/starry-night/source.emacs.lisp",
+      "@wooorm/starry-night/source.commonlisp",
       "@wooorm/starry-night/text.html.asciidoc",
       "@wooorm/starry-night/text.html.django",
       "@wooorm/starry-night/text.html.vue",

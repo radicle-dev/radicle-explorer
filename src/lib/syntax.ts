@@ -22,6 +22,8 @@ import sourceEditorconfig from "@wooorm/starry-night/source.editorconfig";
 import sourceHaproxyConfig from "@wooorm/starry-night/source.haproxy-config";
 import sourceDotenv from "@wooorm/starry-night/source.dotenv";
 import sourceZig from "@wooorm/starry-night/source.zig";
+import sourceEmacsLisp from "@wooorm/starry-night/source.emacs.lisp";
+import sourceCommonLisp from "@wooorm/starry-night/source.commonlisp";
 import textHtmlVue from "@wooorm/starry-night/text.html.vue";
 import textHtmlDjango from "@wooorm/starry-night/text.html.django";
 import textRobotsTxt from "@wooorm/starry-night/text.robots-txt";
@@ -56,6 +58,8 @@ export const grammars = [
   sourceHaproxyConfig,
   sourceDotenv,
   sourceZig,
+  sourceEmacsLisp,
+  sourceCommonLisp,
   textHtmlVue,
   textHtmlDjango,
   textRobotsTxt,
