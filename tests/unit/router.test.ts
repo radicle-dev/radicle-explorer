@@ -269,3 +269,95 @@ describe("pathToRoute", () => {
     ).toEqual(route);
   }
 });
+
+describe("extractBaseUrl", () => {
+  test("hostname with explicit port", () => {
+    const result = testExports.extractBaseUrl("example.com:9000");
+    expect(result).toEqual({
+      hostname: "example.com",
+      port: 9000,
+      scheme: config.nodes.defaultHttpdScheme,
+    });
+  });
+
+  test("hostname without port uses default port and scheme", () => {
+    const result = testExports.extractBaseUrl("example.com");
+    expect(result).toEqual({
+      hostname: "example.com",
+      port: config.nodes.defaultHttpdPort,
+      scheme: config.nodes.defaultHttpdScheme,
+    });
+  });
+
+  test("localhost without port uses local port and http scheme", () => {
+    const result = testExports.extractBaseUrl("localhost");
+    expect(result).toEqual({
+      hostname: "localhost",
+      port: config.nodes.defaultLocalHttpdPort,
+      scheme: "http",
+    });
+  });
+
+  test("localhost with explicit port uses http scheme", () => {
+    const result = testExports.extractBaseUrl("localhost:3000");
+    expect(result).toEqual({
+      hostname: "localhost",
+      port: 3000,
+      scheme: "http",
+    });
+  });
+
+  test("wildcard localhost domain without port uses local port and http scheme", () => {
+    const result = testExports.extractBaseUrl("app.localhost");
+    expect(result).toEqual({
+      hostname: "app.localhost",
+      port: config.nodes.defaultLocalHttpdPort,
+      scheme: "http",
+    });
+  });
+
+  test("127.0.0.1 without port uses local port and http scheme", () => {
+    const result = testExports.extractBaseUrl("127.0.0.1");
+    expect(result).toEqual({
+      hostname: "127.0.0.1",
+      port: config.nodes.defaultLocalHttpdPort,
+      scheme: "http",
+    });
+  });
+
+  test("127.0.0.1 with explicit port uses http scheme", () => {
+    const result = testExports.extractBaseUrl("127.0.0.1:8080");
+    expect(result).toEqual({
+      hostname: "127.0.0.1",
+      port: 8080,
+      scheme: "http",
+    });
+  });
+
+  test("onion domain without port uses default port and http scheme", () => {
+    const result = testExports.extractBaseUrl("example.onion");
+    expect(result).toEqual({
+      hostname: "example.onion",
+      port: config.nodes.defaultHttpdPort,
+      scheme: "http",
+    });
+  });
+
+  test("onion domain with explicit port uses http scheme", () => {
+    const result = testExports.extractBaseUrl("example.onion:9050");
+    expect(result).toEqual({
+      hostname: "example.onion",
+      port: 9050,
+      scheme: "http",
+    });
+  });
+
+  test("URL-encoded hostname is decoded", () => {
+    const result = testExports.extractBaseUrl("example.com%3A8000");
+    expect(result).toEqual({
+      hostname: "example.com",
+      port: 8000,
+      scheme: config.nodes.defaultHttpdScheme,
+    });
+  });
+});

@@ -243,4 +243,4 @@ export function routeToPath(route: Route): string {
   }
 }
 
-export const testExports = { urlToRoute, routeToPath };
+export const testExports = { urlToRoute, routeToPath, extractBaseUrl };

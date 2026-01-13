@@ -203,9 +203,9 @@ export function isMarkdownPath(path: string): boolean {
   return /\.(md|mkd|markdown)$/i.test(path);
 }
 
-// Check whether the given address is a localhost address.
 export function isLocal(addr: string): boolean {
-  return addr.startsWith("127.0.0.1") || addr.startsWith("localhost");
+  // Support *.localhost subdomains and 127.0.0.1.
+  return addr.endsWith("localhost") || addr.startsWith("127.0.0.1");
 }
 
 // Check whether the given domain name is an onion domain name.

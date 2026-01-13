@@ -234,3 +234,23 @@ describe("Date Manipulation", () => {
     );
   });
 });
+
+describe("isLocal", () => {
+  test("returns true for localhost", () => {
+    expect(utils.isLocal("localhost")).toBe(true);
+  });
+
+  test("returns true for 127.0.0.1", () => {
+    expect(utils.isLocal("127.0.0.1")).toBe(true);
+  });
+
+  test("returns true for localhost subdomains", () => {
+    expect(utils.isLocal("test.localhost")).toBe(true);
+    expect(utils.isLocal("deeper.test.localhost")).toBe(true);
+  });
+
+  test("returns false for any other tld", () => {
+    expect(utils.isLocal("example.com")).toBe(false);
+    expect(utils.isLocal("radicle.garden")).toBe(false);
+  });
+});
