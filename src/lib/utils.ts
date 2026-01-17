@@ -204,8 +204,19 @@ export function isMarkdownPath(path: string): boolean {
 }
 
 export function isLocal(addr: string): boolean {
-  // Support *.localhost subdomains and 127.0.0.1.
-  return addr.endsWith("localhost") || addr.startsWith("127.0.0.1");
+  try {
+    const url = new URL(`scheme://${addr}`);
+    const hostname = url.hostname;
+
+    return (
+      hostname === "[::1]" ||
+      hostname === "127.0.0.1" ||
+      hostname === "localhost" ||
+      hostname.endsWith(".localhost")
+    );
+  } catch {
+    return false;
+  }
 }
 
 // Check whether the given domain name is an onion domain name.

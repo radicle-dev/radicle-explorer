@@ -236,21 +236,53 @@ describe("Date Manipulation", () => {
 });
 
 describe("isLocal", () => {
-  test("returns true for localhost", () => {
-    expect(utils.isLocal("localhost")).toBe(true);
+  describe("returns true for valid local addresses", () => {
+    test.each([
+      { addr: "localhost", description: "bare localhost" },
+      { addr: "app.localhost", description: "localhost subdomain" },
+      {
+        addr: "deeper.app.localhost",
+        description: "nested localhost subdomain",
+      },
+      {
+        addr: "deeper.app.localhost:8080",
+        description: "nested localhost subdomain with port",
+      },
+      { addr: "127.0.0.1", description: "IPv4 loopback" },
+      { addr: "127.0.0.1:8080", description: "IPv4 loopback with port" },
+      { addr: "[::1]", description: "IPv6 loopback" },
+      {
+        addr: "localhost:3000",
+        description: "localhost with port",
+      },
+    ])("$description: $addr", ({ addr }) => {
+      expect(utils.isLocal(addr)).toBe(true);
+    });
   });
 
-  test("returns true for 127.0.0.1", () => {
-    expect(utils.isLocal("127.0.0.1")).toBe(true);
-  });
-
-  test("returns true for localhost subdomains", () => {
-    expect(utils.isLocal("test.localhost")).toBe(true);
-    expect(utils.isLocal("deeper.test.localhost")).toBe(true);
-  });
-
-  test("returns false for any other tld", () => {
-    expect(utils.isLocal("example.com")).toBe(false);
-    expect(utils.isLocal("radicle.garden")).toBe(false);
+  describe("returns false for invalid/remote addresses", () => {
+    test.each([
+      { addr: "example.com", description: "remote domain" },
+      {
+        addr: "notlocalhost",
+        description: "domain that ends with 'localhost'",
+      },
+      {
+        addr: "127.0.0.1.evil.com",
+        description: "malicious domain mimicking loopback",
+      },
+      { addr: "192.168.1.1", description: "private network IP" },
+      { addr: "10.0.0.1", description: "another private network IP" },
+      { addr: "", description: "empty string" },
+      { addr: "not a url", description: "invalid URL format" },
+      { addr: "localhost.com", description: "domain with localhost in name" },
+      { addr: "mylocalhost.com", description: "domain containing localhost" },
+      {
+        addr: "http://example.com",
+        description: "remote domain with scheme",
+      },
+    ])("$description: $addr", ({ addr }) => {
+      expect(utils.isLocal(addr)).toBe(false);
+    });
   });
 });
