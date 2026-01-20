@@ -61,12 +61,13 @@ async fn repo_root_handler(
         per_page,
     } = qs;
     let page = page.unwrap_or(0);
+    let web_config = ctx.web_config().read().await;
     let per_page = per_page.unwrap_or_else(|| match show {
-        RepoQuery::Pinned => ctx.profile.config.web.pinned.repositories.len(),
+        RepoQuery::Pinned => web_config.pinned.repositories.len(),
         _ => 10,
     });
     let storage = &ctx.profile.storage;
-    let pinned = &ctx.profile.config.web.pinned;
+    let pinned = &web_config.pinned;
     let policies = ctx.profile.policies()?;
 
     let mut repos = match show {
@@ -1845,5 +1846,36 @@ mod routes {
 
         let response = get(&app, format!("/repos/{RID_PRIVATE}/remotes")).await;
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn test_repos_uses_reloadable_pinned_config() {
+        use radicle::identity::RepoId;
+        use std::str::FromStr;
+
+        let tmp = tempfile::tempdir().unwrap();
+        let seed = seed(tmp.path());
+
+        let app = super::router(seed.clone())
+            .layer(MockConnectInfo(SocketAddr::from(([127, 0, 0, 1], 8080))));
+        let response = get(&app, "/repos?show=pinned").await;
+        assert_eq!(response.status(), StatusCode::OK);
+        let repos = response.json().await;
+        assert_eq!(repos.as_array().unwrap().len(), 0);
+
+        {
+            let rid = RepoId::from_str(RID).unwrap();
+            seed.web_config
+                .update(|config| {
+                    config.pinned.repositories.insert(rid);
+                })
+                .await;
+        }
+
+        let response = get(&app, "/repos?show=pinned").await;
+        assert_eq!(response.status(), StatusCode::OK);
+        let repos = response.json().await;
+        assert_eq!(repos.as_array().unwrap().len(), 1);
+        assert_eq!(repos[0]["rid"], json!(RID));
     }
 }

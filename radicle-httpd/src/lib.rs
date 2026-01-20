@@ -10,6 +10,8 @@ use std::str;
 use std::sync::Arc;
 use std::time::Duration;
 
+use tokio::signal::unix::{signal, SignalKind};
+
 use anyhow::Context as _;
 use axum::body::Body;
 use axum::http::Request;
@@ -68,7 +70,35 @@ pub async fn run(options: Options) -> anyhow::Result<()> {
 
     tracing::info!("using radicle home at {}", profile.home().path().display());
 
-    let app = router(options, profile)?
+    let web_config = api::WebConfig::from_profile(&profile);
+    let profile = Arc::new(profile);
+    let ctx = api::Context::new(profile.clone(), web_config.clone(), &options);
+
+    tokio::spawn(async move {
+        let mut sighup = signal(SignalKind::hangup()).expect("Failed to register SIGHUP handler");
+
+        loop {
+            sighup.recv().await;
+            tracing::info!("Received SIGHUP, reloading web configuration");
+
+            match Profile::load() {
+                Ok(new_profile) => {
+                    web_config
+                        .update(|config| {
+                            *config = new_profile.config.web.clone();
+                        })
+                        .await;
+                    tracing::info!("Web configuration reloaded successfully");
+                }
+                Err(e) => {
+                    tracing::error!("Failed to reload configuration: {:#}", e);
+                    tracing::warn!("Continuing with previous configuration");
+                }
+            }
+        }
+    });
+
+    let app = router(options, profile, ctx)?
         .layer(middleware::from_fn(tracing_middleware))
         .layer(
             TraceLayer::new_for_http()
@@ -116,10 +146,7 @@ pub async fn run(options: Options) -> anyhow::Result<()> {
 }
 
 /// Create a router consisting of other sub-routers.
-fn router(options: Options, profile: Profile) -> anyhow::Result<Router> {
-    let profile = Arc::new(profile);
-    let ctx = api::Context::new(profile.clone(), &options);
-
+fn router(options: Options, profile: Arc<Profile>, ctx: api::Context) -> anyhow::Result<Router> {
     let api_router = api::router(ctx);
     let git_router = git::router(profile.clone(), options.aliases);
     let raw_router = raw::router(profile);
@@ -217,19 +244,21 @@ mod routes {
     #[tokio::test]
     async fn test_invalid_route_returns_404() {
         let tmp = tempfile::tempdir().unwrap();
-        let app = super::router(
-            super::Options {
-                aliases: HashMap::new(),
-                listen: DualAddr::Tcp(SocketAddr::from(([0, 0, 0, 0], 8080))),
-                cache: None,
-            },
-            test::profile(tmp.path(), [0xff; 32]),
-        )
-        .unwrap()
-        .layer(MockConnectInfo(DualAddr::Tcp(SocketAddr::from((
-            [0, 0, 0, 0],
-            8080,
-        )))));
+        let options = super::Options {
+            aliases: HashMap::new(),
+            listen: DualAddr::Tcp(SocketAddr::from(([0, 0, 0, 0], 8080))),
+            cache: None,
+        };
+        let profile = test::profile(tmp.path(), [0xff; 32]);
+        let web_config = crate::api::WebConfig::from_profile(&profile);
+        let profile = std::sync::Arc::new(profile);
+        let ctx = crate::api::Context::new(profile.clone(), web_config, &options);
+        let app = super::router(options, profile, ctx)
+            .unwrap()
+            .layer(MockConnectInfo(DualAddr::Tcp(SocketAddr::from((
+                [0, 0, 0, 0],
+                8080,
+            )))));
 
         let response = test::get(&app, "/aa/a").await;
 

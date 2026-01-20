@@ -92,7 +92,7 @@ async fn node_handler(State(ctx): State<Context>) -> impl IntoResponse {
         agent,
         config,
         node_state.to_string(),
-        ctx.profile.config.web.clone(),
+        ctx.web_config().read().await,
     );
 
     Ok::<_, Error>(cached_response(response, 600))
@@ -263,6 +263,39 @@ mod routes {
                 json!("rad:z4FucBZHZMCsxTyQE1dfE2YR59Qbp"),
                 json!("rad:z4GypKmh1gkEfmkXtarcYnkvtFUfE"),
             ]
+        );
+    }
+
+    #[tokio::test]
+    async fn test_node_uses_reloadable_config() {
+        let tmp = tempfile::tempdir().unwrap();
+        let seed = seed(tmp.path());
+
+        {
+            seed.web_config
+                .update(|config| {
+                    config.description = Some("Test node description".to_string());
+                    config.avatar_url = Some("https://example.com/avatar.png".to_string());
+                    config.banner_url = Some("https://example.com/banner.png".to_string());
+                })
+                .await;
+        }
+
+        let app = super::router(seed.clone())
+            .layer(MockConnectInfo(SocketAddr::from(([127, 0, 0, 1], 8080))));
+        let response = get(&app, "/node").await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let json_response = response.json().await;
+
+        assert_eq!(json_response["description"], json!("Test node description"));
+        assert_eq!(
+            json_response["avatarUrl"],
+            json!("https://example.com/avatar.png")
+        );
+        assert_eq!(
+            json_response["bannerUrl"],
+            json!("https://example.com/banner.png")
         );
     }
 }

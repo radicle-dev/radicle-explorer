@@ -32,7 +32,8 @@ async fn delegates_repos_handler(
     let page = page.unwrap_or(0);
     let per_page = per_page.unwrap_or(10);
     let storage = &ctx.profile.storage;
-    let pinned = &ctx.profile.config.web.pinned;
+    let web_config = ctx.web_config().read().await;
+    let pinned = &web_config.pinned;
     let mut repos = match show {
         RepoQuery::All => storage
             .repositories()?

@@ -14,7 +14,8 @@ use radicle::node::NodeId;
 use radicle::patch::cache::Patches as _;
 use radicle::storage::git::Repository;
 use radicle::storage::{ReadRepository, ReadStorage};
-use radicle::Profile;
+use radicle::{web, Profile};
+use tokio::sync::RwLock;
 
 mod error;
 mod json;
@@ -29,17 +30,54 @@ pub const RADICLE_VERSION: &str = env!("RADICLE_VERSION");
 // This version has to be updated on every breaking change to the radicle-httpd API.
 pub const API_VERSION: &str = "6.1.0";
 
+/// Thread-safe wrapper around radicle's web configuration.
+///
+/// This struct provides concurrent read/write access to web configuration
+/// that can be dynamically reloaded (e.g., via SIGHUP) without restarting the server.
+/// All access is synchronized via an async [`RwLock`] to prevent race conditions.
+#[derive(Clone)]
+pub struct WebConfig {
+    inner: Arc<RwLock<web::Config>>,
+}
+
+impl WebConfig {
+    /// Creates a new WebConfig from a [`Profile`]'s web configuration.
+    pub fn from_profile(profile: &Profile) -> Self {
+        let config = profile.config.web.clone();
+        Self {
+            inner: Arc::new(RwLock::new(config)),
+        }
+    }
+
+    /// Return the underlying web configuration.
+    pub async fn read(&self) -> web::Config {
+        self.inner.read().await.clone()
+    }
+
+    /// Atomically updates the config by applying a function while holding the write lock.
+    /// This prevents lost updates when multiple tasks attempt concurrent modifications.
+    pub async fn update<F>(&self, f: F)
+    where
+        F: FnOnce(&mut web::Config),
+    {
+        let mut config = self.inner.write().await;
+        f(&mut config);
+    }
+}
+
 #[derive(Clone)]
 pub struct Context {
     profile: Arc<Profile>,
     cache: Option<Cache>,
+    web_config: WebConfig,
 }
 
 impl Context {
-    pub fn new(profile: Arc<Profile>, options: &Options) -> Self {
+    pub fn new(profile: Arc<Profile>, web_config: WebConfig, options: &Options) -> Self {
         Self {
-            profile,
+            profile: profile.clone(),
             cache: options.cache.map(Cache::new),
+            web_config,
         }
     }
 
@@ -109,6 +147,14 @@ impl Context {
             return Err(Error::NotFound);
         }
         Ok((repo, doc))
+    }
+
+    /// Returns a reference to the thread-safe web configuration.
+    ///
+    /// Use this instead of accessing [`radicle::web::Config`] from the [`Profile`] to ensure
+    /// you get the latest config after dynamic reloads.
+    pub fn web_config(&self) -> &WebConfig {
+        &self.web_config
     }
 
     #[cfg(test)]
@@ -253,5 +299,144 @@ mod repo {
         pub visibility: Visibility,
         pub rid: RepoId,
         pub seeding: usize,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::test;
+
+    #[tokio::test]
+    async fn test_web_config_accessor() {
+        let tmp = tempfile::tempdir().unwrap();
+        let ctx = test::seed(tmp.path());
+
+        let config = ctx.web_config.read().await;
+        assert_eq!(config.pinned.repositories.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_web_config_reload_simulation() {
+        let tmp = tempfile::tempdir().unwrap();
+        let ctx = test::seed(tmp.path());
+
+        {
+            let config = ctx.web_config.read().await;
+            assert_eq!(config.pinned.repositories.len(), 0);
+            assert_eq!(config.description, None);
+        }
+
+        {
+            ctx.web_config
+                .update(|config| {
+                    config.description = Some("Updated description".to_string());
+                    config.avatar_url = Some("https://example.com/avatar.png".to_string());
+                })
+                .await;
+        }
+
+        {
+            let config = ctx.web_config.read().await;
+            assert_eq!(config.description, Some("Updated description".to_string()));
+            assert_eq!(
+                config.avatar_url,
+                Some("https://example.com/avatar.png".to_string())
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn test_web_config_concurrent_reads() {
+        let tmp = tempfile::tempdir().unwrap();
+        let ctx = test::seed(tmp.path());
+
+        let mut handles = vec![];
+        for _ in 0..10 {
+            let ctx_clone = ctx.clone();
+            let handle = tokio::spawn(async move {
+                let config = ctx_clone.web_config.read().await;
+                config.pinned.repositories.len()
+            });
+            handles.push(handle);
+        }
+
+        for handle in handles {
+            handle.await.unwrap();
+        }
+    }
+
+    #[tokio::test]
+    async fn test_web_config_preserves_data_across_reads() {
+        let tmp = tempfile::tempdir().unwrap();
+        let ctx = test::seed(tmp.path());
+
+        {
+            ctx.web_config
+                .update(|config| {
+                    config.banner_url = Some("https://example.com/banner.png".to_string());
+                })
+                .await;
+        }
+
+        for _ in 0..5 {
+            let config = ctx.web_config.read().await;
+            assert_eq!(
+                config.banner_url,
+                Some("https://example.com/banner.png".to_string())
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn test_profile_immutable_after_reload() {
+        let tmp = tempfile::tempdir().unwrap();
+        let ctx = test::seed(tmp.path());
+        let original_key = ctx.profile.public_key;
+        let original_home = ctx.profile.home.path().to_path_buf();
+
+        {
+            ctx.web_config
+                .update(|config| {
+                    config.description = Some("Updated".to_string());
+                    config.avatar_url = Some("https://example.com/new-avatar.png".to_string());
+                })
+                .await;
+        }
+
+        assert_eq!(ctx.profile.public_key, original_key);
+        assert_eq!(ctx.profile.home.path(), original_home);
+    }
+
+    #[tokio::test]
+    async fn test_empty_pinned_repos_transitions() {
+        use radicle::identity::RepoId;
+        use std::str::FromStr;
+
+        let tmp = tempfile::tempdir().unwrap();
+        let ctx = test::seed(tmp.path());
+
+        assert_eq!(ctx.web_config.read().await.pinned.repositories.len(), 0);
+
+        let rid1 = RepoId::from_str("rad:z4FucBZHZMCsxTyQE1dfE2YR59Qbp").unwrap();
+        let rid2 = RepoId::from_str("rad:z4GypKmh1gkEfmkXtarcYnkvtFUfE").unwrap();
+
+        {
+            ctx.web_config
+                .update(|config| {
+                    config.pinned.repositories.insert(rid1);
+                    config.pinned.repositories.insert(rid2);
+                })
+                .await;
+        }
+        assert_eq!(ctx.web_config.read().await.pinned.repositories.len(), 2);
+
+        {
+            ctx.web_config
+                .update(|config| {
+                    config.pinned.repositories.clear();
+                })
+                .await;
+        }
+        assert_eq!(ctx.web_config.read().await.pinned.repositories.len(), 0);
     }
 }

@@ -330,7 +330,8 @@ fn seed_with_signer<G: Signer<Signature>>(
         cache: Some(crate::DEFAULT_CACHE_SIZE),
     };
 
-    Context::new(Arc::new(profile), &options)
+    let web_config = crate::api::WebConfig::from_profile(&profile);
+    Context::new(Arc::new(profile), web_config, &options)
 }
 
 pub async fn get(app: &Router, path: impl ToString) -> Response {
