@@ -1,0 +1,86 @@
+#!/bin/sh
+set -e
+
+# Version from which to generate the changelog.
+from=""
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --from-version)
+      if [ -z "$2" ]; then
+        echo "error: '--from-version' requires a version number" >&2
+        exit 1
+      fi
+      shift
+      from=$(echo "$1" | sed 's/^releases\///')
+      break
+      ;;
+    *)
+      echo "error: unknown argument '$1'" >&2
+      exit 1
+      ;;
+  esac
+done
+
+# Get version from Cargo.toml
+version=$(grep '^version = ' "$(dirname "$0")/../Cargo.toml" | head -1 | sed 's/version = "\(.*\)"/\1/')
+
+if [ -z "$version" ]; then
+  echo "error: could not determine version from Cargo.toml" >&2
+  exit 1
+fi
+
+# Current/latest tag or HEAD
+current="releases/${version}"
+
+# Check if the tag exists, otherwise use HEAD
+if git rev-parse --verify "$current^{tag}" >/dev/null 2>&1; then
+  use_head=false
+else
+  echo "warning: tag '$current' not found, using HEAD instead" >&2
+  current="HEAD"
+  use_head=true
+fi
+
+if [ -z "$from" ]; then
+  # Try to find the previous tag
+  if previous=$(git describe --tags --abbrev=0 --match='releases/*' "$current^" 2>/dev/null); then
+    :  # previous tag found
+  else
+    # No previous tag found, use the first commit
+    previous=$(git rev-list --max-parents=0 HEAD)
+    echo "warning: no previous release tag found, using first commit" >&2
+  fi
+else
+  previous="releases/$from"
+fi
+
+if [ -n "$from" ] && ! git rev-parse --verify "$previous^{tag}" >/dev/null 2>&1; then
+  echo "error: '$from' is not a valid version, tag '$previous' not found" >&2
+  exit 1
+fi
+
+echo "# radicle-httpd $version"
+echo
+echo "radicle-httpd $version ($(git rev-parse --short HEAD)) is released."
+echo
+echo "## Changelog"
+
+range="${previous}..${current}"
+ncommits=$(git rev-list --count "$range")
+ncontribs=$(git log "$range" --format='%ae' | sort -u | wc -l)
+
+echo
+echo "This release contains $ncommits commit(s) by $ncontribs contributor(s)."
+echo
+
+# shellcheck disable=SC2016
+git log --pretty=format:'* `%h` **%s** *<%ae>*' "$range"
+
+echo
+echo "## Checksums"
+echo
+
+echo '```'
+"$(dirname "$0")/checksums"
+echo '```'
