@@ -6,7 +6,7 @@ SSH_ADDRESS=${SSH_ADDRESS:-$SSH_LOGIN@files.radicle.xyz}
 SSH_KEY="$(rad path)/keys/radicle"
 
 main() {
-  version="$(build/version)"
+  version="$("$(dirname "$0")/version")"
 
   echo "Uploading Radicle $version..."
 
@@ -18,10 +18,10 @@ main() {
   # Create remote folder.
   ssh -i $SSH_KEY $SSH_ADDRESS mkdir -p /var/www/files.radicle.xyz/releases/radicle-httpd/$version
   # Copy files over.
-  scp -i $SSH_KEY build/artifacts/radicle-httpd-$version* $SSH_ADDRESS:/var/www/files.radicle.xyz/releases/radicle-httpd/$version
-  scp -i $SSH_KEY build/artifacts/radicle-httpd.json $SSH_ADDRESS:/var/www/files.radicle.xyz/releases/radicle-httpd/$version
+  scp -i $SSH_KEY "$(dirname "$0")/artifacts/radicle-httpd-$version"* $SSH_ADDRESS:/var/www/files.radicle.xyz/releases/radicle-httpd/$version
+  scp -i $SSH_KEY "$(dirname "$0")/artifacts/radicle-httpd.json" $SSH_ADDRESS:/var/www/files.radicle.xyz/releases/radicle-httpd/$version
 
-  for target in $(cat build/TARGETS); do
+  for target in $(cat "$(dirname "$0")/TARGETS"); do
     archive=/var/www/files.radicle.xyz/releases/radicle-httpd/$version/radicle-httpd-$version-$target.tar.xz
     symlink=/var/www/files.radicle.xyz/releases/radicle-httpd/$version/radicle-httpd-$target.tar.xz
 
