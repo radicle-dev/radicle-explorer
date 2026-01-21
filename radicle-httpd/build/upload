@@ -32,7 +32,7 @@ main() {
     ssh -i $SSH_KEY $SSH_ADDRESS ln -snf $archive.sha256 $symlink.sha256
   done
 
-  if git describe --exact-match --match='v*' 2>/dev/null; then
+  if git describe --exact-match --match='releases/*' 2>/dev/null; then
     echo "Creating 'latest' symlink.."
     ssh -i $SSH_KEY $SSH_ADDRESS ln -snf /var/www/files.radicle.xyz/releases/radicle-httpd/$version /var/www/files.radicle.xyz/releases/radicle-httpd/latest
   else
