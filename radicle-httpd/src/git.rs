@@ -17,6 +17,7 @@ use flate2::write::GzDecoder;
 use hyper::body::Buf as _;
 
 use radicle::identity::RepoId;
+use radicle::node::NodeId;
 use radicle::profile::Profile;
 use radicle::storage::{ReadRepository, ReadStorage};
 
@@ -49,8 +50,16 @@ async fn git_handler(
         }
     };
 
+    let (nid, request): (Option<NodeId>, &str) = {
+        let (first, rest) = request.split_once('/').unwrap_or((&request, ""));
+        match first.parse::<NodeId>() {
+            Ok(nid) => (Some(nid), rest),
+            Err(_) => (None, &request),
+        }
+    };
+
     let (status, headers, body) = git_http_backend(
-        &profile, method, headers, body, remote, rid, &request, query,
+        &profile, method, headers, body, remote, rid, nid, request, query,
     )
     .await?;
 
@@ -72,6 +81,7 @@ async fn git_http_backend(
     mut body: Bytes,
     remote: DualAddr,
     id: RepoId,
+    nid: Option<NodeId>,
     path: &str,
     query: String,
 ) -> Result<(StatusCode, HashMap<String, Vec<String>>, Vec<u8>), Error> {
@@ -104,6 +114,9 @@ async fn git_http_backend(
     tracing::debug!("remote: {:?}", remote);
 
     let mut cmd = Command::new("git");
+    if let Some(nid) = nid {
+        cmd.env("GIT_NAMESPACE", nid.to_string());
+    }
     let mut child = cmd
         // This is a workaround to allow fetching particular commits by their OID.
         // Otherwise, the client errors with "Server does not allow request for unadvertised object"
