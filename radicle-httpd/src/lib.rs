@@ -10,6 +10,7 @@ use std::str;
 use std::sync::Arc;
 use std::time::Duration;
 
+#[cfg(unix)]
 use tokio::signal::unix::{signal, SignalKind};
 
 use anyhow::Context as _;
@@ -74,6 +75,7 @@ pub async fn run(options: Options) -> anyhow::Result<()> {
     let profile = Arc::new(profile);
     let ctx = api::Context::new(profile.clone(), web_config.clone(), &options);
 
+    #[cfg(unix)]
     tokio::spawn(async move {
         let mut sighup = signal(SignalKind::hangup()).expect("Failed to register SIGHUP handler");
 
