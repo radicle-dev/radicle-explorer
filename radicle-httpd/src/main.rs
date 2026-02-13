@@ -63,6 +63,7 @@ fn parse_options() -> Result<httpd::Options, lexopt::Error> {
             Long("listen") => {
                 let addr: DualAddr = parser.value()?.parse()?;
 
+                #[cfg(unix)]
                 // Get socket path and remove it if existing
                 if let DualAddr::Uds(socket_path) = &addr {
                     if let Some(path) = socket_path.as_pathname() {
