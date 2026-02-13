@@ -116,6 +116,7 @@ pub async fn run(options: Options) -> anyhow::Result<()> {
                                 "{} \"{} {} {:?}\" {} {:?} {}",
                                 match info.connect_info.0 {
                                     DualAddr::Tcp(c) => c.to_string(),
+                                    #[cfg(unix)]
                                     DualAddr::Uds(_) => "unix-socket".into()
                                 },
                                 info.method,
