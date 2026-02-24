@@ -3,6 +3,8 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde_json::json;
 
+use radicle::git::raw::ErrorExt;
+
 /// Errors relating to the API backend.
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -104,13 +106,13 @@ impl IntoResponse for Error {
                 (StatusCode::NOT_FOUND, Some(e.to_string()))
             }
             Error::Crypto(msg) => (StatusCode::BAD_REQUEST, Some(msg.to_string())),
-            Error::Surf(radicle_surf::Error::Git(e)) if radicle::git::is_not_found_err(&e) => {
+            Error::Surf(radicle_surf::Error::Git(e)) if e.is_not_found() => {
                 (StatusCode::NOT_FOUND, Some(e.message().to_owned()))
             }
             Error::Surf(radicle_surf::Error::Directory(
                 e @ radicle_surf::fs::error::Directory::PathNotFound(_),
             )) => (StatusCode::NOT_FOUND, Some(e.to_string())),
-            Error::Git2(e) if radicle::git::is_not_found_err(&e) => {
+            Error::Git2(e) if e.is_not_found() => {
                 (StatusCode::NOT_FOUND, Some(e.message().to_owned()))
             }
             Error::Git2(e) => (

@@ -1,6 +1,5 @@
 use std::collections::BTreeMap;
 
-use radicle_surf as surf;
 use serde_json::{json, Value};
 
 use radicle::cob;
@@ -149,8 +148,8 @@ impl<'a> Review<'a> {
 fn get_refs(
     repo: &git::Repository,
     id: &cob::ActorId,
-    head: &surf::Oid,
-) -> Result<Vec<git::RefString>, refs::Error> {
+    head: &radicle::git::Oid,
+) -> Result<Vec<radicle::git::fmt::RefString>, refs::Error> {
     let remote = repo.remote(id)?;
     let refs = remote
         .refs

@@ -42,8 +42,14 @@ async fn delegates_repos_handler(
             .filter(|repo| repo.doc.delegates().iter().any(|d| *d == did))
             .collect::<Vec<_>>(),
         RepoQuery::Pinned => storage
-            .repositories_by_id(pinned.repositories.iter())?
-            .into_iter()
+            .repositories_by_id(pinned.repositories.iter())
+            .filter_map(|result| match result {
+                Ok(repo) => Some(repo),
+                Err(e) => {
+                    tracing::warn!("Failed to load pinned repository: {}", e);
+                    None
+                }
+            })
             .filter(|repo| repo.doc.visibility().is_public())
             .filter(|repo| repo.doc.delegates().iter().any(|d| *d == did))
             .collect::<Vec<_>>(),

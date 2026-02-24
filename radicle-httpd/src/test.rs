@@ -12,10 +12,11 @@ use tower::ServiceExt;
 
 use radicle::cob::migrate;
 use radicle::cob::patch::MergeTarget;
+use radicle::cob::Title;
 use radicle::crypto::signature::Signer;
 use radicle::crypto::ssh::Keystore;
 use radicle::crypto::{KeyPair, Seed, Signature};
-use radicle::git::{raw as git2, RefString};
+use radicle::git::fmt::RefString;
 use radicle::identity::{project, Visibility};
 use radicle::node::device::Device;
 use radicle::node::{Features, Timestamp, UserAgent};
@@ -110,9 +111,9 @@ fn seed_with_signer<G: Signer<Signature>>(
     fs::create_dir_all(&workdir).unwrap();
 
     // add commits to workdir (repo)
-    let mut opts = git2::RepositoryInitOptions::new();
+    let mut opts = radicle::git::raw::RepositoryInitOptions::new();
     opts.initial_head(DEFAULT_BRANCH);
-    let repo = git2::Repository::init_opts(&workdir, &opts).unwrap();
+    let repo = radicle::git::raw::Repository::init_opts(&workdir, &opts).unwrap();
     let tree = radicle::git::write_tree(
         Path::new("README"),
         "Hello Private World!\n".as_bytes(),
@@ -120,14 +121,15 @@ fn seed_with_signer<G: Signer<Signature>>(
     )
     .unwrap();
 
-    let sig_time = git2::Time::new(1673001014, 0);
-    let sig = git2::Signature::new("Alice Liddell", "alice@radicle.xyz", &sig_time).unwrap();
+    let sig_time = radicle::git::raw::Time::new(1673001014, 0);
+    let sig =
+        radicle::git::raw::Signature::new("Alice Liddell", "alice@radicle.xyz", &sig_time).unwrap();
 
     repo.commit(Some("HEAD"), &sig, &sig, "Initial commit\n", &tree, &[])
         .unwrap();
 
     // rad init
-    let repo = git2::Repository::open(&workdir).unwrap();
+    let repo = radicle::git::raw::Repository::open(&workdir).unwrap();
     let name = project::ProjectName::from_str("hello-world-private").unwrap();
     let description = "Private Rad repository for tests".to_string();
     let branch = RefString::try_from(DEFAULT_BRANCH).unwrap();
@@ -156,14 +158,15 @@ fn seed_with_signer<G: Signer<Signature>>(
     fs::create_dir_all(&workdir).unwrap();
 
     // add commits to workdir (repo)
-    let mut opts = git2::RepositoryInitOptions::new();
+    let mut opts = radicle::git::raw::RepositoryInitOptions::new();
     opts.initial_head(DEFAULT_BRANCH);
-    let repo = git2::Repository::init_opts(&workdir, &opts).unwrap();
+    let repo = radicle::git::raw::Repository::init_opts(&workdir, &opts).unwrap();
     let tree =
         radicle::git::write_tree(Path::new("README"), "Hello World!\n".as_bytes(), &repo).unwrap();
 
-    let sig_time = git2::Time::new(1673001014, 0);
-    let sig = git2::Signature::new("Alice Liddell", "alice@radicle.xyz", &sig_time).unwrap();
+    let sig_time = radicle::git::raw::Time::new(1673001014, 0);
+    let sig =
+        radicle::git::raw::Signature::new("Alice Liddell", "alice@radicle.xyz", &sig_time).unwrap();
 
     let oid = repo
         .commit(Some("HEAD"), &sig, &sig, "Initial commit\n", &tree, &[])
@@ -178,8 +181,9 @@ fn seed_with_signer<G: Signer<Signature>>(
         &repo,
     )
     .unwrap();
-    let sig_time = git2::Time::new(1673002014, 0);
-    let sig = git2::Signature::new("Alice Liddell", "alice@radicle.xyz", &sig_time).unwrap();
+    let sig_time = radicle::git::raw::Time::new(1673002014, 0);
+    let sig =
+        radicle::git::raw::Signature::new("Alice Liddell", "alice@radicle.xyz", &sig_time).unwrap();
 
     let oid2 = repo
         .commit(
@@ -202,16 +206,15 @@ fn seed_with_signer<G: Signer<Signature>>(
     )
     .unwrap();
     let mut index = repo.index().unwrap();
-    index
-        .add_all(["."], git2::IndexAddOption::DEFAULT, None)
-        .unwrap();
+    index.add_path(Path::new("dir1/README")).unwrap();
     index.write().unwrap();
 
     let oid = index.write_tree().unwrap();
     let tree = repo.find_tree(oid).unwrap();
 
-    let sig_time = git2::Time::new(1673003014, 0);
-    let sig = git2::Signature::new("Alice Liddell", "alice@radicle.xyz", &sig_time).unwrap();
+    let sig_time = radicle::git::raw::Time::new(1673003014, 0);
+    let sig =
+        radicle::git::raw::Signature::new("Alice Liddell", "alice@radicle.xyz", &sig_time).unwrap();
     repo.commit(
         Some("HEAD"),
         &sig,
@@ -223,7 +226,7 @@ fn seed_with_signer<G: Signer<Signature>>(
     .unwrap();
 
     // rad init
-    let repo = git2::Repository::open(&workdir).unwrap();
+    let repo = radicle::git::raw::Repository::open(&workdir).unwrap();
     let name = project::ProjectName::from_str("hello-world").unwrap();
     let description = "Rad repository for tests".to_string();
     let branch = RefString::try_from(DEFAULT_BRANCH).unwrap();
@@ -250,7 +253,7 @@ fn seed_with_signer<G: Signer<Signature>>(
     let mut issues = profile.issues_mut(&repo).unwrap();
     let issue = issues
         .create(
-            "Issue #1".to_string(),
+            Title::new("Issue #1").unwrap(),
             "Change 'hello world' to 'hello everyone'".to_string(),
             &[],
             &[],
@@ -266,7 +269,7 @@ fn seed_with_signer<G: Signer<Signature>>(
     let base = radicle::git::Oid::from_str(PARENT).unwrap();
     let patch = patches
         .create(
-            "A new `hello world`",
+            Title::new("A new `hello world`").unwrap(),
             "change `hello world` in README to something else",
             MergeTarget::Delegates,
             base,
@@ -284,9 +287,9 @@ fn seed_with_signer<G: Signer<Signature>>(
     fs::create_dir_all(&workdir).unwrap();
 
     // add commits to workdir (repo)
-    let mut opts = git2::RepositoryInitOptions::new();
+    let mut opts = radicle::git::raw::RepositoryInitOptions::new();
     opts.initial_head(DEFAULT_BRANCH);
-    let repo = git2::Repository::init_opts(&workdir, &opts).unwrap();
+    let repo = radicle::git::raw::Repository::init_opts(&workdir, &opts).unwrap();
     let tree = radicle::git::write_tree(
         Path::new("README"),
         "Hello World Again!\n".as_bytes(),
@@ -294,8 +297,9 @@ fn seed_with_signer<G: Signer<Signature>>(
     )
     .unwrap();
 
-    let sig_time = git2::Time::new(1673001014, 0);
-    let sig = git2::Signature::new("Alice Liddell", "alice@radicle.xyz", &sig_time).unwrap();
+    let sig_time = radicle::git::raw::Time::new(1673001014, 0);
+    let sig =
+        radicle::git::raw::Signature::new("Alice Liddell", "alice@radicle.xyz", &sig_time).unwrap();
 
     repo.commit(Some("HEAD"), &sig, &sig, "Initial commit\n", &tree, &[])
         .unwrap();
@@ -303,7 +307,7 @@ fn seed_with_signer<G: Signer<Signature>>(
     repo.checkout_tree(tree.as_object(), None).unwrap();
 
     // rad init
-    let repo = git2::Repository::open(&workdir).unwrap();
+    let repo = radicle::git::raw::Repository::open(&workdir).unwrap();
     let name = project::ProjectName::from_str("again-hello-world").unwrap();
     let description = "Rad repository for sorting".to_string();
     let branch = RefString::try_from(DEFAULT_BRANCH).unwrap();

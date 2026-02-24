@@ -72,7 +72,10 @@ async fn file_by_commit_handler(
     }
 
     let repo: Repository = repo.backend.into();
-    let blob = repo.blob(sha, &path)?;
+    let blob = repo.blob(
+        radicle_surf::Oid::from(radicle::git::raw::Oid::from(sha)),
+        &path,
+    )?;
 
     blob_response(blob, &path)
 }
@@ -171,7 +174,10 @@ async fn file_by_canonical_head_handler(
 
     let (_, sha) = repo.head()?;
     let repo: Repository = repo.backend.into();
-    let blob = repo.blob(sha, &path)?;
+    let blob = repo.blob(
+        radicle_surf::Oid::from(radicle::git::raw::Oid::from(sha)),
+        &path,
+    )?;
 
     blob_response(blob, &path)
 }

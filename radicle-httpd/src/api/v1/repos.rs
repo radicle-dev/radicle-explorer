@@ -77,8 +77,14 @@ async fn repo_root_handler(
             .filter(|repo| repo.doc.visibility().is_public())
             .collect::<Vec<_>>(),
         RepoQuery::Pinned => storage
-            .repositories_by_id(pinned.repositories.iter())?
-            .into_iter()
+            .repositories_by_id(pinned.repositories.iter())
+            .filter_map(|result| match result {
+                Ok(repo) => Some(repo),
+                Err(e) => {
+                    tracing::warn!("Failed to load pinned repository: {}", e);
+                    None
+                }
+            })
             .filter(|repo| repo.doc.visibility().is_public())
             .collect::<Vec<_>>(),
     };
@@ -447,11 +453,12 @@ async fn remotes_handler(State(ctx): State<Context>, Path(rid): Path<RepoId>) ->
                 .refs
                 .iter()
                 .filter_map(|(r, oid)| {
-                    r.as_str()
-                        .strip_prefix("refs/heads/")
-                        .map(|head| (head.to_string(), oid))
+                    r.as_str().strip_prefix("refs/heads/").map(|head| {
+                        let surf_oid = Oid::from(radicle::git::raw::Oid::from(oid));
+                        (head.to_string(), surf_oid)
+                    })
                 })
-                .collect::<BTreeMap<String, &Oid>>();
+                .collect::<BTreeMap<String, Oid>>();
 
             match aliases.alias(&remote.id) {
                 Some(alias) => json!({
@@ -485,11 +492,12 @@ async fn remote_handler(
         .refs
         .iter()
         .filter_map(|(r, oid)| {
-            r.as_str()
-                .strip_prefix("refs/heads/")
-                .map(|head| (head.to_string(), oid))
+            r.as_str().strip_prefix("refs/heads/").map(|head| {
+                let surf_oid = Oid::from(radicle::git::raw::Oid::from(oid));
+                (head.to_string(), surf_oid)
+            })
         })
-        .collect::<BTreeMap<String, &Oid>>();
+        .collect::<BTreeMap<String, Oid>>();
     let remote = json!({
         "id": remote.id,
         "heads": refs,
@@ -616,12 +624,12 @@ async fn issue_handler(
     let issue = ctx
         .profile
         .issues(&repo)?
-        .get(&issue_id.into())?
+        .get(&(&*issue_id).into())?
         .ok_or(Error::NotFound)?;
     let aliases = ctx.profile.aliases();
 
     Ok::<_, Error>(Json(
-        api::json::cobs::Issue::new(&issue).as_json(issue_id.into(), &aliases),
+        api::json::cobs::Issue::new(&issue).as_json((&*issue_id).into(), &aliases),
     ))
 }
 
@@ -669,11 +677,11 @@ async fn patch_handler(
 ) -> impl IntoResponse {
     let (repo, _) = ctx.repo(rid)?;
     let patches = ctx.profile.patches(&repo)?;
-    let patch = patches.get(&patch_id.into())?.ok_or(Error::NotFound)?;
+    let patch = patches.get(&(&*patch_id).into())?.ok_or(Error::NotFound)?;
     let aliases = ctx.profile.aliases();
 
     Ok::<_, Error>(Json(api::json::cobs::Patch::new(&patch).as_json(
-        patch_id.into(),
+        (&*patch_id).into(),
         &repo,
         &aliases,
     )))

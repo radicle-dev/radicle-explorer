@@ -73,10 +73,6 @@ pub enum RawError {
     #[error(transparent)]
     Surf(#[from] radicle_surf::Error),
 
-    /// Git2 error.
-    #[error(transparent)]
-    Git2(#[from] radicle::git::raw::Error),
-
     /// Payload error.
     #[error(transparent)]
     ProjectPayload(#[from] radicle::identity::PayloadError),
@@ -91,7 +87,7 @@ pub enum RawError {
 
     /// Git error.
     #[error(transparent)]
-    Git(#[from] radicle::git::ext::Error),
+    Git(#[from] radicle::git::raw::Error),
 
     /// Radicle Storage error.
     #[error(transparent)]

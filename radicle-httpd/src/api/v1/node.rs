@@ -130,7 +130,7 @@ async fn nodes_inventory_handler(
 /// `GET /node/policies/repos`
 async fn node_policies_repos_handler(State(ctx): State<Context>) -> impl IntoResponse {
     let policies = ctx.profile.policies()?;
-    let policies = policies.seed_policies()?.collect::<Vec<_>>();
+    let policies = policies.seed_policies()?.collect::<Result<Vec<_>, _>>()?;
 
     Ok::<_, Error>(Json(policies))
 }

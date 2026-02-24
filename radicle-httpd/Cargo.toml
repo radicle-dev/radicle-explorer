@@ -33,9 +33,9 @@ lexopt = { version = "0.3.1" }
 lru = { version = "0.16.0" }
 mime_guess = { version = "2.0.5" }
 nonempty = { version = "0.12.0", features = ["serialize"] }
-radicle = { version = "0.18.0" }
-radicle-surf = { version = "0.22.0", default-features = false, features = ["serde"] }
-radicle-term = { version = "0.14.0", default-features = false }
+radicle = { version = "0.21.0" }
+radicle-surf = { version = "0.27.0", default-features = false, features = ["serde"] }
+radicle-term = { version = "0.17.0", default-features = false }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }
 thiserror = { version = "2" }
@@ -48,7 +48,7 @@ tracing-subscriber = { version = "0.3.19", default-features = false, features = 
 [dev-dependencies]
 hyper = { version = "1.6", default-features = false, features = ["client"] }
 pretty_assertions = { version = "1.4.1" }
-radicle = { version = "0.18.0", features = ["test"] }
-radicle-crypto = { version = "0.13.0", features = ["test"] }
+radicle = { version = "0.21.0", features = ["test"] }
+radicle-crypto = { version = "0.15.0", features = ["test"] }
 tempfile = { version = "3.20.0" }
 tower = { version = "0.5.2", features = ["util"] }
