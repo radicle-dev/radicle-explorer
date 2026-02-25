@@ -339,6 +339,7 @@
             style:margin-left="0.375rem"
             style:flex="1">
             <TextInput
+              size="small"
               showKeyHint={false}
               placeholder={selectedTab === "branches"
                 ? "Filter branches"

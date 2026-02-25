@@ -11,6 +11,8 @@
   export let placeholder: string | undefined = undefined;
   export let value: string | undefined = undefined;
 
+  export let size: "small" | "regular" = "regular";
+
   export let autofocus: boolean = false;
   export let autoselect: boolean = false;
   export let disabled: boolean = false;
@@ -76,8 +78,13 @@
     position: relative;
     flex: 1;
     align-items: center;
-    height: var(--button-regular-height);
     background: var(--color-background-dip);
+  }
+  .wrapper.small {
+    height: var(--button-small-height);
+  }
+  .wrapper.regular {
+    height: var(--button-regular-height);
   }
   input {
     background: var(--color-background-dip);
@@ -140,7 +147,7 @@
   }
 </style>
 
-<div class="wrapper">
+<div class="wrapper {size}">
   <input
     class:invalid={!valid && value}
     style:padding-right={rightContainerWidth
