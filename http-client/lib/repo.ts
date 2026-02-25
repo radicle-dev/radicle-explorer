@@ -113,7 +113,7 @@ export const remoteSchema = object({
   id: string(),
   alias: string().optional(),
   heads: record(string(), string()),
-  tags: record(string(), string()),
+  tags: record(string(), string()).optional(),
   delegate: boolean(),
 });
 

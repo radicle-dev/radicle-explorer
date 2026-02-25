@@ -25,7 +25,7 @@
     "display: grid; grid-template-columns: subgrid; grid-column: span 2;";
   let expanded = false;
 
-  $: refs = type === "branches" ? peer.remote.heads : peer.remote.tags;
+  $: refs = type === "branches" ? peer.remote.heads : (peer.remote.tags || {});
   $: iconName = type === "branches" ? "branch" : "label";
 </script>
 

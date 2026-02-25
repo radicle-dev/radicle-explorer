@@ -426,7 +426,9 @@ async function loadTreeView(
 
   // Add all peer tags to branchMap for tag resolution
   peers.forEach(peer => {
-    Object.assign(branchMap, peer.tags);
+    if (peer.tags) {
+      Object.assign(branchMap, peer.tags);
+    }
   });
 
   if (route.peer) {
@@ -784,7 +786,9 @@ async function getPeerBranches(
     };
     // Add all peer tags
     peers.forEach(p => {
-      Object.assign(branchMap, p.tags);
+      if (p.tags) {
+        Object.assign(branchMap, p.tags);
+      }
     });
     return branchMap;
   } else {

@@ -67,12 +67,14 @@
         }))
       : []),
     ...peers.flatMap(peer =>
-      Object.entries(peer.tags).map(([name, head]) => ({
-        peer: { id: peer.id, alias: peer.alias, delegate: peer.delegate },
-        revision: name,
-        head,
-        type: "tag" as const,
-      })),
+      peer.tags
+        ? Object.entries(peer.tags).map(([name, head]) => ({
+            peer: { id: peer.id, alias: peer.alias, delegate: peer.delegate },
+            revision: name,
+            head,
+            type: "tag" as const,
+          }))
+        : [],
     ),
   ];
 
@@ -91,6 +93,14 @@
   $: canonicalTags = repo.canonicalTags
     ? Object.entries(repo.canonicalTags)
     : [];
+  $: hasTags =
+    (repo.canonicalTags && Object.keys(repo.canonicalTags).length > 0) ||
+    peers.some(p => p.tags && Object.keys(p.tags).length > 0);
+
+  // Reset to branches tab if tags disappear
+  $: if (!hasTags && selectedTab === "tags") {
+    selectedTab = "branches";
+  }
 </script>
 
 <style>
@@ -197,30 +207,32 @@
     </Button>
 
     <div slot="popover" class="dropdown" let:toggle>
-      <div class="tabs">
-        <Radio styleGap="0.375rem">
-          <Button
-            size="large"
-            variant={selectedTab === "branches" ? "tab-active" : "tab"}
-            on:click={() => {
-              selectedTab = "branches";
-              searchInput = "";
-            }}>
-            <Icon name="branch" />
-            Branches
-          </Button>
-          <Button
-            size="large"
-            variant={selectedTab === "tags" ? "tab-active" : "tab"}
-            on:click={() => {
-              selectedTab = "tags";
-              searchInput = "";
-            }}>
-            <Icon name="label" />
-            Tags
-          </Button>
-        </Radio>
-      </div>
+      {#if hasTags}
+        <div class="tabs">
+          <Radio styleGap="0.375rem">
+            <Button
+              size="large"
+              variant={selectedTab === "branches" ? "tab-active" : "tab"}
+              on:click={() => {
+                selectedTab = "branches";
+                searchInput = "";
+              }}>
+              <Icon name="branch" />
+              Branches
+            </Button>
+            <Button
+              size="large"
+              variant={selectedTab === "tags" ? "tab-active" : "tab"}
+              on:click={() => {
+                selectedTab = "tags";
+                searchInput = "";
+              }}>
+              <Icon name="label" />
+              Tags
+            </Button>
+          </Radio>
+        </div>
+      {/if}
       <TextInput
         showKeyHint={false}
         placeholder="Search"
@@ -374,7 +386,7 @@
               </Link>
             {/each}
           {/if}
-          {#each orderBy(peers, ["delegate", o => o.alias?.toLowerCase()], ["desc", "asc"]).filter(p => Object.keys(p.tags).length > 0) as peer}
+          {#each orderBy(peers, ["delegate", o => o.alias?.toLowerCase()], ["desc", "asc"]).filter(p => p.tags && Object.keys(p.tags).length > 0) as peer}
             <Peer
               {baseRoute}
               revision={selectedBranch}
