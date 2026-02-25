@@ -20,13 +20,18 @@
   export let peer: { remote: Remote; selected: boolean };
   export let revision: string | undefined = undefined;
   export let type: "branches" | "tags" = "branches";
+  export let selectedTagName: string | undefined = undefined;
 
   const subgridStyle =
     "display: grid; grid-template-columns: subgrid; grid-column: span 2;";
   let expanded = false;
 
-  $: refs = type === "branches" ? peer.remote.heads : (peer.remote.tags || {});
-  $: iconName = type === "branches" ? "branch" : "label";
+  $: refs = type === "branches" ? peer.remote.heads : peer.remote.tags || {};
+
+  // Auto-expand if this peer is selected
+  $: if (peer.selected) {
+    expanded = true;
+  }
 </script>
 
 <style>
@@ -65,9 +70,9 @@
       }}
       on:afterNavigate={() => closeFocused()}>
       <DropdownListItem
-        selected={peer.selected &&
-          (revision === name ||
-            (type === "tags" && revision === encodeURIComponent(name)))}
+        selected={type === "tags"
+          ? selectedTagName === name || revision === encodeURIComponent(name)
+          : peer.selected && revision === name}
         on:click={() =>
           replace({
             ...baseRoute,
@@ -76,7 +81,7 @@
           })}
         style={`${subgridStyle} padding-left: 2.3rem; gap: inherit;`}>
         <div class="global-flex-item">
-          <Icon name={iconName} />
+          <Icon name={type === "branches" ? "branch" : "label"} />
           <span class="txt-overflow">
             {name}
           </span>
