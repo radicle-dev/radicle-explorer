@@ -128,12 +128,15 @@ impl Context {
             })
             .collect();
 
-        // Compute canonical tags
+        // Compute canonical tags and branches
         // Note: This requires converting R to Repository, so we compute it differently
-        let canonical_tags = if let Ok(storage_repo) = self.profile.storage.repository(rid) {
-            Self::compute_canonical_tags(&storage_repo, &doc).ok().flatten()
+        let (canonical_tags, canonical_branches) = if let Ok(storage_repo) = self.profile.storage.repository(rid) {
+            (
+                Self::compute_canonical_tags(&storage_repo, &doc).ok().flatten(),
+                Self::compute_canonical_branches(&storage_repo, &doc).ok().flatten(),
+            )
         } else {
-            None
+            (None, None)
         };
 
         Ok(repo::Info {
@@ -144,6 +147,7 @@ impl Context {
             rid,
             seeding,
             canonical_tags,
+            canonical_branches,
         })
     }
 
@@ -252,6 +256,105 @@ impl Context {
             Ok(None)
         } else {
             Ok(Some(canonical_tags))
+        }
+    }
+
+    /// Compute canonical branches that have reached consensus threshold.
+    /// Returns map of branch name -> commit OID for branches with consensus.
+    fn compute_canonical_branches(
+        repo: &Repository,
+        doc: &radicle::identity::Doc,
+    ) -> Result<Option<BTreeMap<String, String>>, error::Error> {
+        // Get canonical refs configuration
+        let canonical_refs = match doc.canonical_refs().ok().flatten() {
+            Some(crefs) => crefs,
+            None => return Ok(None),
+        };
+
+        let rules = canonical_refs.rules();
+
+        // Collect branch patterns from the rules
+        let branch_patterns: Vec<String> = rules
+            .iter()
+            .filter_map(|(pattern, _)| {
+                let pattern_str = pattern.to_string();
+                if pattern_str.starts_with("refs/heads/") {
+                    Some(pattern_str)
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        if branch_patterns.is_empty() {
+            return Ok(None);
+        }
+
+        // Helper function to check if a refname matches any of the patterns
+        let matches_pattern = |refname: &str| -> bool {
+            for pattern in &branch_patterns {
+                // Handle wildcard patterns like "refs/heads/feature/*"
+                if pattern.ends_with("/*") {
+                    let prefix = &pattern[..pattern.len() - 2]; // Remove "/*"
+                    if refname.starts_with(prefix) {
+                        return true;
+                    }
+                } else if pattern.ends_with('*') {
+                    let prefix = &pattern[..pattern.len() - 1]; // Remove "*"
+                    if refname.starts_with(prefix) {
+                        return true;
+                    }
+                } else {
+                    // Exact match
+                    if refname == pattern {
+                        return true;
+                    }
+                }
+            }
+            false
+        };
+
+        // Collect votes only for branches that match the canonical patterns
+        let mut branch_votes: HashMap<String, HashMap<git::Oid, Vec<NodeId>>> = HashMap::new();
+
+        for remote_result in repo.remotes()? {
+            let (remote_id, remote) = remote_result?;
+
+            // Iterate through remote's branch refs
+            for (refname, oid) in remote.refs.iter() {
+                let refname_str = refname.as_str();
+
+                // Only collect votes for branches that match canonical patterns
+                if refname_str.starts_with("refs/heads/") && matches_pattern(refname_str) {
+                    if let Some(branch_name) = refname_str.strip_prefix("refs/heads/") {
+                        branch_votes
+                            .entry(branch_name.to_string())
+                            .or_default()
+                            .entry(*oid)
+                            .or_default()
+                            .push(remote_id.into());
+                    }
+                }
+            }
+        }
+
+        // Check which branches have reached threshold
+        let threshold = doc.threshold();
+        let mut canonical_branches = BTreeMap::new();
+
+        for (branch_name, oid_votes) in branch_votes {
+            // Find the OID with the most votes
+            if let Some((oid, voters)) = oid_votes.iter().max_by_key(|(_, voters)| voters.len()) {
+                if voters.len() >= threshold {
+                    canonical_branches.insert(branch_name, oid.to_string());
+                }
+            }
+        }
+
+        if canonical_branches.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(canonical_branches))
         }
     }
 
@@ -419,6 +522,8 @@ mod repo {
         pub seeding: usize,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub canonical_tags: Option<BTreeMap<String, String>>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub canonical_branches: Option<BTreeMap<String, String>>,
     }
 }
 

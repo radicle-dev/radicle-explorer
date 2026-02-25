@@ -423,6 +423,14 @@ async function loadTreeView(
     [project.data.defaultBranch]: project.meta.head,
   };
 
+  // Add canonical branches with both original and encoded names
+  if (repo.canonicalBranches) {
+    Object.entries(repo.canonicalBranches).forEach(([branchName, oid]) => {
+      branchMap[branchName] = oid;
+      branchMap[encodeURIComponent(branchName)] = oid;
+    });
+  }
+
   // Add canonical tags with both original and encoded names
   if (repo.canonicalTags) {
     Object.entries(repo.canonicalTags).forEach(([tagName, oid]) => {
@@ -790,8 +798,16 @@ async function getPeerBranches(
   if (peer) {
     return (await api.repo.getRemoteByPeer(repoId, peer)).heads;
   } else if (repo && peers) {
-    // When no peer is specified, include canonical tags and all peer tags
+    // When no peer is specified, include canonical branches/tags and all peer tags
     const branchMap: Record<string, string> = {};
+
+    // Add canonical branches with both original and encoded names
+    if (repo.canonicalBranches) {
+      Object.entries(repo.canonicalBranches).forEach(([branchName, oid]) => {
+        branchMap[branchName] = oid;
+        branchMap[encodeURIComponent(branchName)] = oid;
+      });
+    }
 
     // Add canonical tags with both original and encoded names
     if (repo.canonicalTags) {

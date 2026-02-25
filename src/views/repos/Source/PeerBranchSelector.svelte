@@ -50,6 +50,20 @@
       head: repo.payloads["xyz.radicle.project"].meta.head,
       type: "branch",
     },
+    ...(repo.canonicalBranches
+      ? Object.entries(repo.canonicalBranches)
+          .filter(
+            ([branchName]) =>
+              branchName !==
+              repo.payloads["xyz.radicle.project"].data.defaultBranch,
+          )
+          .map(([name, head]) => ({
+            peer: undefined,
+            revision: name,
+            head,
+            type: "branch" as const,
+          }))
+      : []),
     ...peers.flatMap(peer =>
       Object.entries(peer.heads).map(([name, head]) => ({
         peer: { id: peer.id, alias: peer.alias, delegate: peer.delegate },
@@ -97,6 +111,13 @@
   });
   $: canonicalTags = repo.canonicalTags
     ? Object.entries(repo.canonicalTags)
+    : [];
+  $: canonicalBranches = repo.canonicalBranches
+    ? Object.entries(repo.canonicalBranches).filter(
+        ([branchName]) =>
+          branchName !==
+          repo.payloads["xyz.radicle.project"].data.defaultBranch,
+      )
     : [];
   $: hasTags =
     (repo.canonicalTags && Object.keys(repo.canonicalTags).length > 0) ||
@@ -156,6 +177,22 @@
   $: if (!hasTags && selectedTab === "tags") {
     selectedTab = "branches";
   }
+
+  // Check if the selected branch is canonical (including non-default canonical branches)
+  $: isSelectedBranchCanonical = (() => {
+    if (onCanonical) return true;
+    if (!selectedBranch || peer) return false;
+
+    // Check if selectedBranch is in canonicalBranches
+    if (repo.canonicalBranches) {
+      const branchNames = Object.keys(repo.canonicalBranches);
+      return (
+        branchNames.includes(selectedBranch) ||
+        branchNames.includes(decodeURIComponent(selectedBranch))
+      );
+    }
+    return false;
+  })();
 </script>
 
 <style>
@@ -263,7 +300,7 @@
         <span class="txt-overflow">
           {selectedBranch}
         </span>
-        {#if onCanonical}
+        {#if isSelectedBranchCanonical}
           <Badge title="Canonical branch" variant="foreground-emphasized">
             Canonical
           </Badge>
@@ -441,6 +478,40 @@
               </div>
             </DropdownListItem>
           </Link>
+          {#each canonicalBranches as [branchName, branchHead]}
+            <Link
+              style={subgridStyle}
+              route={{
+                ...baseRoute,
+                peer: undefined,
+                revision: encodeURIComponent(branchName),
+              }}
+              on:afterNavigate={() => {
+                searchInput = "";
+                toggle();
+              }}>
+              <DropdownListItem
+                selected={!peer &&
+                  (selectedBranch === branchName ||
+                    selectedBranch === encodeURIComponent(branchName))}
+                style={`${subgridStyle} gap: inherit;`}>
+                <div class="global-flex-item">
+                  <Icon name="branch" />
+                  <span class="txt-overflow">{branchName}</span>
+                  <Badge
+                    title="Canonical branch"
+                    variant="foreground-emphasized">
+                    Canonical
+                  </Badge>
+                </div>
+                <div
+                  class="txt-monospace"
+                  style="color: var(--color-foreground-dim);">
+                  {formatCommit(branchHead)}
+                </div>
+              </DropdownListItem>
+            </Link>
+          {/each}
           {#each orderBy(peers, ["delegate", o => o.alias?.toLowerCase()], ["desc", "asc"]) as peer}
             <Peer
               {baseRoute}

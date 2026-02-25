@@ -60,6 +60,7 @@ const repoSchema = object({
   ]),
   seeding: number(),
   canonicalTags: record(string(), string()).optional(),
+  canonicalBranches: record(string(), string()).optional(),
 });
 const reposSchema = array(repoSchema);
 
