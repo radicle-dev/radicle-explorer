@@ -1,10 +1,12 @@
 # Changelog
 
+## 0.24.0
+
+- **Windows support**: The HTTP daemon now runs on Windows with platform-specific adaptations
+- **Faster API responses**: Improved `/node` endpoint performance
+- **Git namespace paths**: Direct access to node ref namespaces via `/{rid}.git/{nid}/` remote URLs, simplifying clones and fetches from specific nodes
+- Updated dependencies and internal improvements
+
 ## 0.23.0
 
-This release contains 2 commit(s) by 2 contributor(s).
-
-* `7dfca539` **httpd: Add SIGHUP config reloading** *<rudolfs@osins.org>*
-  The daemon has learned how to reload the Radicle web configuration when the
-  daemon receives a SIGHUP signal.
-* `0fae94fc` **httpd: Remove unused struct** *<mail@defelo.de>*
+- **Live config reload**: Update configuration without restarting by sending a SIGHUP signal

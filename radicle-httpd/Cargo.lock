@@ -2169,7 +2169,7 @@ dependencies = [
 
 [[package]]
 name = "radicle-httpd"
-version = "0.23.0"
+version = "0.24.0"
 dependencies = [
  "anyhow",
  "axum",
