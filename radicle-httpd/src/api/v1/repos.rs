@@ -488,7 +488,20 @@ async fn remote_handler(
     let (repo, doc) = ctx.repo(rid)?;
     let delegates = doc.delegates();
     let remote = repo.remote(&node_id)?;
-    let refs = remote
+
+    // Helper to peel tags to commits.
+    let peel_to_commit = |oid: &radicle::git::Oid| -> String {
+        let raw_oid = radicle::git::raw::Oid::from(*oid);
+        match repo.backend.find_object(raw_oid, None) {
+            Ok(obj) => match obj.peel_to_commit() {
+                Ok(commit) => commit.id().to_string(),
+                Err(_) => raw_oid.to_string(),
+            },
+            Err(_) => raw_oid.to_string(),
+        }
+    };
+
+    let heads = remote
         .refs
         .iter()
         .filter_map(|(r, oid)| {
@@ -498,10 +511,26 @@ async fn remote_handler(
             })
         })
         .collect::<BTreeMap<String, Oid>>();
+
+    // Full ref names including tags, with annotated tags peeled to commits.
+    let refs: BTreeMap<String, String> = remote
+        .refs
+        .iter()
+        .filter_map(|(r, oid)| {
+            let refname = r.as_str();
+            if refname.starts_with("refs/heads/") || refname.starts_with("refs/tags/") {
+                Some((refname.to_string(), peel_to_commit(oid)))
+            } else {
+                None
+            }
+        })
+        .collect();
+
     let remote = json!({
         "id": remote.id,
-        "heads": refs,
+        "heads": heads,
         "delegate": delegates.contains(&remote.id.into()),
+        "refs": refs,
     });
 
     Ok::<_, Error>(Json(remote))
@@ -746,6 +775,19 @@ mod routes {
                 },
                 "rid": RID,
                 "seeding": 1,
+                "refs": {
+                  "canonical": {},
+                  "peers": [
+                    {
+                      "id": "z6MknSLrJoTcukLrE435hVNQT4JUhbvWLX4kUzqkEStBU8Vi",
+                      "alias": CONTRIBUTOR_ALIAS,
+                      "delegate": true,
+                      "refs": {
+                        "refs/heads/master": HEAD
+                      }
+                    }
+                  ]
+                }
               },
               {
                 "payloads": {
@@ -782,6 +824,19 @@ mod routes {
                 },
                 "rid": "rad:z4GypKmh1gkEfmkXtarcYnkvtFUfE",
                 "seeding": 1,
+                "refs": {
+                  "canonical": {},
+                  "peers": [
+                    {
+                      "id": "z6MknSLrJoTcukLrE435hVNQT4JUhbvWLX4kUzqkEStBU8Vi",
+                      "alias": CONTRIBUTOR_ALIAS,
+                      "delegate": true,
+                      "refs": {
+                        "refs/heads/master": "344dcd184df5bf37aab6c107fa9371a1c5b3321a"
+                      }
+                    }
+                  ]
+                }
               },
             ])
         );
@@ -831,6 +886,19 @@ mod routes {
                 },
                 "rid": RID,
                 "seeding": 1,
+                "refs": {
+                  "canonical": {},
+                  "peers": [
+                    {
+                      "id": "z6MknSLrJoTcukLrE435hVNQT4JUhbvWLX4kUzqkEStBU8Vi",
+                      "alias": CONTRIBUTOR_ALIAS,
+                      "delegate": true,
+                      "refs": {
+                        "refs/heads/master": HEAD
+                      }
+                    }
+                  ]
+                }
               },
               {
                 "payloads": {
@@ -867,6 +935,19 @@ mod routes {
                 },
                 "rid": "rad:z4GypKmh1gkEfmkXtarcYnkvtFUfE",
                 "seeding": 1,
+                "refs": {
+                  "canonical": {},
+                  "peers": [
+                    {
+                      "id": "z6MknSLrJoTcukLrE435hVNQT4JUhbvWLX4kUzqkEStBU8Vi",
+                      "alias": CONTRIBUTOR_ALIAS,
+                      "delegate": true,
+                      "refs": {
+                        "refs/heads/master": "344dcd184df5bf37aab6c107fa9371a1c5b3321a"
+                      }
+                    }
+                  ]
+                }
               },
             ])
         );
@@ -916,6 +997,19 @@ mod routes {
                },
                "rid": RID,
                "seeding": 1,
+               "refs": {
+                 "canonical": {},
+                 "peers": [
+                   {
+                     "id": "z6MknSLrJoTcukLrE435hVNQT4JUhbvWLX4kUzqkEStBU8Vi",
+                     "alias": CONTRIBUTOR_ALIAS,
+                     "delegate": true,
+                     "refs": {
+                       "refs/heads/master": HEAD
+                     }
+                   }
+                 ]
+               }
             })
         );
     }
@@ -1410,6 +1504,9 @@ mod routes {
                 "heads": {
                     "master": HEAD
                 },
+                "refs": {
+                    "refs/heads/master": HEAD
+                },
                 "delegate": true
             })
         );
@@ -1426,6 +1523,75 @@ mod routes {
         .await;
 
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn test_repos_multi_peer_canonical_refs() {
+        let tmp = tempfile::tempdir().unwrap();
+        let ctx = seed_multi_peer(tmp.path());
+        let app =
+            super::router(ctx).layer(MockConnectInfo(SocketAddr::from(([127, 0, 0, 1], 8080))));
+        let response = get(&app, format!("/repos/{RID}")).await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = response.json().await;
+        let refs = &body["refs"];
+
+        // Canonical refs should contain master (threshold=1, both peers)
+        // and v1.0 (threshold=2, both peers agree).
+        assert_eq!(
+            refs["canonical"]["refs/heads/master"],
+            json!(HEAD),
+            "master should be canonical"
+        );
+        assert_eq!(
+            refs["canonical"]["refs/tags/v1.0"],
+            json!(HEAD),
+            "v1.0 should be canonical"
+        );
+        // feature/branch is on peer2 only but threshold=1 for heads.
+        assert!(
+            refs["canonical"]["refs/heads/feature/branch"].is_string(),
+            "feature/branch should be canonical (threshold=1)"
+        );
+
+        // v2.0-rc should NOT be canonical (threshold=2, only peer2 has it).
+        assert!(
+            refs["canonical"].get("refs/tags/v2.0-rc").is_none(),
+            "v2.0-rc should not be canonical"
+        );
+
+        // Peers array should have 2 entries.
+        let peers = refs["peers"].as_array().expect("peers should be an array");
+        assert_eq!(peers.len(), 2, "should have 2 peers");
+
+        // Both peers should be delegates.
+        for peer in peers {
+            assert_eq!(peer["delegate"], json!(true));
+        }
+
+        // Verify peer2 has v2.0-rc in its non-canonical refs.
+        let peer2 = peers
+            .iter()
+            .find(|p| p["alias"] == json!("peer2"))
+            .expect("peer2 should exist");
+        assert!(
+            peer2["refs"].get("refs/tags/v2.0-rc").is_some(),
+            "peer2 should have v2.0-rc in non-canonical refs"
+        );
+
+        // Canonical refs should not appear in any peer's refs.
+        for peer in peers {
+            assert!(
+                peer["refs"].get("refs/heads/master").is_none(),
+                "canonical ref master should not appear in peer refs"
+            );
+            assert!(
+                peer["refs"].get("refs/tags/v1.0").is_none(),
+                "canonical ref v1.0 should not appear in peer refs"
+            );
+        }
     }
 
     #[tokio::test]

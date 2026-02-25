@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { RepoRoute } from "@app/views/repos/router";
-  import type { Remote } from "@http-client";
+  import type { PeerRefs } from "@http-client";
 
   import { closeFocused } from "@app/components/Popover.svelte";
   import { formatCommit } from "@app/lib/utils";
@@ -13,16 +13,50 @@
   import Link from "@app/components/Link.svelte";
   import NodeId from "@app/components/NodeId.svelte";
 
+  // Helper to extract branches from unified refs
+  function getBranches(refs: Record<string, string>): Record<string, string> {
+    const branches: Record<string, string> = {};
+    for (const [name, oid] of Object.entries(refs)) {
+      if (name.startsWith("refs/heads/")) {
+        branches[name.slice("refs/heads/".length)] = oid;
+      }
+    }
+    return branches;
+  }
+
+  // Helper to extract tags from unified refs
+  function getTags(refs: Record<string, string>): Record<string, string> {
+    const tags: Record<string, string> = {};
+    for (const [name, oid] of Object.entries(refs)) {
+      if (name.startsWith("refs/tags/")) {
+        tags[name.slice("refs/tags/".length)] = oid;
+      }
+    }
+    return tags;
+  }
+
   export let baseRoute: Extract<
     RepoRoute,
     { resource: "repo.source" } | { resource: "repo.history" }
   >;
-  export let peer: { remote: Remote; selected: boolean };
+  export let peer: { remote: PeerRefs; selected: boolean };
   export let revision: string | undefined = undefined;
+  export let type: "branches" | "tags" = "branches";
+  export let selectedTagName: string | undefined = undefined;
 
   const subgridStyle =
     "display: grid; grid-template-columns: subgrid; grid-column: span 2;";
   let expanded = false;
+
+  $: refs =
+    type === "branches"
+      ? getBranches(peer.remote.refs)
+      : getTags(peer.remote.refs);
+
+  // Auto-expand if this peer is selected
+  $: if (peer.selected) {
+    expanded = true;
+  }
 </script>
 
 <style>
@@ -51,26 +85,28 @@
   </div>
 </div>
 {#if expanded}
-  {#each Object.entries(peer.remote.heads) as [name, head]}
+  {#each Object.entries(refs) as [name, head]}
     <Link
       style={subgridStyle}
       route={{
         ...baseRoute,
-        peer: peer.remote.id,
-        revision: name,
+        peer: type === "branches" ? peer.remote.id : undefined,
+        revision: type === "tags" ? encodeURIComponent(name) : name,
       }}
       on:afterNavigate={() => closeFocused()}>
       <DropdownListItem
-        selected={peer.selected && revision === name}
+        selected={type === "tags"
+          ? selectedTagName === name || revision === encodeURIComponent(name)
+          : peer.selected && revision === name}
         on:click={() =>
           replace({
             ...baseRoute,
-            peer: peer.remote.id,
-            revision: name,
+            peer: type === "branches" ? peer.remote.id : undefined,
+            revision: type === "tags" ? encodeURIComponent(name) : name,
           })}
         style={`${subgridStyle} padding-left: 2.3rem; gap: inherit;`}>
         <div class="global-flex-item">
-          <Icon name="branch" />
+          <Icon name={type === "branches" ? "branch" : "label"} />
           <span class="txt-overflow">
             {name}
           </span>

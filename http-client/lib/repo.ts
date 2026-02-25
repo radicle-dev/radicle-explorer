@@ -1,4 +1,3 @@
-import type { ZodSchema } from "zod";
 import type { Fetcher, RequestOptions } from "./fetcher.js";
 import type { Commit, Commits } from "./repo/commit.js";
 import type { Issue } from "./repo/issue.js";
@@ -27,6 +26,24 @@ import {
 import { issueSchema, issuesSchema } from "./repo/issue.js";
 import { patchSchema, patchesSchema } from "./repo/patch.js";
 import { authorSchema } from "./shared.js";
+
+// Refs for a single peer (keys are full ref names like "refs/heads/main")
+const peerRefsSchema = object({
+  id: string(),
+  alias: string().optional(),
+  delegate: boolean(),
+  refs: record(string(), string()),
+});
+
+export type PeerRefs = z.infer<typeof peerRefsSchema>;
+
+// Combined refs info containing canonical refs and peer refs
+const refsInfoSchema = object({
+  canonical: record(string(), string()),
+  peers: array(peerRefsSchema),
+});
+
+export type RefsInfo = z.infer<typeof refsInfoSchema>;
 
 const repoSchema = object({
   rid: string(),
@@ -59,6 +76,7 @@ const repoSchema = object({
     object({ type: literal("private"), allow: optional(array(string())) }),
   ]),
   seeding: number(),
+  refs: refsInfoSchema.optional(),
 });
 const reposSchema = array(repoSchema);
 
@@ -106,16 +124,28 @@ const treeSchema = object({
   path: string(),
 });
 
+// Remote with unified refs (new API format)
 export type Remote = z.infer<typeof remoteSchema>;
 
 export const remoteSchema = object({
   id: string(),
   alias: string().optional(),
-  heads: record(string(), string()),
   delegate: boolean(),
+  refs: record(string(), string()),
 });
 
-const remotesSchema = array(remoteSchema) satisfies ZodSchema<Remote[]>;
+// Legacy remote format (old API) - for backwards compatibility
+export type LegacyRemote = z.infer<typeof legacyRemoteSchema>;
+
+export const legacyRemoteSchema = object({
+  id: string(),
+  alias: string().optional(),
+  delegate: boolean(),
+  heads: record(string(), string()),
+  tags: record(string(), string()).optional(),
+});
+
+const legacyRemotesSchema = array(legacyRemoteSchema);
 
 export type DiffResponse = z.infer<typeof diffResponseSchema>;
 
@@ -258,17 +288,18 @@ export class Client {
     return tree;
   }
 
+  // Get all remotes (legacy format for backwards compatibility with old nodes)
   public async getAllRemotes(
     rid: string,
     options?: RequestOptions,
-  ): Promise<Remote[]> {
+  ): Promise<LegacyRemote[]> {
     return this.#fetcher.fetchOk(
       {
         method: "GET",
         path: `repos/${rid}/remotes`,
         options,
       },
-      remotesSchema,
+      legacyRemotesSchema,
     );
   }
 

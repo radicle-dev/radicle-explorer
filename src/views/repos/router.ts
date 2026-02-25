@@ -13,11 +13,12 @@ import type {
   DiffBlob,
   Issue,
   IssueState,
+  LegacyRemote,
   Node,
   Patch,
   PatchState,
+  PeerRefs,
   Repo,
-  Remote,
   Revision,
   SeedingPolicy,
   Tree,
@@ -34,6 +35,61 @@ import { nodePath } from "@app/views/nodes/router";
 
 export const PATCHES_PER_PAGE = 10;
 export const ISSUES_PER_PAGE = 10;
+
+// Helper to extract branches from unified refs (refs/heads/*)
+function getBranchesFromRefs(
+  refs: Record<string, string>,
+): Record<string, string> {
+  const branches: Record<string, string> = {};
+  for (const [name, oid] of Object.entries(refs)) {
+    if (name.startsWith("refs/heads/")) {
+      const branchName = name.slice("refs/heads/".length);
+      branches[branchName] = oid;
+    }
+  }
+  return branches;
+}
+
+// Helper to extract tags from unified refs (refs/tags/*)
+function getTagsFromRefs(refs: Record<string, string>): Record<string, string> {
+  const tags: Record<string, string> = {};
+  for (const [name, oid] of Object.entries(refs)) {
+    if (name.startsWith("refs/tags/")) {
+      const tagName = name.slice("refs/tags/".length);
+      tags[tagName] = oid;
+    }
+  }
+  return tags;
+}
+
+// Helper to check if peer has any branches
+function peerHasBranches(peer: PeerRefs): boolean {
+  return Object.keys(peer.refs).some(name => name.startsWith("refs/heads/"));
+}
+
+// Convert legacy remote format to PeerRefs format (for backwards compatibility)
+function legacyRemoteToPeerRefs(remote: LegacyRemote): PeerRefs {
+  const refs: Record<string, string> = {};
+
+  // Convert heads to refs/heads/*
+  for (const [name, oid] of Object.entries(remote.heads)) {
+    refs[`refs/heads/${name}`] = oid;
+  }
+
+  // Convert tags to refs/tags/*
+  if (remote.tags) {
+    for (const [name, oid] of Object.entries(remote.tags)) {
+      refs[`refs/tags/${name}`] = oid;
+    }
+  }
+
+  return {
+    id: remote.id,
+    alias: remote.alias,
+    delegate: remote.delegate,
+    refs,
+  };
+}
 
 export type RepoRoute =
   | RepoTreeRoute
@@ -116,7 +172,7 @@ export type RepoLoadedRoute =
         seedingPolicy: SeedingPolicy;
         commit: string;
         repo: Repo;
-        peers: Remote[];
+        peers: PeerRefs[];
         peer: string | undefined;
         revision: string | undefined;
         tree: Tree;
@@ -133,7 +189,7 @@ export type RepoLoadedRoute =
         seedingPolicy: SeedingPolicy;
         commit: string;
         repo: Repo;
-        peers: Remote[];
+        peers: PeerRefs[];
         peer: string | undefined;
         revision: string | undefined;
         tree: Tree;
@@ -384,7 +440,6 @@ async function loadTreeView(
 
   let repoPromise: Promise<Repo>;
   let seedingPolicyPromise: Promise<SeedingPolicy>;
-  let peersPromise: Promise<Remote[]>;
   let nodePromise: Promise<Partial<Node>>;
   if (
     (previousLoaded.resource === "repo.source" ||
@@ -393,24 +448,31 @@ async function loadTreeView(
     previousLoaded.params.peer === route.peer
   ) {
     repoPromise = Promise.resolve(previousLoaded.params.repo);
-    peersPromise = Promise.resolve(previousLoaded.params.peers);
     seedingPolicyPromise = Promise.resolve(previousLoaded.params.seedingPolicy);
     nodePromise = Promise.resolve({
       avatarUrl: previousLoaded.params.nodeAvatarUrl,
     });
   } else {
     repoPromise = api.repo.getByRid(route.repo);
-    peersPromise = api.repo.getAllRemotes(route.repo);
     seedingPolicyPromise = api.getPolicyByRid(route.repo);
     nodePromise = api.getNode();
   }
 
-  const [repo, peers, seedingPolicy, node] = await Promise.all([
+  const [repo, seedingPolicy, node] = await Promise.all([
     repoPromise,
-    peersPromise,
     seedingPolicyPromise,
     nodePromise,
   ]);
+
+  // Extract peers from repo.refs, or fall back to legacy endpoint for old nodes
+  let peers: PeerRefs[];
+  if (repo.refs?.peers) {
+    peers = repo.refs.peers;
+  } else {
+    // Backwards compatibility: fetch from legacy endpoint and convert
+    const legacyRemotes = await api.repo.getAllRemotes(route.repo);
+    peers = legacyRemotes.map(legacyRemoteToPeerRefs);
+  }
 
   if (!repo["payloads"]["xyz.radicle.project"]) {
     throw new Error(
@@ -422,6 +484,30 @@ async function loadTreeView(
   let branchMap: Record<string, string> = {
     [project.data.defaultBranch]: project.meta.head,
   };
+
+  // Add canonical refs (branches and tags) with both original and encoded names
+  if (repo.refs?.canonical) {
+    for (const [refName, oid] of Object.entries(repo.refs.canonical)) {
+      // Extract short name from full ref name
+      const shortName = refName.startsWith("refs/heads/")
+        ? refName.slice("refs/heads/".length)
+        : refName.startsWith("refs/tags/")
+          ? refName.slice("refs/tags/".length)
+          : refName;
+      branchMap[shortName] = oid;
+      branchMap[encodeURIComponent(shortName)] = oid;
+    }
+  }
+
+  // Add all peer tags to branchMap for tag resolution
+  for (const peer of peers) {
+    const tags = getTagsFromRefs(peer.refs);
+    for (const [tagName, oid] of Object.entries(tags)) {
+      branchMap[tagName] = oid;
+      branchMap[encodeURIComponent(tagName)] = oid;
+    }
+  }
+
   if (route.peer) {
     const peer = peers.find(peer => peer.id === route.peer);
     if (!peer) {
@@ -430,7 +516,7 @@ async function loadTreeView(
         params: { title: `Peer ${route.peer} could not be found` },
       };
     } else {
-      branchMap = peer.heads;
+      branchMap = getBranchesFromRefs(peer.refs);
     }
   }
 
@@ -457,7 +543,7 @@ async function loadTreeView(
       seedingPolicy,
       commit,
       repo,
-      peers: peers.filter(remote => Object.keys(remote.heads).length > 0),
+      peers: peers.filter(peerHasBranches),
       peer: route.peer,
       rawPath,
       revision: route.revision,
@@ -526,7 +612,6 @@ async function loadHistoryView(
 
   let repoPromise: Promise<Repo>;
   let seedingPolicyPromise: Promise<SeedingPolicy>;
-  let peersPromise: Promise<Remote[]>;
   let nodePromise: Promise<Partial<Node>>;
   if (
     (previousLoaded.resource === "repo.source" ||
@@ -535,25 +620,39 @@ async function loadHistoryView(
     previousLoaded.params.peer === route.peer
   ) {
     repoPromise = Promise.resolve(previousLoaded.params.repo);
-    peersPromise = Promise.resolve(previousLoaded.params.peers);
     seedingPolicyPromise = Promise.resolve(previousLoaded.params.seedingPolicy);
     nodePromise = Promise.resolve({
       avatarUrl: previousLoaded.params.nodeAvatarUrl,
     });
   } else {
     repoPromise = api.repo.getByRid(route.repo);
-    peersPromise = api.repo.getAllRemotes(route.repo);
     seedingPolicyPromise = api.getPolicyByRid(route.repo);
     nodePromise = api.getNode();
   }
 
-  const [repo, peers, seedingPolicy, branchMap, node] = await Promise.all([
+  const [repo, seedingPolicy, node] = await Promise.all([
     repoPromise,
-    peersPromise,
     seedingPolicyPromise,
-    getPeerBranches(api, route.repo, route.peer),
     nodePromise,
   ]);
+
+  // Extract peers from repo.refs, or fall back to legacy endpoint for old nodes
+  let peers: PeerRefs[];
+  if (repo.refs?.peers) {
+    peers = repo.refs.peers;
+  } else {
+    // Backwards compatibility: fetch from legacy endpoint and convert
+    const legacyRemotes = await api.repo.getAllRemotes(route.repo);
+    peers = legacyRemotes.map(legacyRemoteToPeerRefs);
+  }
+
+  const branchMap = await getPeerBranches(
+    api,
+    route.repo,
+    route.peer,
+    repo,
+    peers,
+  );
 
   if (!repo["payloads"]["xyz.radicle.project"]) {
     throw new Error(
@@ -569,6 +668,10 @@ async function loadHistoryView(
     commitId = branchMap[route.revision || project.data.defaultBranch];
   } else if (!route.revision) {
     commitId = project.meta.head;
+  } else if (route.revision && repo.refs?.canonical) {
+    // Check if revision is a canonical tag
+    const canonicalTags = getTagsFromRefs(repo.refs.canonical);
+    commitId = canonicalTags[route.revision];
   }
 
   if (!commitId) {
@@ -606,7 +709,7 @@ async function loadHistoryView(
       seedingPolicy,
       commit: commitId,
       repo,
-      peers: peers.filter(remote => Object.keys(remote.heads).length > 0),
+      peers: peers.filter(peerHasBranches),
       peer: route.peer,
       revision: route.revision,
       tree,
@@ -751,9 +854,52 @@ async function loadPatchView(
   };
 }
 
-async function getPeerBranches(api: HttpdClient, repo: string, peer?: string) {
+async function getPeerBranches(
+  api: HttpdClient,
+  repoId: string,
+  peer?: string,
+  repo?: Repo,
+  loadedPeers?: PeerRefs[],
+) {
   if (peer) {
-    return (await api.repo.getRemoteByPeer(repo, peer)).heads;
+    // Fetch specific peer's refs and extract branches
+    const remote = await api.repo.getRemoteByPeer(repoId, peer);
+    return getBranchesFromRefs(remote.refs);
+  } else if (repo) {
+    // When no peer is specified, include canonical refs and all peer tags
+    const branchMap: Record<string, string> = {};
+    const peers = loadedPeers ?? repo.refs?.peers ?? [];
+
+    // Add default canonical branch
+    const project = repo.payloads["xyz.radicle.project"];
+    if (project) {
+      branchMap[project.data.defaultBranch] = project.meta.head;
+      branchMap[encodeURIComponent(project.data.defaultBranch)] =
+        project.meta.head;
+    }
+
+    // Add canonical refs (branches and tags) with both original and encoded names
+    if (repo.refs?.canonical) {
+      for (const [refName, oid] of Object.entries(repo.refs.canonical)) {
+        const shortName = refName.startsWith("refs/heads/")
+          ? refName.slice("refs/heads/".length)
+          : refName.startsWith("refs/tags/")
+            ? refName.slice("refs/tags/".length)
+            : refName;
+        branchMap[shortName] = oid;
+        branchMap[encodeURIComponent(shortName)] = oid;
+      }
+    }
+
+    // Add all peer tags with both original and encoded names
+    for (const p of peers) {
+      const tags = getTagsFromRefs(p.refs);
+      for (const [tagName, oid] of Object.entries(tags)) {
+        branchMap[tagName] = oid;
+        branchMap[encodeURIComponent(tagName)] = oid;
+      }
+    }
+    return branchMap;
   } else {
     return undefined;
   }

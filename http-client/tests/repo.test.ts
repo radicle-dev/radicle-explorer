@@ -52,10 +52,6 @@ describe("repo", () => {
     await api.repo.getTree(sourceBrowsingRid, aliceMainHead, "src");
   });
 
-  test("#getAllRemotes(rid)", async () => {
-    await api.repo.getAllRemotes(sourceBrowsingRid);
-  });
-
   test("#getRemoteByPeer(rid, peer)", async () => {
     await api.repo.getRemoteByPeer(sourceBrowsingRid, aliceRemote.substring(8));
   });

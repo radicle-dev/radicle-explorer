@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { RepoRoute } from "@app/views/repos/router";
-  import type { Repo, Remote } from "@http-client";
+  import type { Repo, PeerRefs } from "@http-client";
 
   import fuzzysort from "fuzzysort";
   import orderBy from "lodash/orderBy";
@@ -13,8 +13,31 @@
   import Link from "@app/components/Link.svelte";
   import Peer from "./PeerBranchSelector/Peer.svelte";
   import Popover from "@app/components/Popover.svelte";
+  import Radio from "@app/components/Radio.svelte";
   import TextInput from "@app/components/TextInput.svelte";
   import Avatar from "@app/components/Avatar.svelte";
+
+  // Helper to extract branches from unified refs
+  function getBranches(refs: Record<string, string>): Record<string, string> {
+    const branches: Record<string, string> = {};
+    for (const [name, oid] of Object.entries(refs)) {
+      if (name.startsWith("refs/heads/")) {
+        branches[name.slice("refs/heads/".length)] = oid;
+      }
+    }
+    return branches;
+  }
+
+  // Helper to extract tags from unified refs
+  function getTags(refs: Record<string, string>): Record<string, string> {
+    const tags: Record<string, string> = {};
+    for (const [name, oid] of Object.entries(refs)) {
+      if (name.startsWith("refs/tags/")) {
+        tags[name.slice("refs/tags/".length)] = oid;
+      }
+    }
+    return tags;
+  }
 
   export let baseRoute: Extract<
     RepoRoute,
@@ -22,7 +45,7 @@
   >;
   export let onCanonical: boolean;
   export let peer: string | undefined;
-  export let peers: Remote[];
+  export let peers: PeerRefs[];
   export let repo: Repo;
   export let selectedBranch: string | undefined;
 
@@ -33,22 +56,78 @@
     "</span>",
   ];
   let searchInput = "";
+  let selectedTab: "branches" | "tags" = "branches";
 
-  const searchElements = [
+  type SearchElement = {
+    peer?: { id: string; alias?: string; delegate: boolean };
+    revision: string;
+    head: string;
+    type: "branch" | "tag";
+  };
+
+  // Extract canonical branches and tags (reactive)
+  $: canonicalRefs = repo.refs?.canonical ?? {};
+  $: canonicalBranchesMap = getBranches(canonicalRefs);
+  $: canonicalTagsMap = getTags(canonicalRefs);
+
+  $: allElements = [
+    // Default branch (always first)
     {
       peer: undefined,
       revision: repo.payloads["xyz.radicle.project"].data.defaultBranch,
       head: repo.payloads["xyz.radicle.project"].meta.head,
+      type: "branch" as const,
     },
-    ...peers.flatMap(peer =>
-      Object.entries(peer.heads).map(([name, head]) => ({
+    // Canonical branches (excluding default)
+    ...Object.entries(canonicalBranchesMap)
+      .filter(
+        ([branchName]) =>
+          branchName !==
+          repo.payloads["xyz.radicle.project"].data.defaultBranch,
+      )
+      .map(([name, head]) => ({
+        peer: undefined,
+        revision: name,
+        head,
+        type: "branch" as const,
+      })),
+    // Peer branches
+    ...peers.flatMap(peer => {
+      const peerBranches = getBranches(peer.refs);
+      return Object.entries(peerBranches).map(([name, head]) => ({
         peer: { id: peer.id, alias: peer.alias, delegate: peer.delegate },
         revision: name,
         head,
-      })),
-    ),
-  ];
+        type: "branch" as const,
+      }));
+    }),
+    // Canonical tags
+    ...Object.entries(canonicalTagsMap).map(([name, head]) => ({
+      peer: undefined,
+      revision: name,
+      head,
+      type: "tag" as const,
+    })),
+    // Peer tags
+    ...peers.flatMap(peer => {
+      const peerTags = getTags(peer.refs);
+      return Object.entries(peerTags).map(([name, head]) => ({
+        peer: { id: peer.id, alias: peer.alias, delegate: peer.delegate },
+        revision: name,
+        head,
+        type: "tag" as const,
+      }));
+    }),
+  ] satisfies SearchElement[];
 
+  $: searchElements = allElements.filter(el => {
+    if (selectedTab === "branches") {
+      return el.type === "branch";
+    } else if (selectedTab === "tags") {
+      return el.type === "tag";
+    }
+    return false;
+  });
   $: selectedPeer = peers.find(p => p.id === peer);
   $: searchResults = fuzzysort.go(searchInput, searchElements, {
     keys: ["peer.alias", "revision"],
@@ -58,6 +137,79 @@
       (r.obj.peer === undefined ? 10 : 1) *
       (r.obj.peer?.alias ? 2 : 1),
   });
+  $: canonicalTags = Object.entries(canonicalTagsMap);
+  $: canonicalBranches = Object.entries(canonicalBranchesMap).filter(
+    ([branchName]) =>
+      branchName !== repo.payloads["xyz.radicle.project"].data.defaultBranch,
+  );
+  $: hasTags =
+    Object.keys(canonicalTagsMap).length > 0 ||
+    peers.some(p => Object.keys(getTags(p.refs)).length > 0);
+
+  // Determine if selectedBranch is a tag and get its name and peer
+  $: selectedTag = (() => {
+    if (!selectedBranch) return undefined;
+
+    // Check canonical tags
+    for (const [tagName, oid] of Object.entries(canonicalTagsMap)) {
+      if (
+        oid === selectedBranch ||
+        encodeURIComponent(tagName) === selectedBranch
+      ) {
+        return { name: tagName, peer: undefined };
+      }
+    }
+
+    // Check peer tags
+    for (const peer of peers) {
+      const peerTags = getTags(peer.refs);
+      for (const [tagName, oid] of Object.entries(peerTags)) {
+        if (
+          oid === selectedBranch ||
+          encodeURIComponent(tagName) === selectedBranch
+        ) {
+          return { name: tagName, peer };
+        }
+      }
+    }
+
+    return undefined;
+  })();
+
+  $: selectedTagName = selectedTag?.name;
+  $: selectedTagPeer = selectedTag?.peer;
+
+  // Auto-switch to tags tab when a tag is selected (only when popover opens)
+  let lastSelectedBranch: string | undefined;
+  $: {
+    // Only auto-switch when the selection changes
+    if (selectedBranch !== lastSelectedBranch) {
+      if (selectedTagName) {
+        selectedTab = "tags";
+      } else if (!selectedBranch) {
+        selectedTab = "branches";
+      }
+      lastSelectedBranch = selectedBranch;
+    }
+  }
+
+  // Reset to branches tab if tags disappear
+  $: if (!hasTags && selectedTab === "tags") {
+    selectedTab = "branches";
+  }
+
+  // Check if the selected branch is canonical (including non-default canonical branches)
+  $: isSelectedBranchCanonical = (() => {
+    if (onCanonical) return true;
+    if (!selectedBranch || peer) return false;
+
+    // Check if selectedBranch is in canonicalBranches
+    const branchNames = Object.keys(canonicalBranchesMap);
+    return (
+      branchNames.includes(selectedBranch) ||
+      branchNames.includes(decodeURIComponent(selectedBranch))
+    );
+  })();
 </script>
 
 <style>
@@ -68,6 +220,7 @@
     overflow-y: auto;
     overscroll-behavior: contain;
     padding: 0.25rem;
+    background-color: var(--color-background-default);
   }
   .subgrid-item {
     display: grid;
@@ -100,6 +253,12 @@
     height: 1rem;
     font: var(--txt-body-m-regular);
   }
+  .tabs {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    box-shadow: inset 0 -1px 0 var(--color-border-hint);
+  }
   @media (max-width: 719.98px) {
     .dropdown {
       width: 100%;
@@ -120,16 +279,17 @@
       styleBorderRadius="var(--border-radius-sm) 0 0 var(--border-radius-sm)"
       styleWidth="100%"
       on:click={toggle}
-      title="Change branch"
+      title={hasTags ? "Change branch or tag" : "Change branch"}
       disabled={!peers}>
-      {#if selectedPeer}
+      {@const displayPeer = selectedPeer || selectedTagPeer}
+      {#if displayPeer}
         <div class="global-flex-item">
           <div class="node-id">
-            <Avatar nodeId={selectedPeer.id} variant="small" />
-            {selectedPeer.alias || formatNodeId(selectedPeer.id)}
+            <Avatar nodeId={displayPeer.id} variant="small" />
+            {displayPeer.alias || formatNodeId(displayPeer.id)}
           </div>
 
-          {#if selectedPeer.delegate}
+          {#if displayPeer.delegate}
             <Badge size="tiny" variant="delegate">
               <Icon name="badge" />
               <span class="global-hide-on-small-desktop-down">Delegate</span>
@@ -137,15 +297,25 @@
           {/if}
         </div>
       {/if}
-      {#if selectedPeer && selectedBranch}
+      {#if displayPeer && (selectedBranch || selectedTagName)}
         <span>/</span>
       {/if}
-      {#if selectedBranch}
+      {#if selectedTagName}
+        <Icon name="label" />
+        <span class="txt-overflow">
+          {selectedTagName}
+        </span>
+        {#if Object.keys(canonicalTagsMap).includes(selectedTagName)}
+          <Badge title="Canonical tag" variant="foreground-emphasized">
+            Canonical
+          </Badge>
+        {/if}
+      {:else if selectedBranch}
         <Icon name="branch" />
         <span class="txt-overflow">
           {selectedBranch}
         </span>
-        {#if onCanonical}
+        {#if isSelectedBranchCanonical}
           <Badge title="Canonical branch" variant="foreground-emphasized">
             Canonical
           </Badge>
@@ -155,34 +325,93 @@
     </Button>
 
     <div slot="popover" class="dropdown" let:toggle>
-      <TextInput
-        showKeyHint={false}
-        placeholder="Search"
-        bind:value={searchInput} />
+      {#if hasTags}
+        <div class="tabs">
+          <Radio styleGap="0.375rem">
+            <Button
+              size="large"
+              variant={selectedTab === "branches" ? "tab-active" : "tab"}
+              on:click={() => {
+                selectedTab = "branches";
+                searchInput = "";
+              }}>
+              <Icon name="branch" />
+              Branches
+            </Button>
+            <Button
+              size="large"
+              variant={selectedTab === "tags" ? "tab-active" : "tab"}
+              on:click={() => {
+                selectedTab = "tags";
+                searchInput = "";
+              }}>
+              <Icon name="label" />
+              Tags
+            </Button>
+          </Radio>
+          <div
+            class="global-hide-on-mobile-down"
+            style:margin-left="0.375rem"
+            style:flex="1">
+            <TextInput
+              size="small"
+              showKeyHint={false}
+              placeholder={selectedTab === "branches"
+                ? "Filter branches"
+                : "Filter tags"}
+              bind:value={searchInput} />
+          </div>
+        </div>
+      {:else}
+        <div style="margin-bottom: 0.5rem;">
+          <TextInput
+            showKeyHint={false}
+            placeholder="Filter branches"
+            bind:value={searchInput} />
+        </div>
+      {/if}
+      {#if hasTags}
+        <div
+          class="global-hide-on-small-desktop-up"
+          style="margin-bottom: 0.5rem;">
+          <TextInput
+            showKeyHint={false}
+            placeholder={selectedTab === "branches"
+              ? "Filter branches"
+              : "Filter tags"}
+            bind:value={searchInput} />
+        </div>
+      {/if}
       <div class="dropdown-grid">
-        <div class="dropdown-header">Branch</div>
+        <div class="dropdown-header">
+          {selectedTab === "branches" ? "Branch" : "Tag"}
+        </div>
         <div class="dropdown-header" style="padding-left: 0;">Head</div>
 
         {#if searchInput}
           {#each searchResults as result}
-            {@const { revision, peer, head } = result.obj}
+            {@const { revision, peer, head, type } = result.obj}
             <Link
               style={subgridStyle}
               route={{
                 ...baseRoute,
-                peer: peer?.id,
-                revision: peer ? revision : undefined,
+                peer: type === "branch" ? peer?.id : undefined,
+                revision:
+                  type === "tag" ? encodeURIComponent(revision) : revision,
               }}
               on:afterNavigate={() => {
                 searchInput = "";
                 toggle();
               }}>
               <DropdownListItem
-                selected={selectedPeer?.id === peer?.id &&
-                  selectedBranch === revision}
+                selected={type === "tag"
+                  ? selectedTagName === revision ||
+                    selectedBranch === encodeURIComponent(revision)
+                  : selectedPeer?.id === peer?.id &&
+                    selectedBranch === revision}
                 style={`${subgridStyle} gap: inherit;`}>
                 <div class="global-flex-item">
-                  <Icon name="branch" />
+                  <Icon name={type === "tag" ? "label" : "branch"} />
                   <span class="txt-overflow">
                     {#if peer?.id}
                       <span class="global-flex-item">
@@ -216,7 +445,9 @@
                       <div class="global-flex-item">
                         {revision}
                         <Badge
-                          title="Canonical branch"
+                          title={type === "tag"
+                            ? "Canonical tag"
+                            : "Canonical branch"}
                           variant="foreground-emphasized">
                           Canonical
                         </Badge>
@@ -237,7 +468,7 @@
               No entries found
             </div>
           {/each}
-        {:else}
+        {:else if selectedTab === "branches"}
           <Link
             style={subgridStyle}
             route={{ ...baseRoute, revision: undefined }}
@@ -260,11 +491,92 @@
               </div>
             </DropdownListItem>
           </Link>
+          {#each canonicalBranches as [branchName, branchHead]}
+            <Link
+              style={subgridStyle}
+              route={{
+                ...baseRoute,
+                peer: undefined,
+                revision: encodeURIComponent(branchName),
+              }}
+              on:afterNavigate={() => {
+                searchInput = "";
+                toggle();
+              }}>
+              <DropdownListItem
+                selected={!peer &&
+                  (selectedBranch === branchName ||
+                    selectedBranch === encodeURIComponent(branchName))}
+                style={`${subgridStyle} gap: inherit;`}>
+                <div class="global-flex-item">
+                  <Icon name="branch" />
+                  <span class="txt-overflow">{branchName}</span>
+                  <Badge
+                    title="Canonical branch"
+                    variant="foreground-emphasized">
+                    Canonical
+                  </Badge>
+                </div>
+                <div
+                  class="txt-monospace"
+                  style="color: var(--color-foreground-dim);">
+                  {formatCommit(branchHead)}
+                </div>
+              </DropdownListItem>
+            </Link>
+          {/each}
           {#each orderBy(peers, ["delegate", o => o.alias?.toLowerCase()], ["desc", "asc"]) as peer}
             <Peer
               {baseRoute}
               revision={selectedBranch}
               peer={{ remote: peer, selected: selectedPeer?.id === peer.id }} />
+          {/each}
+        {:else if selectedTab === "tags"}
+          {#if canonicalTags.length > 0}
+            {#each canonicalTags as [tagName, tagHead]}
+              <Link
+                style={subgridStyle}
+                route={{
+                  ...baseRoute,
+                  peer: undefined,
+                  revision: encodeURIComponent(tagName),
+                }}
+                on:afterNavigate={() => {
+                  searchInput = "";
+                  toggle();
+                }}>
+                <DropdownListItem
+                  selected={!peer &&
+                    (selectedBranch === tagName ||
+                      selectedBranch === encodeURIComponent(tagName) ||
+                      selectedTagName === tagName)}
+                  style={`${subgridStyle} gap: inherit;`}>
+                  <div class="global-flex-item">
+                    <Icon name="label" />
+                    <span class="txt-overflow">{tagName}</span>
+                    <Badge
+                      title="Canonical tag"
+                      variant="foreground-emphasized">
+                      Canonical
+                    </Badge>
+                  </div>
+                  <div class="txt-id">
+                    {formatCommit(tagHead)}
+                  </div>
+                </DropdownListItem>
+              </Link>
+            {/each}
+          {/if}
+          {#each orderBy(peers, ["delegate", o => o.alias?.toLowerCase()], ["desc", "asc"]).filter(p => Object.keys(getTags(p.refs)).length > 0) as peer}
+            <Peer
+              {baseRoute}
+              revision={selectedBranch}
+              type="tags"
+              {selectedTagName}
+              peer={{
+                remote: peer,
+                selected: selectedTagPeer?.id === peer.id,
+              }} />
           {/each}
         {/if}
       </div>

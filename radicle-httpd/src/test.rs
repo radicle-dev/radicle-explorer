@@ -21,7 +21,9 @@ use radicle::identity::{project, Visibility};
 use radicle::node::device::Device;
 use radicle::node::{Features, Timestamp, UserAgent};
 use radicle::profile::{env, Home};
-use radicle::storage::ReadStorage;
+use radicle::storage::{
+    ReadRepository, ReadStorage, SignRepository, WriteRepository, WriteStorage,
+};
 use radicle::{node, profile};
 use radicle::{Node, Storage};
 
@@ -336,6 +338,152 @@ fn seed_with_signer<G: Signer<Signature>>(
 
     let web_config = crate::api::WebConfig::from_profile(&profile);
     Context::new(Arc::new(profile), web_config, &options)
+}
+
+pub const PEER2_NID: &str = "z6Mko9uYxDPk2BetRRziLz1xHN8nR5zQWdNjytKNDPcygHJP";
+
+/// Create a test context with multiple peers and canonical refs configured.
+///
+/// This sets up:
+/// - The hello-world repo from `seed()` as the base
+/// - A second peer that forks the repo (same `master` head)
+/// - An additional branch (`feature/branch`) on the second peer only
+/// - A tag (`v1.0`) on both peers (reaches canonical consensus)
+/// - A tag (`v2.0-rc`) on the second peer only (does not reach consensus)
+/// - The identity document is updated with:
+///   - The second peer added as a delegate
+///   - A `xyz.radicle.crefs` payload with rules for `refs/heads/*` and `refs/tags/*`
+pub fn seed_multi_peer(dir: &Path) -> Context {
+    use radicle::identity::doc::PayloadId;
+    use radicle::identity::Identity;
+
+    let ctx = seed(dir);
+
+    let signer1 = Device::mock_from_seed([0xff; 32]);
+    let signer2 = Device::mock_from_seed([0xee; 32]);
+
+    let rid = radicle::identity::RepoId::from_str(RID).unwrap();
+    let storage = &ctx.profile().storage;
+
+    // Register the second peer's alias via follow policy.
+    {
+        let mut policies = ctx.profile().policies_mut().unwrap();
+        policies
+            .follow(signer2.public_key(), Some(&node::Alias::new("peer2")))
+            .unwrap();
+    }
+
+    // Step 1: Update identity to add second delegate and crefs payload.
+    {
+        let repo = storage.repository_mut(rid).unwrap();
+        let mut identity = Identity::load_mut(&repo).unwrap();
+        let current_doc = repo.identity_doc().unwrap();
+
+        // Build a new doc with the second delegate and crefs payload.
+        let new_doc = current_doc
+            .doc
+            .clone()
+            .with_edits(|raw| {
+                // Add second delegate.
+                let did2: radicle::identity::Did = (*signer2.public_key()).into();
+                if !raw.delegates.contains(&did2) {
+                    raw.delegates.push(did2);
+                }
+                // Set threshold to 1 so single delegate vote is enough for canonical.
+                raw.threshold = 1;
+                // Add crefs payload with rules for heads and tags.
+                let crefs_payload: serde_json::Value = serde_json::json!({
+                    "rules": {
+                        "refs/heads/*": {
+                            "allow": "delegates",
+                            "threshold": 1
+                        },
+                        "refs/tags/*": {
+                            "allow": "delegates",
+                            "threshold": 2
+                        }
+                    }
+                });
+                raw.payload.insert(
+                    PayloadId::canonical_refs(),
+                    radicle::identity::doc::Payload::from(crefs_payload),
+                );
+            })
+            .unwrap();
+
+        identity
+            .update(
+                Title::new("Add second delegate and crefs").unwrap(),
+                "",
+                &new_doc,
+                &signer1,
+            )
+            .unwrap();
+
+        // The COB update only updates the per-namespace identity ref.
+        // We need to also update the canonical refs/rad/id ref so that
+        // identity_doc() returns the updated document.
+        let new_head = repo.identity_head_of(signer1.public_key()).unwrap();
+        repo.set_identity_head_to(new_head).unwrap();
+
+        // Re-sign refs for signer1 after identity update.
+        repo.sign_refs(&signer1).unwrap();
+    }
+
+    // Step 2: Fork the repo for the second signer.
+    radicle::rad::fork(rid, &signer2, storage).unwrap();
+
+    // Step 3: Add extra refs for both peers.
+    {
+        let repo = storage.repository_mut(rid).unwrap();
+        let raw = repo.raw();
+
+        let head_oid = radicle::git::raw::Oid::from_str(HEAD).unwrap();
+        let parent_oid = radicle::git::raw::Oid::from_str(PARENT).unwrap();
+
+        let pk1 = signer1.public_key();
+        let pk2 = signer2.public_key();
+
+        // Create a tag v1.0 on both peers (will reach consensus with threshold=2).
+        raw.reference(
+            &format!("refs/namespaces/{pk1}/refs/tags/v1.0"),
+            head_oid,
+            true,
+            "test: add tag v1.0 for peer1",
+        )
+        .unwrap();
+        raw.reference(
+            &format!("refs/namespaces/{pk2}/refs/tags/v1.0"),
+            head_oid,
+            true,
+            "test: add tag v1.0 for peer2",
+        )
+        .unwrap();
+
+        // Create a tag v2.0-rc on second peer only (won't reach threshold=2).
+        raw.reference(
+            &format!("refs/namespaces/{pk2}/refs/tags/v2.0-rc"),
+            parent_oid,
+            true,
+            "test: add tag v2.0-rc for peer2 only",
+        )
+        .unwrap();
+
+        // Create a feature branch on second peer only.
+        raw.reference(
+            &format!("refs/namespaces/{pk2}/refs/heads/feature/branch"),
+            parent_oid,
+            true,
+            "test: add feature/branch for peer2",
+        )
+        .unwrap();
+
+        // Re-sign refs for both signers.
+        repo.sign_refs(&signer1).unwrap();
+        repo.sign_refs(&signer2).unwrap();
+    }
+
+    ctx
 }
 
 pub async fn get(app: &Router, path: impl ToString) -> Response {

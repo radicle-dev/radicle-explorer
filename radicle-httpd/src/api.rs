@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
 use axum::response::{IntoResponse, Json};
@@ -6,15 +6,16 @@ use axum::routing::get;
 use axum::Router;
 use serde_json::{json, Value};
 
+use radicle::identity::crefs::GetCanonicalRefs;
 use radicle::identity::doc::PayloadId;
 use radicle::identity::{DocAt, RepoId};
 use radicle::issue::cache::Issues as _;
 use radicle::node::routing::Store;
-use radicle::node::NodeId;
+use radicle::node::{AliasStore, NodeId};
 use radicle::patch::cache::Patches as _;
 use radicle::storage::git::Repository;
 use radicle::storage::{ReadRepository, ReadStorage};
-use radicle::{web, Profile};
+use radicle::{git, web, Profile};
 use tokio::sync::RwLock;
 
 mod error;
@@ -127,6 +128,13 @@ impl Context {
             })
             .collect();
 
+        // Compute refs info (canonical refs + peer refs)
+        let refs = if let Ok(storage_repo) = self.profile.storage.repository(rid) {
+            Self::compute_refs_info(&storage_repo, &doc, &self.profile.aliases()).ok()
+        } else {
+            None
+        };
+
         Ok(repo::Info {
             payloads,
             delegates,
@@ -134,7 +142,153 @@ impl Context {
             visibility: doc.visibility().clone(),
             rid,
             seeding,
+            refs,
         })
+    }
+
+    /// Compute refs info containing canonical refs and peer refs.
+    /// Returns RefsInfo with canonical refs that have reached consensus and per-peer refs.
+    fn compute_refs_info(
+        repo: &Repository,
+        doc: &radicle::identity::Doc,
+        aliases: &radicle::profile::Aliases,
+    ) -> Result<repo::RefsInfo, error::Error> {
+        let delegates = doc.delegates();
+
+        // Get canonical refs rules from the identity document.
+        // Each rule has a pattern (e.g. "refs/heads/*") and a threshold.
+        struct PatternRule {
+            prefix: String,
+            threshold: usize,
+        }
+        let rules: Vec<PatternRule> = doc
+            .canonical_refs()
+            .ok()
+            .flatten()
+            .map(|crefs| {
+                crefs
+                    .rules()
+                    .iter()
+                    .map(|(pattern, rule)| {
+                        let pat = pattern.to_string();
+                        let prefix = if pat.ends_with("/*") {
+                            pat[..pat.len() - 2].to_string()
+                        } else if pat.ends_with('*') {
+                            pat[..pat.len() - 1].to_string()
+                        } else {
+                            pat.clone()
+                        };
+                        PatternRule {
+                            prefix,
+                            threshold: (*rule.threshold()).into(),
+                        }
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        // Find the matching rule for a refname and return its threshold.
+        // Uses most specific match (longest prefix).
+        let matching_threshold = |refname: &str| -> Option<usize> {
+            let mut best: Option<&PatternRule> = None;
+            for rule in &rules {
+                if refname.starts_with(&rule.prefix)
+                    && best.is_none_or(|b| rule.prefix.len() > b.prefix.len())
+                {
+                    best = Some(rule);
+                }
+            }
+            best.map(|r| r.threshold)
+        };
+
+        // Peel a ref to get commit OID (handles annotated tags).
+        let peel_to_commit = |oid: &git::Oid| -> String {
+            let raw_oid = git::raw::Oid::from(*oid);
+            match repo.backend.find_object(raw_oid, None) {
+                Ok(obj) => match obj.peel_to_commit() {
+                    Ok(commit) => commit.id().to_string(),
+                    Err(_) => raw_oid.to_string(),
+                },
+                Err(_) => raw_oid.to_string(),
+            }
+        };
+
+        // Collect votes for refs matching canonical patterns.
+        // Structure: refname -> (oid -> list of voters)
+        let mut votes: HashMap<String, HashMap<git::Oid, Vec<NodeId>>> = HashMap::new();
+
+        // Collect peer info and refs in one pass.
+        struct PeerInfo {
+            id: NodeId,
+            alias: Option<String>,
+            delegate: bool,
+            refs: BTreeMap<String, String>,
+        }
+        let mut peer_infos: Vec<PeerInfo> = Vec::new();
+
+        for remote_result in repo.remotes()? {
+            let (remote_id, remote) = remote_result?;
+            let mut peer_refs = BTreeMap::new();
+
+            for (refname, oid) in remote.refs.iter() {
+                let refname_str = refname.as_str();
+
+                // Only process heads and tags.
+                if !refname_str.starts_with("refs/heads/") && !refname_str.starts_with("refs/tags/")
+                {
+                    continue;
+                }
+
+                // Collect votes for refs matching canonical patterns.
+                if matching_threshold(refname_str).is_some() {
+                    votes
+                        .entry(refname_str.to_string())
+                        .or_default()
+                        .entry(*oid)
+                        .or_default()
+                        .push(remote_id);
+                }
+
+                // Store all refs for this peer (we'll filter out canonical ones later).
+                peer_refs.insert(refname_str.to_string(), peel_to_commit(oid));
+            }
+
+            peer_infos.push(PeerInfo {
+                id: remote_id,
+                alias: aliases.alias(&remote_id).map(|a| a.to_string()),
+                delegate: delegates.contains(&remote_id.into()),
+                refs: peer_refs,
+            });
+        }
+
+        // Determine which refs have reached canonical consensus using per-rule thresholds.
+        let mut canonical: BTreeMap<String, String> = BTreeMap::new();
+        for (refname, oid_votes) in votes {
+            if let Some(threshold) = matching_threshold(&refname) {
+                if let Some((oid, voters)) = oid_votes.iter().max_by_key(|(_, v)| v.len()) {
+                    if voters.len() >= threshold {
+                        canonical.insert(refname, peel_to_commit(oid));
+                    }
+                }
+            }
+        }
+
+        // Build peer refs list, excluding canonical refs.
+        let peers: Vec<repo::PeerRefs> = peer_infos
+            .into_iter()
+            .map(|info| repo::PeerRefs {
+                id: info.id,
+                alias: info.alias,
+                delegate: info.delegate,
+                refs: info
+                    .refs
+                    .into_iter()
+                    .filter(|(refname, _)| !canonical.contains_key(refname))
+                    .collect(),
+            })
+            .collect();
+
+        Ok(repo::RefsInfo { canonical, peers })
     }
 
     /// Get a repository by RID, checking to make sure we're allowed to view it.
@@ -288,6 +442,27 @@ mod repo {
 
     use radicle::identity::doc::PayloadId;
     use radicle::identity::{RepoId, Visibility};
+    use radicle::node::NodeId;
+
+    /// Refs for a single peer.
+    #[derive(Serialize)]
+    pub struct PeerRefs {
+        pub id: NodeId,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub alias: Option<String>,
+        pub delegate: bool,
+        /// All refs for this peer (keys are full ref names like "refs/heads/main").
+        pub refs: BTreeMap<String, String>,
+    }
+
+    /// Combined refs info containing canonical refs and peer refs.
+    #[derive(Serialize)]
+    pub struct RefsInfo {
+        /// Canonical refs that have reached consensus (keys are full ref names).
+        pub canonical: BTreeMap<String, String>,
+        /// Per-peer refs (excluding canonical refs).
+        pub peers: Vec<PeerRefs>,
+    }
 
     /// Repos info.
     #[derive(Serialize)]
@@ -299,6 +474,8 @@ mod repo {
         pub visibility: Visibility,
         pub rid: RepoId,
         pub seeding: usize,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub refs: Option<RefsInfo>,
     }
 }
 
@@ -438,5 +615,119 @@ mod tests {
                 .await;
         }
         assert_eq!(ctx.web_config.read().await.pinned.repositories.len(), 0);
+    }
+
+    mod refs {
+        use std::str::FromStr;
+
+        use radicle::identity::RepoId;
+        use radicle::storage::{ReadRepository, ReadStorage};
+
+        use crate::test;
+
+        #[test]
+        fn test_compute_refs_info_without_canonical_config() {
+            let tmp = tempfile::tempdir().unwrap();
+            let ctx = test::seed(tmp.path());
+            let rid = RepoId::from_str(test::RID).unwrap();
+
+            let repo = ctx.profile.storage.repository(rid).unwrap();
+            let doc = repo.identity_doc().unwrap();
+            let aliases = ctx.profile.aliases();
+
+            let result = super::super::Context::compute_refs_info(&repo, &doc.doc, &aliases);
+
+            assert!(result.is_ok());
+            let refs_info = result.unwrap();
+            // Without canonical refs config, canonical should be empty
+            assert!(refs_info.canonical.is_empty());
+            // But peers should still be populated
+            assert!(!refs_info.peers.is_empty());
+        }
+
+        #[test]
+        fn test_repo_info_includes_refs() {
+            let tmp = tempfile::tempdir().unwrap();
+            let ctx = test::seed(tmp.path());
+            let rid = RepoId::from_str(test::RID).unwrap();
+
+            let (repo, doc) = ctx.repo(rid).unwrap();
+            let info = ctx.repo_info(&repo, doc).unwrap();
+
+            // refs should be present
+            assert!(info.refs.is_some());
+            let refs = info.refs.unwrap();
+            // Without canonical config, canonical refs should be empty
+            assert!(refs.canonical.is_empty());
+        }
+
+        #[test]
+        fn test_multi_peer_canonical_refs() {
+            let tmp = tempfile::tempdir().unwrap();
+            let ctx = test::seed_multi_peer(tmp.path());
+            let rid = RepoId::from_str(test::RID).unwrap();
+
+            let repo = ctx.profile.storage.repository(rid).unwrap();
+            let doc = repo.identity_doc().unwrap();
+            let aliases = ctx.profile.aliases();
+
+            let refs_info =
+                super::super::Context::compute_refs_info(&repo, &doc.doc, &aliases).unwrap();
+
+            // refs/heads/* has threshold=1, so master should be canonical
+            // (both peers have it, and only 1 vote needed).
+            assert!(
+                refs_info.canonical.contains_key("refs/heads/master"),
+                "master should be canonical (threshold=1, both peers have it)"
+            );
+
+            // refs/tags/* has threshold=2, and both peers have v1.0,
+            // so it should be canonical.
+            assert!(
+                refs_info.canonical.contains_key("refs/tags/v1.0"),
+                "v1.0 should be canonical (threshold=2, both peers agree)"
+            );
+
+            // v2.0-rc only exists on peer2, so it should NOT be canonical
+            // (threshold=2 but only 1 vote).
+            assert!(
+                !refs_info.canonical.contains_key("refs/tags/v2.0-rc"),
+                "v2.0-rc should NOT be canonical (threshold=2, only 1 peer has it)"
+            );
+
+            // feature/branch only exists on peer2 with threshold=1 for heads,
+            // so it should be canonical.
+            assert!(
+                refs_info
+                    .canonical
+                    .contains_key("refs/heads/feature/branch"),
+                "feature/branch should be canonical (threshold=1)"
+            );
+
+            // There should be 2 peers.
+            assert_eq!(refs_info.peers.len(), 2);
+
+            // Canonical refs should be excluded from per-peer refs.
+            for peer in &refs_info.peers {
+                for refname in refs_info.canonical.keys() {
+                    assert!(
+                        !peer.refs.contains_key(refname),
+                        "canonical ref {refname} should not appear in peer {} refs",
+                        peer.id
+                    );
+                }
+            }
+
+            // v2.0-rc should appear in peer2's refs (not canonical).
+            let peer2 = refs_info
+                .peers
+                .iter()
+                .find(|p| p.id.to_string() == test::PEER2_NID)
+                .expect("peer2 should exist");
+            assert!(
+                peer2.refs.contains_key("refs/tags/v2.0-rc"),
+                "v2.0-rc should be in peer2's non-canonical refs"
+            );
+        }
     }
 }

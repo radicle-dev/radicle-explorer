@@ -141,6 +141,19 @@ mod routes {
                 },
                 "rid": RID,
                 "seeding": 1,
+                "refs": {
+                  "canonical": {},
+                  "peers": [
+                    {
+                      "id": "z6MknSLrJoTcukLrE435hVNQT4JUhbvWLX4kUzqkEStBU8Vi",
+                      "alias": CONTRIBUTOR_ALIAS,
+                      "delegate": true,
+                      "refs": {
+                        "refs/heads/master": HEAD
+                      }
+                    }
+                  ]
+                }
               },
               {
                 "payloads": {
@@ -177,6 +190,19 @@ mod routes {
                 },
                 "rid": "rad:z4GypKmh1gkEfmkXtarcYnkvtFUfE",
                 "seeding": 1,
+                "refs": {
+                  "canonical": {},
+                  "peers": [
+                    {
+                      "id": "z6MknSLrJoTcukLrE435hVNQT4JUhbvWLX4kUzqkEStBU8Vi",
+                      "alias": CONTRIBUTOR_ALIAS,
+                      "delegate": true,
+                      "refs": {
+                        "refs/heads/master": "344dcd184df5bf37aab6c107fa9371a1c5b3321a"
+                      }
+                    }
+                  ]
+                }
               }
             ])
         );
@@ -235,6 +261,19 @@ mod routes {
                 },
                 "rid": RID,
                 "seeding": 1,
+                "refs": {
+                  "canonical": {},
+                  "peers": [
+                    {
+                      "id": "z6MknSLrJoTcukLrE435hVNQT4JUhbvWLX4kUzqkEStBU8Vi",
+                      "alias": CONTRIBUTOR_ALIAS,
+                      "delegate": true,
+                      "refs": {
+                        "refs/heads/master": HEAD
+                      }
+                    }
+                  ]
+                }
               },
               {
                 "payloads": {
@@ -271,6 +310,19 @@ mod routes {
                 },
                 "rid": "rad:z4GypKmh1gkEfmkXtarcYnkvtFUfE",
                 "seeding": 1,
+                "refs": {
+                  "canonical": {},
+                  "peers": [
+                    {
+                      "id": "z6MknSLrJoTcukLrE435hVNQT4JUhbvWLX4kUzqkEStBU8Vi",
+                      "alias": CONTRIBUTOR_ALIAS,
+                      "delegate": true,
+                      "refs": {
+                        "refs/heads/master": "344dcd184df5bf37aab6c107fa9371a1c5b3321a"
+                      }
+                    }
+                  ]
+                }
               }
             ])
         );

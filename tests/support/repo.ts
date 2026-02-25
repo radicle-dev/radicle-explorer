@@ -6,8 +6,16 @@ import * as Path from "node:path";
 export async function changeBranch(peer: string, branch: string, page: Page) {
   await page.getByTitle("Change branch").click();
   const peerLocator = page.getByLabel("peer-item").filter({ hasText: peer });
-  await peerLocator.getByTitle("Expand peer").click();
-  await page.getByRole("button", { name: branch }).click();
+
+  // Only expand if the peer is not already expanded
+  const branchButton = page.getByRole("button", { name: branch });
+  const isVisible = await branchButton.isVisible().catch(() => false);
+
+  if (!isVisible) {
+    await peerLocator.getByTitle("Expand peer").click();
+  }
+
+  await branchButton.click();
 }
 
 // Create a repo using the rad CLI.

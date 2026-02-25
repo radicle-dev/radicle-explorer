@@ -14,6 +14,7 @@
     "test:e2e": "NODE_CONFIG_ENV='test' TZ='UTC' playwright test",
     "test:e2e:local": "scripts/compile-local-httpd && USE_LOCAL_HTTPD=true NODE_CONFIG_ENV='test' TZ='UTC' playwright test",
     "test:http-client:unit": "NODE_CONFIG_ENV='test' TZ='UTC' vitest run --config http-client/vite.config.ts --reporter verbose",
+    "test:http-client:unit:local": "scripts/compile-local-httpd && USE_LOCAL_HTTPD=true NODE_CONFIG_ENV='test' TZ='UTC' vitest run --config http-client/vite.config.ts --reporter verbose",
     "test:radicle-httpd": "cd radicle-httpd && cargo test --all-features",
     "deploy": "rimraf build && npm clean-install && npm run build && scripts/inject-plausible && npx wrangler deploy"
   },
