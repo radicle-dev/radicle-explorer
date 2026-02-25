@@ -423,6 +423,12 @@ async function loadTreeView(
     [project.data.defaultBranch]: project.meta.head,
     ...(repo.canonicalTags || {}),
   };
+
+  // Add all peer tags to branchMap for tag resolution
+  peers.forEach(peer => {
+    Object.assign(branchMap, peer.tags);
+  });
+
   if (route.peer) {
     const peer = peers.find(peer => peer.id === route.peer);
     if (!peer) {
@@ -548,13 +554,20 @@ async function loadHistoryView(
     nodePromise = api.getNode();
   }
 
-  const [repo, peers, seedingPolicy, branchMap, node] = await Promise.all([
+  const [repo, peers, seedingPolicy, node] = await Promise.all([
     repoPromise,
     peersPromise,
     seedingPolicyPromise,
-    getPeerBranches(api, route.repo, route.peer),
     nodePromise,
   ]);
+
+  const branchMap = await getPeerBranches(
+    api,
+    route.repo,
+    route.peer,
+    repo,
+    peers,
+  );
 
   if (!repo["payloads"]["xyz.radicle.project"]) {
     throw new Error(
@@ -755,9 +768,25 @@ async function loadPatchView(
   };
 }
 
-async function getPeerBranches(api: HttpdClient, repo: string, peer?: string) {
+async function getPeerBranches(
+  api: HttpdClient,
+  repoId: string,
+  peer?: string,
+  repo?: Repo,
+  peers?: Remote[],
+) {
   if (peer) {
-    return (await api.repo.getRemoteByPeer(repo, peer)).heads;
+    return (await api.repo.getRemoteByPeer(repoId, peer)).heads;
+  } else if (repo && peers) {
+    // When no peer is specified, include canonical tags and all peer tags
+    const branchMap: Record<string, string> = {
+      ...(repo.canonicalTags || {}),
+    };
+    // Add all peer tags
+    peers.forEach(p => {
+      Object.assign(branchMap, p.tags);
+    });
+    return branchMap;
   } else {
     return undefined;
   }

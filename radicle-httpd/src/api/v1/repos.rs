@@ -445,6 +445,15 @@ async fn remotes_handler(State(ctx): State<Context>, Path(rid): Path<RepoId>) ->
     let (repo, doc) = ctx.repo(rid)?;
     let delegates = doc.delegates();
     let aliases = &ctx.profile.aliases();
+
+    // Compute canonical tags to exclude them from per-peer tags
+    let canonical_tag_names: std::collections::HashSet<String> =
+        Context::compute_canonical_tags(&repo, &doc)
+            .ok()
+            .flatten()
+            .map(|tags| tags.keys().cloned().collect())
+            .unwrap_or_default();
+
     let remotes = repo
         .remotes()?
         .filter_map(|r| r.map(|r| r.1).ok())
@@ -460,16 +469,35 @@ async fn remotes_handler(State(ctx): State<Context>, Path(rid): Path<RepoId>) ->
                 })
                 .collect::<BTreeMap<String, Oid>>();
 
+            // Collect non-canonical tags for this peer
+            let tags = remote
+                .refs
+                .iter()
+                .filter_map(|(r, oid)| {
+                    r.as_str().strip_prefix("refs/tags/").and_then(|tag| {
+                        // Only include tags that are NOT canonical
+                        if canonical_tag_names.contains(tag) {
+                            None
+                        } else {
+                            let surf_oid = Oid::from(radicle::git::raw::Oid::from(oid));
+                            Some((tag.to_string(), surf_oid))
+                        }
+                    })
+                })
+                .collect::<BTreeMap<String, Oid>>();
+
             match aliases.alias(&remote.id) {
                 Some(alias) => json!({
                     "id": remote.id,
                     "alias": alias,
                     "heads": refs,
+                    "tags": tags,
                     "delegate": delegates.contains(&remote.id.into()),
                 }),
                 None => json!({
                     "id": remote.id,
                     "heads": refs,
+                    "tags": tags,
                     "delegate": delegates.contains(&remote.id.into()),
                 }),
             }
@@ -488,6 +516,15 @@ async fn remote_handler(
     let (repo, doc) = ctx.repo(rid)?;
     let delegates = doc.delegates();
     let remote = repo.remote(&node_id)?;
+
+    // Compute canonical tags to exclude them from per-peer tags
+    let canonical_tag_names: std::collections::HashSet<String> =
+        Context::compute_canonical_tags(&repo, &doc)
+            .ok()
+            .flatten()
+            .map(|tags| tags.keys().cloned().collect())
+            .unwrap_or_default();
+
     let refs = remote
         .refs
         .iter()
@@ -498,9 +535,28 @@ async fn remote_handler(
             })
         })
         .collect::<BTreeMap<String, Oid>>();
+
+    // Collect non-canonical tags for this peer
+    let tags = remote
+        .refs
+        .iter()
+        .filter_map(|(r, oid)| {
+            r.as_str().strip_prefix("refs/tags/").and_then(|tag| {
+                // Only include tags that are NOT canonical
+                if canonical_tag_names.contains(tag) {
+                    None
+                } else {
+                    let surf_oid = Oid::from(radicle::git::raw::Oid::from(oid));
+                    Some((tag.to_string(), surf_oid))
+                }
+            })
+        })
+        .collect::<BTreeMap<String, Oid>>();
+
     let remote = json!({
         "id": remote.id,
         "heads": refs,
+        "tags": tags,
         "delegate": delegates.contains(&remote.id.into()),
     });
 

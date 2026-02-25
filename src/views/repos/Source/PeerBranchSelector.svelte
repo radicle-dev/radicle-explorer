@@ -66,6 +66,14 @@
           type: "tag" as const,
         }))
       : []),
+    ...peers.flatMap(peer =>
+      Object.entries(peer.tags).map(([name, head]) => ({
+        peer: { id: peer.id, alias: peer.alias, delegate: peer.delegate },
+        revision: name,
+        head,
+        type: "tag" as const,
+      })),
+    ),
   ];
 
   $: searchElements = allElements.filter(
@@ -230,8 +238,8 @@
               style={subgridStyle}
               route={{
                 ...baseRoute,
-                peer: peer?.id,
-                revision: peer ? revision : undefined,
+                peer: type === "branch" ? peer?.id : undefined,
+                revision,
               }}
               on:afterNavigate={() => {
                 searchInput = "";
@@ -276,7 +284,9 @@
                       <div class="global-flex-item">
                         {revision}
                         <Badge
-                          title="Canonical branch"
+                          title={type === "tag"
+                            ? "Canonical tag"
+                            : "Canonical branch"}
                           variant="foreground-emphasized">
                           Canonical
                         </Badge>
@@ -363,13 +373,14 @@
                 </DropdownListItem>
               </Link>
             {/each}
-          {:else}
-            <div
-              style="gap: inherit; padding: 0.5rem 0.375rem;"
-              class="subgrid-item txt-missing txt-small">
-              No canonical tags
-            </div>
           {/if}
+          {#each orderBy(peers, ["delegate", o => o.alias?.toLowerCase()], ["desc", "asc"]).filter(p => Object.keys(p.tags).length > 0) as peer}
+            <Peer
+              {baseRoute}
+              revision={selectedBranch}
+              type="tags"
+              peer={{ remote: peer, selected: selectedPeer?.id === peer.id }} />
+          {/each}
         {/if}
       </div>
     </div>

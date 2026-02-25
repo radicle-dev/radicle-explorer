@@ -19,10 +19,14 @@
   >;
   export let peer: { remote: Remote; selected: boolean };
   export let revision: string | undefined = undefined;
+  export let type: "branches" | "tags" = "branches";
 
   const subgridStyle =
     "display: grid; grid-template-columns: subgrid; grid-column: span 2;";
   let expanded = false;
+
+  $: refs = type === "branches" ? peer.remote.heads : peer.remote.tags;
+  $: iconName = type === "branches" ? "branch" : "label";
 </script>
 
 <style>
@@ -51,12 +55,12 @@
   </div>
 </div>
 {#if expanded}
-  {#each Object.entries(peer.remote.heads) as [name, head]}
+  {#each Object.entries(refs) as [name, head]}
     <Link
       style={subgridStyle}
       route={{
         ...baseRoute,
-        peer: peer.remote.id,
+        peer: type === "branches" ? peer.remote.id : undefined,
         revision: name,
       }}
       on:afterNavigate={() => closeFocused()}>
@@ -65,12 +69,12 @@
         on:click={() =>
           replace({
             ...baseRoute,
-            peer: peer.remote.id,
+            peer: type === "branches" ? peer.remote.id : undefined,
             revision: name,
           })}
         style={`${subgridStyle} padding-left: 2.3rem; gap: inherit;`}>
         <div class="global-flex-item">
-          <Icon name="branch" />
+          <Icon name={iconName} />
           <span class="txt-overflow">
             {name}
           </span>
