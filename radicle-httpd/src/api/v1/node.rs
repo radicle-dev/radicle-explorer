@@ -4,6 +4,7 @@ use axum::routing::get;
 use axum::{Json, Router};
 use serde::Serialize;
 use serde_json::json;
+use tokio::time::{timeout, Duration};
 
 use radicle::crypto::ssh::fmt;
 use radicle::identity::{Did, RepoId};
@@ -16,6 +17,8 @@ use radicle::Node;
 use crate::api::error::Error;
 use crate::api::Context;
 use crate::axum_extra::{cached_response, Path};
+
+const SOCKET_QUERY_TIMEOUT_MS: Duration = Duration::from_millis(500);
 
 pub fn router(ctx: Context) -> Router {
     Router::new()
@@ -68,22 +71,46 @@ impl Response {
 /// Return local node information.
 /// `GET /node`
 async fn node_handler(State(ctx): State<Context>) -> impl IntoResponse {
-    let node = Node::new(ctx.profile.socket());
     let node_id = ctx.profile.public_key;
     let home = ctx.profile.home.database()?;
     let agent = AddressStore::get(&home, &node_id)
         .unwrap_or_default()
         .map(|node| node.agent);
-    let node_state = if node.is_running() {
-        "running"
-    } else {
-        "stopped"
+
+    // Work around /nodes endpoint being slow to respond.
+    let node_state = {
+        let socket = ctx.profile.socket();
+        let is_running = timeout(
+            SOCKET_QUERY_TIMEOUT_MS,
+            tokio::task::spawn_blocking(move || Node::new(socket).is_running()),
+        )
+        .await
+        .ok() // Handle timeout.
+        .and_then(|r| r.ok()) // Handle JoinError.
+        .unwrap_or(false);
+
+        if is_running {
+            "running"
+        } else {
+            "stopped"
+        }
     };
-    let config = match node.config() {
-        Ok(config) => Some(config),
-        Err(err) => {
-            tracing::error!("Error getting node config: {:#}", err);
-            None
+    let config = {
+        let socket = ctx.profile.socket();
+        match timeout(
+            SOCKET_QUERY_TIMEOUT_MS,
+            tokio::task::spawn_blocking(move || Node::new(socket).config()),
+        )
+        .await
+        {
+            Ok(Ok(result)) => match result {
+                Ok(config) => Some(config),
+                Err(err) => {
+                    tracing::error!("Error getting node config: {:#}", err);
+                    None
+                }
+            },
+            _ => None, // Timeout or join error - node likely not running.
         }
     };
 
@@ -297,5 +324,33 @@ mod routes {
             json_response["bannerUrl"],
             json!("https://example.com/banner.png")
         );
+    }
+
+    #[tokio::test]
+    async fn test_node_endpoint_responds_quickly() {
+        use std::time::Instant;
+
+        let tmp = tempfile::tempdir().unwrap();
+        let seed = seed(tmp.path());
+        let app = super::router(seed.clone())
+            .layer(MockConnectInfo(SocketAddr::from(([127, 0, 0, 1], 8080))));
+
+        let start = Instant::now();
+        let response = get(&app, "/node").await;
+        let elapsed = start.elapsed();
+
+        // Endpoint should respond within 2 seconds even if node.is_running() is slow
+        // (500ms timeout + overhead)
+        assert!(
+            elapsed.as_secs() < 2,
+            "Request took too long: {:?}",
+            elapsed
+        );
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let json_response = response.json().await;
+        assert!(json_response["state"].is_string());
+        let state = json_response["state"].as_str().unwrap();
+        assert!(state == "running" || state == "stopped");
     }
 }
