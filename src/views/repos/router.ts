@@ -421,6 +421,7 @@ async function loadTreeView(
   const project = repo["payloads"]["xyz.radicle.project"];
   let branchMap: Record<string, string> = {
     [project.data.defaultBranch]: project.meta.head,
+    ...(repo.canonicalTags || {}),
   };
   if (route.peer) {
     const peer = peers.find(peer => peer.id === route.peer);
@@ -569,6 +570,9 @@ async function loadHistoryView(
     commitId = branchMap[route.revision || project.data.defaultBranch];
   } else if (!route.revision) {
     commitId = project.meta.head;
+  } else if (route.revision && repo.canonicalTags) {
+    // Check if revision is a canonical tag
+    commitId = repo.canonicalTags[route.revision];
   }
 
   if (!commitId) {

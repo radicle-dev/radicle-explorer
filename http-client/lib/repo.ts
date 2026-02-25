@@ -59,6 +59,7 @@ const repoSchema = object({
     object({ type: literal("private"), allow: optional(array(string())) }),
   ]),
   seeding: number(),
+  canonicalTags: record(string(), string()).optional(),
 });
 const reposSchema = array(repoSchema);
 

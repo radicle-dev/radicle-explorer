@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
 use axum::response::{IntoResponse, Json};
@@ -6,6 +6,7 @@ use axum::routing::get;
 use axum::Router;
 use serde_json::{json, Value};
 
+use radicle::identity::crefs::GetCanonicalRefs;
 use radicle::identity::doc::PayloadId;
 use radicle::identity::{DocAt, RepoId};
 use radicle::issue::cache::Issues as _;
@@ -14,7 +15,7 @@ use radicle::node::NodeId;
 use radicle::patch::cache::Patches as _;
 use radicle::storage::git::Repository;
 use radicle::storage::{ReadRepository, ReadStorage};
-use radicle::{web, Profile};
+use radicle::{git, web, Profile};
 use tokio::sync::RwLock;
 
 mod error;
@@ -127,6 +128,14 @@ impl Context {
             })
             .collect();
 
+        // Compute canonical tags
+        // Note: This requires converting R to Repository, so we compute it differently
+        let canonical_tags = if let Ok(storage_repo) = self.profile.storage.repository(rid) {
+            Self::compute_canonical_tags(&storage_repo, &doc).ok().flatten()
+        } else {
+            None
+        };
+
         Ok(repo::Info {
             payloads,
             delegates,
@@ -134,7 +143,107 @@ impl Context {
             visibility: doc.visibility().clone(),
             rid,
             seeding,
+            canonical_tags,
         })
+    }
+
+    /// Compute canonical tags that have reached consensus threshold.
+    /// Returns map of tag name -> commit OID for tags with consensus.
+    fn compute_canonical_tags(
+        repo: &Repository,
+        doc: &radicle::identity::Doc,
+    ) -> Result<Option<BTreeMap<String, String>>, error::Error> {
+        // Get canonical refs configuration
+        let canonical_refs = match doc.canonical_refs().ok().flatten() {
+            Some(crefs) => crefs,
+            None => return Ok(None),
+        };
+
+        let rules = canonical_refs.rules();
+
+        // Collect tag patterns from the rules
+        let tag_patterns: Vec<String> = rules
+            .iter()
+            .filter_map(|(pattern, _)| {
+                let pattern_str = pattern.to_string();
+                if pattern_str.starts_with("refs/tags/") {
+                    Some(pattern_str)
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        if tag_patterns.is_empty() {
+            return Ok(None);
+        }
+
+        // Helper function to check if a refname matches any of the patterns
+        let matches_pattern = |refname: &str| -> bool {
+            for pattern in &tag_patterns {
+                // Handle wildcard patterns like "refs/tags/releases/*"
+                if pattern.ends_with("/*") {
+                    let prefix = &pattern[..pattern.len() - 2]; // Remove "/*"
+                    if refname.starts_with(prefix) {
+                        return true;
+                    }
+                } else if pattern.ends_with('*') {
+                    let prefix = &pattern[..pattern.len() - 1]; // Remove "*"
+                    if refname.starts_with(prefix) {
+                        return true;
+                    }
+                } else {
+                    // Exact match
+                    if refname == pattern {
+                        return true;
+                    }
+                }
+            }
+            false
+        };
+
+        // Collect votes only for tags that match the canonical patterns
+        let mut tag_votes: HashMap<String, HashMap<git::Oid, Vec<NodeId>>> = HashMap::new();
+
+        for remote_result in repo.remotes()? {
+            let (remote_id, remote) = remote_result?;
+
+            // Iterate through remote's tag refs
+            for (refname, oid) in remote.refs.iter() {
+                let refname_str = refname.as_str();
+
+                // Only collect votes for tags that match canonical patterns
+                if refname_str.starts_with("refs/tags/") && matches_pattern(refname_str) {
+                    if let Some(tag_name) = refname_str.strip_prefix("refs/tags/") {
+                        tag_votes
+                            .entry(tag_name.to_string())
+                            .or_default()
+                            .entry(*oid)
+                            .or_default()
+                            .push(remote_id.into());
+                    }
+                }
+            }
+        }
+
+        // Check which tags have reached threshold
+        let threshold = doc.threshold();
+        let mut canonical_tags = BTreeMap::new();
+
+        for (tag_name, oid_votes) in tag_votes {
+            // Find the OID with the most votes
+            if let Some((oid, voters)) = oid_votes.iter().max_by_key(|(_, voters)| voters.len()) {
+                if voters.len() >= threshold {
+                    canonical_tags.insert(tag_name, oid.to_string());
+                }
+            }
+        }
+
+        if canonical_tags.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(canonical_tags))
+        }
     }
 
     /// Get a repository by RID, checking to make sure we're allowed to view it.
@@ -299,6 +408,8 @@ mod repo {
         pub visibility: Visibility,
         pub rid: RepoId,
         pub seeding: usize,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub canonical_tags: Option<BTreeMap<String, String>>,
     }
 }
 

@@ -34,19 +34,36 @@
   ];
   let searchInput = "";
 
-  const searchElements = [
+  type SearchElement = {
+    peer?: { id: string; alias?: string; delegate: boolean };
+    revision: string;
+    head: string;
+    type: "branch" | "tag";
+  };
+
+  const searchElements: SearchElement[] = [
     {
       peer: undefined,
       revision: repo.payloads["xyz.radicle.project"].data.defaultBranch,
       head: repo.payloads["xyz.radicle.project"].meta.head,
+      type: "branch",
     },
     ...peers.flatMap(peer =>
       Object.entries(peer.heads).map(([name, head]) => ({
         peer: { id: peer.id, alias: peer.alias, delegate: peer.delegate },
         revision: name,
         head,
+        type: "branch" as const,
       })),
     ),
+    ...(repo.canonicalTags
+      ? Object.entries(repo.canonicalTags).map(([name, head]) => ({
+          peer: undefined,
+          revision: name,
+          head,
+          type: "tag" as const,
+        }))
+      : []),
   ];
 
   $: selectedPeer = peers.find(p => p.id === peer);
@@ -101,6 +118,21 @@
     font-family: var(--font-family-monospace);
     font-weight: var(--font-weight-semibold);
     font-size: var(--font-size-small);
+  }
+  .section-header {
+    grid-column: span 2;
+    font-size: var(--font-size-tiny);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-foreground-dim);
+    padding: 0.75rem 0.5rem 0.25rem 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 0.5rem;
+    border-top: 1px solid var(--color-border-hint);
+  }
+  .section-header:first-child {
+    margin-top: 0;
+    border-top: none;
   }
   @media (max-width: 719.98px) {
     .dropdown {
@@ -167,7 +199,7 @@
 
         {#if searchInput}
           {#each searchResults as result}
-            {@const { revision, peer, head } = result.obj}
+            {@const { revision, peer, head, type } = result.obj}
             <Link
               style={subgridStyle}
               route={{
@@ -184,7 +216,7 @@
                   selectedBranch === revision}
                 style={`${subgridStyle} gap: inherit;`}>
                 <div class="global-flex-item">
-                  <Icon name="branch" />
+                  <Icon name={type === "tag" ? "label" : "branch"} />
                   <span class="txt-overflow">
                     {#if peer?.id}
                       <span class="global-flex-item">
@@ -271,6 +303,42 @@
               revision={selectedBranch}
               peer={{ remote: peer, selected: selectedPeer?.id === peer.id }} />
           {/each}
+
+          {#if searchElements.some(el => el.type === "tag")}
+            <div class="section-header">Canonical Tags</div>
+            {#each searchElements.filter(el => el.type === "tag") as tag}
+              <Link
+                style={subgridStyle}
+                route={{
+                  ...baseRoute,
+                  peer: undefined,
+                  revision: tag.revision,
+                }}
+                on:afterNavigate={() => {
+                  searchInput = "";
+                  toggle();
+                }}>
+                <DropdownListItem
+                  selected={!peer && selectedBranch === tag.revision}
+                  style={`${subgridStyle} gap: inherit;`}>
+                  <div class="global-flex-item">
+                    <Icon name="label" />
+                    <span class="txt-overflow">{tag.revision}</span>
+                    <Badge
+                      title="Canonical tag"
+                      variant="foreground-emphasized">
+                      Canonical
+                    </Badge>
+                  </div>
+                  <div
+                    class="txt-monospace"
+                    style="color: var(--color-foreground-dim);">
+                    {formatCommit(tag.head)}
+                  </div>
+                </DropdownListItem>
+              </Link>
+            {/each}
+          {/if}
         {/if}
       </div>
     </div>
