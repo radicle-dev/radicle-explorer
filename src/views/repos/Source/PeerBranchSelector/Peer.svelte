@@ -61,16 +61,18 @@
       route={{
         ...baseRoute,
         peer: type === "branches" ? peer.remote.id : undefined,
-        revision: name,
+        revision: type === "tags" ? encodeURIComponent(name) : name,
       }}
       on:afterNavigate={() => closeFocused()}>
       <DropdownListItem
-        selected={peer.selected && revision === name}
+        selected={peer.selected &&
+          (revision === name ||
+            (type === "tags" && revision === encodeURIComponent(name)))}
         on:click={() =>
           replace({
             ...baseRoute,
             peer: type === "branches" ? peer.remote.id : undefined,
-            revision: name,
+            revision: type === "tags" ? encodeURIComponent(name) : name,
           })}
         style={`${subgridStyle} padding-left: 2.3rem; gap: inherit;`}>
         <div class="global-flex-item">

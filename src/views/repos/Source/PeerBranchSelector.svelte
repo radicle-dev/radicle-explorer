@@ -251,7 +251,7 @@
               route={{
                 ...baseRoute,
                 peer: type === "branch" ? peer?.id : undefined,
-                revision,
+                revision: type === "tag" ? encodeURIComponent(revision) : revision,
               }}
               on:afterNavigate={() => {
                 searchInput = "";
@@ -259,7 +259,9 @@
               }}>
               <DropdownListItem
                 selected={selectedPeer?.id === peer?.id &&
-                  selectedBranch === revision}
+                  (selectedBranch === revision ||
+                    (type === "tag" &&
+                      selectedBranch === encodeURIComponent(revision)))}
                 style={`${subgridStyle} gap: inherit;`}>
                 <div class="global-flex-item">
                   <Icon name={type === "tag" ? "label" : "branch"} />
@@ -359,14 +361,16 @@
                 route={{
                   ...baseRoute,
                   peer: undefined,
-                  revision: tagName,
+                  revision: encodeURIComponent(tagName),
                 }}
                 on:afterNavigate={() => {
                   searchInput = "";
                   toggle();
                 }}>
                 <DropdownListItem
-                  selected={!peer && selectedBranch === tagName}
+                  selected={!peer &&
+                    (selectedBranch === tagName ||
+                      selectedBranch === encodeURIComponent(tagName))}
                   style={`${subgridStyle} gap: inherit;`}>
                   <div class="global-flex-item">
                     <Icon name="label" />

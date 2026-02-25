@@ -479,7 +479,16 @@ async fn remotes_handler(State(ctx): State<Context>, Path(rid): Path<RepoId>) ->
                         if canonical_tag_names.contains(tag) {
                             None
                         } else {
-                            let surf_oid = Oid::from(radicle::git::raw::Oid::from(oid));
+                            // Peel the tag to get the commit OID
+                            let raw_oid = radicle::git::raw::Oid::from(oid);
+                            let commit_oid = match repo.backend.find_object(raw_oid, None) {
+                                Ok(obj) => match obj.peel_to_commit() {
+                                    Ok(commit) => commit.id(),
+                                    Err(_) => raw_oid,
+                                },
+                                Err(_) => raw_oid,
+                            };
+                            let surf_oid = Oid::from(commit_oid);
                             Some((tag.to_string(), surf_oid))
                         }
                     })
@@ -546,7 +555,16 @@ async fn remote_handler(
                 if canonical_tag_names.contains(tag) {
                     None
                 } else {
-                    let surf_oid = Oid::from(radicle::git::raw::Oid::from(oid));
+                    // Peel the tag to get the commit OID
+                    let raw_oid = radicle::git::raw::Oid::from(oid);
+                    let commit_oid = match repo.backend.find_object(raw_oid, None) {
+                        Ok(obj) => match obj.peel_to_commit() {
+                            Ok(commit) => commit.id(),
+                            Err(_) => raw_oid,
+                        },
+                        Err(_) => raw_oid,
+                    };
+                    let surf_oid = Oid::from(commit_oid);
                     Some((tag.to_string(), surf_oid))
                 }
             })

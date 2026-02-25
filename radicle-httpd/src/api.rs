@@ -234,7 +234,16 @@ impl Context {
             // Find the OID with the most votes
             if let Some((oid, voters)) = oid_votes.iter().max_by_key(|(_, voters)| voters.len()) {
                 if voters.len() >= threshold {
-                    canonical_tags.insert(tag_name, oid.to_string());
+                    // Peel the tag to get the commit OID (handles both annotated and lightweight tags)
+                    let raw_oid = git::raw::Oid::from(*oid);
+                    let commit_oid = match repo.backend.find_object(raw_oid, None) {
+                        Ok(obj) => match obj.peel_to_commit() {
+                            Ok(commit) => commit.id(),
+                            Err(_) => raw_oid, // If peeling fails, use the original OID
+                        },
+                        Err(_) => raw_oid, // If object not found, use the original OID
+                    };
+                    canonical_tags.insert(tag_name, commit_oid.to_string());
                 }
             }
         }

@@ -421,13 +421,23 @@ async function loadTreeView(
   const project = repo["payloads"]["xyz.radicle.project"];
   let branchMap: Record<string, string> = {
     [project.data.defaultBranch]: project.meta.head,
-    ...(repo.canonicalTags || {}),
   };
+
+  // Add canonical tags with both original and encoded names
+  if (repo.canonicalTags) {
+    Object.entries(repo.canonicalTags).forEach(([tagName, oid]) => {
+      branchMap[tagName] = oid;
+      branchMap[encodeURIComponent(tagName)] = oid;
+    });
+  }
 
   // Add all peer tags to branchMap for tag resolution
   peers.forEach(peer => {
     if (peer.tags) {
-      Object.assign(branchMap, peer.tags);
+      Object.entries(peer.tags).forEach(([tagName, oid]) => {
+        branchMap[tagName] = oid;
+        branchMap[encodeURIComponent(tagName)] = oid;
+      });
     }
   });
 
@@ -781,13 +791,23 @@ async function getPeerBranches(
     return (await api.repo.getRemoteByPeer(repoId, peer)).heads;
   } else if (repo && peers) {
     // When no peer is specified, include canonical tags and all peer tags
-    const branchMap: Record<string, string> = {
-      ...(repo.canonicalTags || {}),
-    };
-    // Add all peer tags
+    const branchMap: Record<string, string> = {};
+
+    // Add canonical tags with both original and encoded names
+    if (repo.canonicalTags) {
+      Object.entries(repo.canonicalTags).forEach(([tagName, oid]) => {
+        branchMap[tagName] = oid;
+        branchMap[encodeURIComponent(tagName)] = oid;
+      });
+    }
+
+    // Add all peer tags with both original and encoded names
     peers.forEach(p => {
       if (p.tags) {
-        Object.assign(branchMap, p.tags);
+        Object.entries(p.tags).forEach(([tagName, oid]) => {
+          branchMap[tagName] = oid;
+          branchMap[encodeURIComponent(tagName)] = oid;
+        });
       }
     });
     return branchMap;
