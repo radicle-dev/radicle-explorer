@@ -130,14 +130,19 @@ impl Context {
 
         // Compute canonical tags and branches
         // Note: This requires converting R to Repository, so we compute it differently
-        let (canonical_tags, canonical_branches) = if let Ok(storage_repo) = self.profile.storage.repository(rid) {
-            (
-                Self::compute_canonical_tags(&storage_repo, &doc).ok().flatten(),
-                Self::compute_canonical_branches(&storage_repo, &doc).ok().flatten(),
-            )
-        } else {
-            (None, None)
-        };
+        let (canonical_tags, canonical_branches) =
+            if let Ok(storage_repo) = self.profile.storage.repository(rid) {
+                (
+                    Self::compute_canonical_tags(&storage_repo, &doc)
+                        .ok()
+                        .flatten(),
+                    Self::compute_canonical_branches(&storage_repo, &doc)
+                        .ok()
+                        .flatten(),
+                )
+            } else {
+                (None, None)
+            };
 
         Ok(repo::Info {
             payloads,
@@ -224,7 +229,7 @@ impl Context {
                             .or_default()
                             .entry(*oid)
                             .or_default()
-                            .push(remote_id.into());
+                            .push(remote_id);
                     }
                 }
             }
@@ -332,7 +337,7 @@ impl Context {
                             .or_default()
                             .entry(*oid)
                             .or_default()
-                            .push(remote_id.into());
+                            .push(remote_id);
                     }
                 }
             }
@@ -663,5 +668,87 @@ mod tests {
                 .await;
         }
         assert_eq!(ctx.web_config.read().await.pinned.repositories.len(), 0);
+    }
+
+    mod canonical_refs {
+        use std::str::FromStr;
+
+        use radicle::identity::RepoId;
+        use radicle::storage::{ReadRepository, ReadStorage};
+
+        use crate::test;
+
+        #[test]
+        fn test_compute_canonical_tags_without_refs() {
+            let tmp = tempfile::tempdir().unwrap();
+            let ctx = test::seed(tmp.path());
+            let rid = RepoId::from_str(test::RID).unwrap();
+
+            let repo = ctx.profile.storage.repository(rid).unwrap();
+            let doc = repo.identity_doc().unwrap();
+
+            let result = super::super::Context::compute_canonical_tags(&repo, &doc.doc);
+
+            // Repos without canonical refs configuration return None
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_none());
+        }
+
+        #[test]
+        fn test_compute_canonical_branches_without_refs() {
+            let tmp = tempfile::tempdir().unwrap();
+            let ctx = test::seed(tmp.path());
+            let rid = RepoId::from_str(test::RID).unwrap();
+
+            let repo = ctx.profile.storage.repository(rid).unwrap();
+            let doc = repo.identity_doc().unwrap();
+
+            let result = super::super::Context::compute_canonical_branches(&repo, &doc.doc);
+
+            // Repos without canonical refs configuration return None
+            assert!(result.is_ok());
+            assert!(result.unwrap().is_none());
+        }
+
+        #[test]
+        fn test_canonical_tags_excluded_from_repo_info() {
+            let tmp = tempfile::tempdir().unwrap();
+            let ctx = test::seed(tmp.path());
+            let rid = RepoId::from_str(test::RID).unwrap();
+
+            let (repo, doc) = ctx.repo(rid).unwrap();
+            let info = ctx.repo_info(&repo, doc).unwrap();
+
+            // Without canonical refs, canonicalTags should be None (and thus omitted from JSON)
+            assert!(info.canonical_tags.is_none());
+        }
+
+        #[test]
+        fn test_canonical_branches_excluded_from_repo_info() {
+            let tmp = tempfile::tempdir().unwrap();
+            let ctx = test::seed(tmp.path());
+            let rid = RepoId::from_str(test::RID).unwrap();
+
+            let (repo, doc) = ctx.repo(rid).unwrap();
+            let info = ctx.repo_info(&repo, doc).unwrap();
+
+            // Without canonical refs, canonicalBranches should be None (and thus omitted from JSON)
+            assert!(info.canonical_branches.is_none());
+        }
+
+        // Note: Testing canonical refs with consensus requires:
+        // - Multiple remotes with overlapping tags/branches
+        // - Canonical refs rules configured in the repo identity
+        // - Tags/branches that meet the threshold requirement
+        //
+        // This would require extending the test::seed infrastructure to:
+        // 1. Create repos with canonical refs rules
+        // 2. Set up multiple remotes (not just self)
+        // 3. Create tags on each remote
+        //
+        // For now, we verify:
+        // - No crashes on repos without canonical refs
+        // - Proper None handling and JSON serialization
+        // - Per-peer tags field exists in remotes endpoint (tested in v1/repos.rs)
     }
 }

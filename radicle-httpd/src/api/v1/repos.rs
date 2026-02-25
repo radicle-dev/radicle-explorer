@@ -1460,6 +1460,7 @@ mod routes {
                 "heads": {
                   "master": HEAD
                 },
+                "tags": {},
                 "delegate": true
               }
             ])
@@ -1484,6 +1485,7 @@ mod routes {
                 "heads": {
                     "master": HEAD
                 },
+                "tags": {},
                 "delegate": true
             })
         );
@@ -1500,6 +1502,41 @@ mod routes {
         .await;
 
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn test_repos_remotes_includes_tags_field() {
+        let tmp = tempfile::tempdir().unwrap();
+        let app = super::router(seed(tmp.path()));
+        let response = get(&app, format!("/repos/{RID}/remotes")).await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let remotes = response.json().await;
+        let remote = &remotes[0];
+
+        // Verify tags field is present (even if empty) for non-canonical tags
+        assert!(remote.get("tags").is_some());
+        assert_eq!(remote["tags"], json!({}));
+    }
+
+    #[tokio::test]
+    async fn test_repos_remote_includes_tags_field() {
+        let tmp = tempfile::tempdir().unwrap();
+        let app = super::router(seed(tmp.path()));
+        let response = get(
+            &app,
+            format!("/repos/{RID}/remotes/z6MknSLrJoTcukLrE435hVNQT4JUhbvWLX4kUzqkEStBU8Vi"),
+        )
+        .await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let remote = response.json().await;
+
+        // Verify tags field is present (even if empty) for non-canonical tags
+        assert!(remote.get("tags").is_some());
+        assert_eq!(remote["tags"], json!({}));
     }
 
     #[tokio::test]
