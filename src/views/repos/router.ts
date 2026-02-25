@@ -801,6 +801,14 @@ async function getPeerBranches(
     // When no peer is specified, include canonical branches/tags and all peer tags
     const branchMap: Record<string, string> = {};
 
+    // Add default canonical branch
+    const project = repo.payloads["xyz.radicle.project"];
+    if (project) {
+      branchMap[project.data.defaultBranch] = project.meta.head;
+      branchMap[encodeURIComponent(project.data.defaultBranch)] =
+        project.meta.head;
+    }
+
     // Add canonical branches with both original and encoded names
     if (repo.canonicalBranches) {
       Object.entries(repo.canonicalBranches).forEach(([branchName, oid]) => {
