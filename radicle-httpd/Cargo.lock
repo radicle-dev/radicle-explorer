@@ -213,9 +213,9 @@ dependencies = [
 
 [[package]]
 name = "axum-listener"
-version = "0.2.0"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0cd6458a1428aec99bace599e09140ecd60479f81a33f866ec628b2f5d3a793"
+checksum = "3b570338dee8621ee4930676c32a114e26f2cd8e4df2e1d9156ea99a9e245360"
 dependencies = [
  "axum",
  "futures",
