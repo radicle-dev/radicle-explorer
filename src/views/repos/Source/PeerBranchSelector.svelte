@@ -13,6 +13,7 @@
   import Link from "@app/components/Link.svelte";
   import Peer from "./PeerBranchSelector/Peer.svelte";
   import Popover from "@app/components/Popover.svelte";
+  import Radio from "@app/components/Radio.svelte";
   import TextInput from "@app/components/TextInput.svelte";
   import Avatar from "@app/components/Avatar.svelte";
 
@@ -33,6 +34,7 @@
     "</span>",
   ];
   let searchInput = "";
+  let selectedTab: "branches" | "tags" = "branches";
 
   type SearchElement = {
     peer?: { id: string; alias?: string; delegate: boolean };
@@ -41,7 +43,7 @@
     type: "branch" | "tag";
   };
 
-  const searchElements: SearchElement[] = [
+  const allElements: SearchElement[] = [
     {
       peer: undefined,
       revision: repo.payloads["xyz.radicle.project"].data.defaultBranch,
@@ -66,6 +68,9 @@
       : []),
   ];
 
+  $: searchElements = allElements.filter(
+    el => el.type === (selectedTab.slice(0, -1) as "branch" | "tag"),
+  );
   $: selectedPeer = peers.find(p => p.id === peer);
   $: searchResults = fuzzysort.go(searchInput, searchElements, {
     keys: ["peer.alias", "revision"],
@@ -75,6 +80,9 @@
       (r.obj.peer === undefined ? 10 : 1) *
       (r.obj.peer?.alias ? 2 : 1),
   });
+  $: canonicalTags = repo.canonicalTags
+    ? Object.entries(repo.canonicalTags)
+    : [];
 </script>
 
 <style>
@@ -85,6 +93,7 @@
     overflow-y: auto;
     overscroll-behavior: contain;
     padding: 0.25rem;
+    background-color: var(--color-background-default);
   }
   .subgrid-item {
     display: grid;
@@ -119,20 +128,11 @@
     font-weight: var(--font-weight-semibold);
     font-size: var(--font-size-small);
   }
-  .section-header {
-    grid-column: span 2;
-    font-size: var(--font-size-tiny);
-    font-weight: var(--font-weight-semibold);
-    color: var(--color-foreground-dim);
-    padding: 0.75rem 0.5rem 0.25rem 0.5rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-top: 0.5rem;
-    border-top: 1px solid var(--color-border-hint);
-  }
-  .section-header:first-child {
-    margin-top: 0;
-    border-top: none;
+  .tabs {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    box-shadow: inset 0 -1px 0 var(--color-border-hint);
   }
   @media (max-width: 719.98px) {
     .dropdown {
@@ -189,12 +189,38 @@
     </Button>
 
     <div slot="popover" class="dropdown" let:toggle>
+      <div class="tabs">
+        <Radio styleGap="0.375rem">
+          <Button
+            size="large"
+            variant={selectedTab === "branches" ? "tab-active" : "tab"}
+            on:click={() => {
+              selectedTab = "branches";
+              searchInput = "";
+            }}>
+            <Icon name="branch" />
+            Branches
+          </Button>
+          <Button
+            size="large"
+            variant={selectedTab === "tags" ? "tab-active" : "tab"}
+            on:click={() => {
+              selectedTab = "tags";
+              searchInput = "";
+            }}>
+            <Icon name="label" />
+            Tags
+          </Button>
+        </Radio>
+      </div>
       <TextInput
         showKeyHint={false}
         placeholder="Search"
         bind:value={searchInput} />
       <div class="dropdown-grid">
-        <div class="dropdown-header">Branch</div>
+        <div class="dropdown-header">
+          {selectedTab === "branches" ? "Branch" : "Tag"}
+        </div>
         <div class="dropdown-header" style="padding-left: 0;">Head</div>
 
         {#if searchInput}
@@ -272,7 +298,7 @@
               No entries found
             </div>
           {/each}
-        {:else}
+        {:else if selectedTab === "branches"}
           <Link
             style={subgridStyle}
             route={{ ...baseRoute, revision: undefined }}
@@ -303,27 +329,26 @@
               revision={selectedBranch}
               peer={{ remote: peer, selected: selectedPeer?.id === peer.id }} />
           {/each}
-
-          {#if searchElements.some(el => el.type === "tag")}
-            <div class="section-header">Canonical Tags</div>
-            {#each searchElements.filter(el => el.type === "tag") as tag}
+        {:else if selectedTab === "tags"}
+          {#if canonicalTags.length > 0}
+            {#each canonicalTags as [tagName, tagHead]}
               <Link
                 style={subgridStyle}
                 route={{
                   ...baseRoute,
                   peer: undefined,
-                  revision: tag.revision,
+                  revision: tagName,
                 }}
                 on:afterNavigate={() => {
                   searchInput = "";
                   toggle();
                 }}>
                 <DropdownListItem
-                  selected={!peer && selectedBranch === tag.revision}
+                  selected={!peer && selectedBranch === tagName}
                   style={`${subgridStyle} gap: inherit;`}>
                   <div class="global-flex-item">
                     <Icon name="label" />
-                    <span class="txt-overflow">{tag.revision}</span>
+                    <span class="txt-overflow">{tagName}</span>
                     <Badge
                       title="Canonical tag"
                       variant="foreground-emphasized">
@@ -333,11 +358,17 @@
                   <div
                     class="txt-monospace"
                     style="color: var(--color-foreground-dim);">
-                    {formatCommit(tag.head)}
+                    {formatCommit(tagHead)}
                   </div>
                 </DropdownListItem>
               </Link>
             {/each}
+          {:else}
+            <div
+              style="gap: inherit; padding: 0.5rem 0.375rem;"
+              class="subgrid-item txt-missing txt-small">
+              No canonical tags
+            </div>
           {/if}
         {/if}
       </div>
