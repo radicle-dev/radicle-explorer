@@ -297,12 +297,38 @@
               Tags
             </Button>
           </Radio>
+          <div
+            class="global-hide-on-mobile-down"
+            style:margin-left="0.375rem"
+            style:flex="1">
+            <TextInput
+              showKeyHint={false}
+              placeholder={selectedTab === "branches"
+                ? "Filter branches"
+                : "Filter tags"}
+              bind:value={searchInput} />
+          </div>
+        </div>
+      {:else}
+        <div style="margin-bottom: 0.5rem;">
+          <TextInput
+            showKeyHint={false}
+            placeholder="Filter branches"
+            bind:value={searchInput} />
         </div>
       {/if}
-      <TextInput
-        showKeyHint={false}
-        placeholder="Search"
-        bind:value={searchInput} />
+      {#if hasTags}
+        <div
+          class="global-hide-on-small-desktop-up"
+          style="margin-bottom: 0.5rem;">
+          <TextInput
+            showKeyHint={false}
+            placeholder={selectedTab === "branches"
+              ? "Filter branches"
+              : "Filter tags"}
+            bind:value={searchInput} />
+        </div>
+      {/if}
       <div class="dropdown-grid">
         <div class="dropdown-header">
           {selectedTab === "branches" ? "Branch" : "Tag"}
