@@ -62,7 +62,7 @@ test("edit seed bookmarks", async ({ page }) => {
           Location: route
             .request()
             .url()
-            .replace("seed.example.tld", "127.0.0.1"),
+            .replace("seed.example.tld", "localhost"),
         },
       }),
   );
@@ -73,7 +73,7 @@ test("edit seed bookmarks", async ({ page }) => {
     .getByRole("button", { name: "Toggle seed selector dropdown" })
     .click();
   await expect(page.getByPlaceholder("seed.radicle.example")).toHaveValue(
-    "127.0.0.1",
+    "localhost",
   );
   await expect(
     page.getByRole("button", { name: "Default seeds can't be removed" }),

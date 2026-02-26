@@ -66,7 +66,7 @@
 <Hotkeys />
 
 {#if $activeRouteStore.resource === "booting"}
-  <div class="loading">
+  <div class="loading" role="progressbar" aria-label="App loading">
     <Loading />
   </div>
 {:else if $activeRouteStore.resource === "nodes"}

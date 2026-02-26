@@ -5,6 +5,9 @@ import { expect } from "@tests/support/fixtures.js";
 export const expectUrlPersistsReload = async (page: Page) => {
   const url = page.url();
   await page.reload();
+  await page
+    .getByRole("progressbar", { name: "App loading" })
+    .waitFor({ state: "hidden" });
   await expect(page).toHaveURL(url);
 };
 

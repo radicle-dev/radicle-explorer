@@ -35,8 +35,8 @@ test("navigation between node and repo pages", async ({ page }) => {
   await expectBackAndForwardNavigationWorks("/nodes/localhost", page);
   await expectUrlPersistsReload(page);
 
-  await page.getByRole("link", { name: "Local Node" }).click();
-  await expect(page).toHaveURL("/nodes/127.0.0.1");
+  await page.getByRole("link", { name: "Radicle logo localhost" }).click();
+  await expect(page).toHaveURL("/nodes/localhost");
 });
 
 test.describe("repo page navigation", () => {
@@ -46,7 +46,12 @@ test.describe("repo page navigation", () => {
     const repoHistoryURL = `${sourceBrowsingUrl}/history/${aliceMainHead}`;
     await page.goto(repoHistoryURL);
 
-    await page.getByText("Add README.md").click();
+    await page
+      .getByRole("link", {
+        name: "Verify that crate::DoubleColon::should_work()",
+        exact: true,
+      })
+      .click();
     await expect(page).toHaveURL(
       `${sourceBrowsingUrl}/commits/${aliceMainHead}`,
     );

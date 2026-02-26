@@ -287,7 +287,7 @@ test("clone modal", async ({ page }) => {
   await page.getByRole("button", { name: "Git" }).click();
   await expect(
     page.getByText(
-      `http://127.0.0.1/${sourceBrowsingRid.replace("rad:", "")}.git`,
+      `http://localhost/${sourceBrowsingRid.replace("rad:", "")}.git`,
     ),
   ).toBeVisible();
 });
