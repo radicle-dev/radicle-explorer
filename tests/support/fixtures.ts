@@ -609,9 +609,13 @@ from ${parent}
   const fastImportFile = Path.join(tmpDir, "repos", "commits-fast-import");
   await Fs.writeFile(fastImportFile, fastImportData);
 
-  await peer.spawn("bash", ["-c", `git fast-import --force < "${fastImportFile}"`], {
-    cwd: repoFolder,
-  });
+  await peer.spawn(
+    "bash",
+    ["-c", `git fast-import --force < "${fastImportFile}"`],
+    {
+      cwd: repoFolder,
+    },
+  );
 
   await Fs.unlink(fastImportFile);
   await peer.git(["push", "rad"], { cwd: repoFolder });

@@ -54,81 +54,105 @@ export default async function globalSetup(): Promise<() => void> {
     process.exit(1);
   }
 
-  if (!process.env.SKIP_BUILD) {
-    // Build the app once before running tests to avoid compilation
-    // overhead on each worker.
-    console.log("Building the app for tests...");
-    const { execa: exec } = await import("execa");
-    await exec("npm", ["run", "build"], { stdio: "inherit" });
-    console.log("Build complete");
-  } else {
-    console.log("Skipping build. Set SKIP_BUILD to skip this");
-  }
+  console.log("⚡ Starting parallel setup...");
 
-  if (!process.env.SKIP_FIXTURE_CREATION) {
-    console.log(
-      "Recreating static fixtures. Set SKIP_FIXTURE_CREATION to skip this",
-    );
-    await removeWorkspace();
-  }
+  // Run build and fixture setup in parallel
+  const buildPromise = (async () => {
+    if (!process.env.SKIP_BUILD) {
+      console.log("  🔨  Starting build...");
+      const { execa: exec } = await import("execa");
+      try {
+        await exec("npm", ["run", "build"]);
+        console.log("  🔨  Build complete");
+      } catch (error) {
+        console.log("  🔨  Build failed!");
+        if (error && typeof error === "object" && "stdout" in error) {
+          console.log(error.stdout);
+        }
+        if (error && typeof error === "object" && "stderr" in error) {
+          console.log(error.stderr);
+        }
+        throw error;
+      }
+    } else {
+      console.log("  🔨  Skipping build");
+    }
+  })();
 
-  const peerManager = await createPeerManager({
-    dataDir: Path.resolve(tmpDir, "peers"),
-    outputLog: Fs.createWriteStream(
-      Path.resolve(tmpDir, "globalPeerManager.log"),
-    )
-      // Workaround for fixing MaxListenersExceededWarning.
-      // Since every prefixOutput stream adds stream listeners that don't autoClose.
-      // TODO: We still seem to have some descriptors left open when running vitest, which we should handle.
-      .setMaxListeners(16),
-  });
+  const fixturesPromise = (async () => {
+    if (!process.env.SKIP_FIXTURE_CREATION) {
+      console.log("  🗂️  Starting fixture creation...");
+      await removeWorkspace();
+    }
 
-  const palm = await peerManager.createPeer({
-    name: "palm",
-    gitOptions: gitOptions["alice"],
-  });
+    const peerManager = await createPeerManager({
+      dataDir: Path.resolve(tmpDir, "peers"),
+      outputLog: Fs.createWriteStream(
+        Path.resolve(tmpDir, "globalPeerManager.log"),
+      )
+        // Workaround for fixing MaxListenersExceededWarning.
+        // Since every prefixOutput stream adds stream listeners that don't autoClose.
+        // TODO: We still seem to have some descriptors left open when running vitest, which we should handle.
+        .setMaxListeners(16),
+    });
 
-  if (!process.env.SKIP_FIXTURE_CREATION) {
-    await palm.startNode({
-      web: {
-        pinned: {
-          repositories: ["rad:z4BwwjPCFNVP27FwVbDFgwVwkjcir"],
-        },
-        description: `:seedling: Radicle is an open source, peer-to-peer code collaboration stack built on Git.
+    const palm = await peerManager.createPeer({
+      name: "palm",
+      gitOptions: gitOptions["alice"],
+    });
+
+    if (!process.env.SKIP_FIXTURE_CREATION) {
+      await palm.startNode({
+        web: {
+          pinned: {
+            repositories: ["rad:z4BwwjPCFNVP27FwVbDFgwVwkjcir"],
+          },
+          description: `:seedling: Radicle is an open source, peer-to-peer code collaboration stack built on Git.
 
 :construction: [radicle.xyz](https://radicle.xyz)`,
-      },
-      node: {
-        ...defaultConfig.node,
-        seedingPolicy: { default: "allow", scope: "all" },
-        alias: "palm",
-      },
-    });
-    await palm.startHttpd(config.nodes.defaultHttpdPort);
+        },
+        node: {
+          ...defaultConfig.node,
+          seedingPolicy: { default: "allow", scope: "all" },
+          alias: "palm",
+        },
+      });
+      await palm.startHttpd(config.nodes.defaultHttpdPort);
 
-    try {
-      console.log("Creating source-browsing fixture");
-      await createSourceBrowsingFixture(peerManager, palm);
-      console.log("Creating markdown fixture");
-      await createMarkdownFixture(palm);
-      console.log("Creating cobs fixture");
-      await createCobsFixture(peerManager, palm);
-      console.log("Creating commits fixture");
-      await createCommitsFixture(palm);
-      console.log("All fixtures created");
-    } catch (error) {
-      console.log("");
-      console.log("Not able to create the required fixtures.");
-      console.log("Make sure you are not using binaries compiled for release.");
-      console.log("");
-      console.log(error);
-      console.log("");
-      process.exit(1);
+      try {
+        console.log("      Creating source-browsing fixture");
+        await createSourceBrowsingFixture(peerManager, palm);
+        console.log("      Creating markdown fixture");
+        await createMarkdownFixture(palm);
+        console.log("      Creating cobs fixture");
+        await createCobsFixture(peerManager, palm);
+        console.log("      Creating commits fixture");
+        await createCommitsFixture(palm);
+        console.log("  🗂️  All fixtures created");
+      } catch (error) {
+        console.log("");
+        console.log("  🗂️  Not able to create the required fixtures.");
+        console.log(
+          "      Make sure you are not using binaries compiled for release.",
+        );
+        console.log("");
+        console.log(error);
+        console.log("");
+        process.exit(1);
+      }
+      await palm.stopNode();
+    } else {
+      console.log("  🗂️  Skipping fixture creation");
+      await palm.startHttpd(config.nodes.defaultHttpdPort);
     }
-    await palm.stopNode();
-  } else {
-    await palm.startHttpd(config.nodes.defaultHttpdPort);
-  }
+
+    return peerManager;
+  })();
+
+  // Wait for both build and fixtures to complete
+  const [, peerManager] = await Promise.all([buildPromise, fixturesPromise]);
+
+  console.log("🚀 Setup complete, ready to run tests");
 
   return async () => {
     await peerManager.shutdown();
