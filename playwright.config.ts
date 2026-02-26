@@ -4,12 +4,12 @@ import { devices } from "@playwright/test";
 const config: PlaywrightTestConfig = {
   testDir: "./tests/e2e",
   outputDir: "./tests/artifacts",
-  timeout: 30_000,
+  timeout: 10_000,
   expect: {
-    timeout: 8000,
+    timeout: 5000,
   },
   fullyParallel: true,
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI ? 2 : undefined,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   reporter: "list",
