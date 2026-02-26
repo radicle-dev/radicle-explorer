@@ -54,11 +54,20 @@ export default async function globalSetup(): Promise<() => void> {
     process.exit(1);
   }
 
-  console.log("⚡ Starting parallel setup...");
+  // Evaluated once at startup; captured by async setup operations.
+  // Set SKIP_SETUP=true to skip both build and fixture creation on subsequent runs.
+  // See CONTRIBUTING.md for details.
+  const shouldSetup = !process.env.SKIP_SETUP;
+
+  if (shouldSetup) {
+    console.log("⚡ Starting parallel setup...");
+  } else {
+    console.log("⏭️  Skipping setup (SKIP_SETUP is set)");
+  }
 
   // Run build and fixture setup in parallel
   const buildPromise = (async () => {
-    if (!process.env.SKIP_BUILD) {
+    if (shouldSetup) {
       console.log("  🔨  Starting build...");
       const { execa: exec } = await import("execa");
       try {
@@ -74,13 +83,11 @@ export default async function globalSetup(): Promise<() => void> {
         }
         throw error;
       }
-    } else {
-      console.log("  🔨  Skipping build");
     }
   })();
 
   const fixturesPromise = (async () => {
-    if (!process.env.SKIP_FIXTURE_CREATION) {
+    if (shouldSetup) {
       console.log("  🗂️  Starting fixture creation...");
       await removeWorkspace();
     }
@@ -101,7 +108,7 @@ export default async function globalSetup(): Promise<() => void> {
       gitOptions: gitOptions["alice"],
     });
 
-    if (!process.env.SKIP_FIXTURE_CREATION) {
+    if (shouldSetup) {
       await palm.startNode({
         web: {
           pinned: {
@@ -142,7 +149,6 @@ export default async function globalSetup(): Promise<() => void> {
       }
       await palm.stopNode();
     } else {
-      console.log("  🗂️  Skipping fixture creation");
       await palm.startHttpd(config.nodes.defaultHttpdPort);
     }
 
@@ -152,7 +158,9 @@ export default async function globalSetup(): Promise<() => void> {
   // Wait for both build and fixtures to complete
   const [, peerManager] = await Promise.all([buildPromise, fixturesPromise]);
 
-  console.log("🚀 Setup complete, ready to run tests");
+  if (shouldSetup) {
+    console.log("🚀 Setup complete, ready to run tests");
+  }
 
   return async () => {
     await peerManager.shutdown();

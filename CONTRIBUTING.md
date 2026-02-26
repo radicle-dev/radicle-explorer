@@ -13,6 +13,34 @@ simple guidelines.
 * Follow the guidelines when proposing code changes (see below).
 * Write properly formatted git commits (see below).
 
+Running Tests
+-------------
+
+The test suite includes end-to-end (e2e) tests that run against the built
+application.
+
+**Basic usage:**
+
+    npm run test:e2e
+
+**Skipping setup:**
+
+The test suite performs setup operations before running tests:
+* Building the application bundle
+* Creating test fixtures (repositories with test data)
+
+On subsequent test runs, you can skip this setup to save time:
+
+    SKIP_SETUP=true npm run test:e2e
+
+Use this when:
+* You haven't changed any source code since the last test run
+* The test fixtures are already created
+* You want to iterate quickly on test development
+
+**Note:** If you've made code changes or are getting unexpected test failures,
+remove the `SKIP_SETUP` flag to ensure tests run against the latest build.
+
 Proposing changes
 -----------------
 When proposing changes via a patch:
