@@ -22,8 +22,13 @@ const heartwoodBinaryPath = Path.join(
   "bin",
   "heartwood",
   heartwoodRelease,
-);
-const httpdBinaryPath = Path.join(tmpDir, "bin", "httpd", radicleHttpdRelease);
+).trim();
+const httpdBinaryPath = Path.join(
+  tmpDir,
+  "bin",
+  "httpd",
+  radicleHttpdRelease,
+).trim();
 
 process.env.PATH = [
   heartwoodBinaryPath,

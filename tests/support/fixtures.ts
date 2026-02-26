@@ -443,7 +443,7 @@ export async function createCobsFixture(
     createOptions(repoFolder, 5),
   );
   await peer.rad(
-    ["patch", "review", patchOne, "-m", "LGTM", "--accept"],
+    ["patch", "review", patchOne, "--accept"],
     createOptions(repoFolder, 6),
   );
   await patch.merge(
@@ -462,14 +462,7 @@ export async function createCobsFixture(
     { cwd: repoFolder },
   );
   await peer.rad(
-    [
-      "patch",
-      "review",
-      patchTwo,
-      "-m",
-      "Not the README we are looking for",
-      "--reject",
-    ],
+    ["patch", "review", patchTwo, "--reject"],
     createOptions(repoFolder, 1),
   );
 
@@ -494,7 +487,7 @@ export async function createCobsFixture(
     createOptions(repoFolder, 1),
   );
   await eve.rad(
-    ["patch", "review", patchThree, "-m", "This looks better"],
+    ["patch", "review", patchThree, "--accept"],
     createOptions(repoFolder, 2),
   );
   await Fs.appendFile(
@@ -516,14 +509,7 @@ export async function createCobsFixture(
     createOptions(repoFolder, 3),
   );
   await peer.rad(
-    [
-      "patch",
-      "review",
-      patchThree,
-      "-m",
-      "No this doesn't look better",
-      "--reject",
-    ],
+    ["patch", "review", patchThree, "--reject"],
     createOptions(repoFolder, 2),
   );
 
@@ -536,13 +522,7 @@ export async function createCobsFixture(
     { cwd: repoFolder },
   );
   await peer.rad(
-    [
-      "patch",
-      "review",
-      patchFour,
-      "-m",
-      "No review due to patch being archived.",
-    ],
+    ["patch", "review", patchFour, "--accept"],
     createOptions(repoFolder, 1),
   );
   await peer.rad(["patch", "archive", patchFour], createOptions(repoFolder, 2));
