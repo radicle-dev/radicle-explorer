@@ -7,9 +7,9 @@ import * as Fs from "node:fs/promises";
 import * as Path from "node:path";
 import { test as base, expect } from "@playwright/test";
 import { execa } from "execa";
+import chalk from "chalk";
 
 import * as issue from "@tests/support/cobs/issue.js";
-import * as logLabel from "@tests/support/logPrefix.js";
 import * as patch from "@tests/support/cobs/patch.js";
 import { createOptions, supportDir, tmpDir } from "@tests/support/support.js";
 import { createPeerManager } from "@tests/support/peerManager.js";
@@ -37,7 +37,7 @@ export const test = base.extend<{
         globalThis.__PLAYWRIGHT__ = true;
       });
 
-      const browserLabel = logLabel.logPrefix("browser");
+      const browserLabel = " ".repeat(23) + "→ " + chalk.blue("browser") + ": ";
       page.on("console", msg => {
         // Ignore common console logs that we don't care about.
         if (
@@ -62,7 +62,8 @@ export const test = base.extend<{
         });
       }
 
-      const playwrightLabel = logLabel.logPrefix("playwright");
+      const playwrightLabel =
+        " ".repeat(23) + "→ " + chalk.yellowBright("playwright") + ": ";
 
       function isLocalhost(url: URL) {
         return url.hostname === "localhost" || url.hostname === "127.0.0.1";
@@ -143,7 +144,7 @@ export const test = base.extend<{
 function log(text: string, label: string, outputLog: Stream.Writable) {
   const output = text
     .split("\n")
-    .map(line => `${label}${line}`)
+    .map(line => `${label}${chalk.dim(line)}`)
     .join("\n");
 
   outputLog.write(`${output}\n`);
