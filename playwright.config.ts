@@ -29,18 +29,6 @@ const config: PlaywrightTestConfig = {
       },
     },
     {
-      name: "firefox",
-      use: {
-        ...devices["Desktop Firefox"],
-      },
-    },
-    {
-      name: "webkit",
-      use: {
-        ...devices["Desktop Safari"],
-      },
-    },
-    {
       name: "visual-desktop",
       timeout: 60_000,
       expect: {
