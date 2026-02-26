@@ -131,6 +131,7 @@ test("commit messages with double colon not converted into single colon", async 
 
 test("expand commit message", async ({ page }) => {
   await page.goto(sourceBrowsingUrl);
+  await page.waitForLoadState("networkidle");
   await page
     .getByRole("link", { name: `Commits ${aliceMainCommitCount}` })
     .click();

@@ -3,6 +3,7 @@ import { createRepo } from "@tests/support/repo";
 
 test("navigate issue listing", async ({ page }) => {
   await page.goto(cobUrl);
+  await page.waitForLoadState("networkidle");
   await page.getByRole("link", { name: "Issues 1" }).click();
   await expect(page).toHaveURL(`${cobUrl}/issues`);
 

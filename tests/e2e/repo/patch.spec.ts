@@ -7,6 +7,7 @@ test("navigate patch details", async ({ page }) => {
   await page.getByRole("link", { name: "Add subtitle to README" }).click();
   await expect(page).toHaveURL(/commits\/[a-f0-9]{40}$/);
   await page.goBack();
+  await page.waitForLoadState("networkidle");
   await page.getByRole("link", { name: "Changes" }).click();
   await expect(page).toHaveURL(/patches\/[a-f0-9]{40}\?tab=changes$/);
 });
@@ -77,6 +78,7 @@ test("navigate through revision diffs", async ({ page }) => {
       /patches\/[a-f0-9]{40}\?diff=38c225e2a0b47ba59def211f4e4825c31d9463ec\.\.9e4feab1b2123dfa5f22bd0e4656060ec9296638$/,
     );
     await page.goBack();
+    await page.waitForLoadState("networkidle");
     await secondRevision
       .getByRole("button", { name: "toggle-context-menu" })
       .first()
@@ -94,6 +96,7 @@ test("navigate through revision diffs", async ({ page }) => {
       /patches\/[a-f0-9]{40}\?diff=88b7fd90389c1a629f91ed7bf838d4b947426622\.\.9e4feab1b2123dfa5f22bd0e4656060ec9296638$/,
     );
     await page.goBack();
+    await page.waitForLoadState("networkidle");
   }
   // First revision and DiffStatBadge shortcut.
   {
@@ -141,6 +144,7 @@ test("commit listing ordering keeping stable on browser navigation", async ({
   await expectCorrectCommitListing();
   await page.getByRole("link", { name: "Rewrite subtitle to README" }).click();
   await page.goBack();
+  await page.waitForLoadState("networkidle");
   await page
     .getByRole("heading", { name: "Taking another stab at the README" })
     .waitFor();

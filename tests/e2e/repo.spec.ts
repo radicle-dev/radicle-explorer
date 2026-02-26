@@ -64,6 +64,7 @@ test("repo description", async ({ page, peer }) => {
     description: "Radicle Heartwood Protocol & Stack",
   });
   await page.goto(peer.ridUrl(rid));
+  await page.waitForLoadState("networkidle");
   await expect(
     page.getByText("Radicle Heartwood Protocol & Stack"),
   ).toBeVisible();
