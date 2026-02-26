@@ -10,6 +10,7 @@ import {
 import {
   defaultConfig,
   createCobsFixture,
+  createCommitsFixture,
   createMarkdownFixture,
   createSourceBrowsingFixture,
   gitOptions,
@@ -53,12 +54,16 @@ export default async function globalSetup(): Promise<() => void> {
     process.exit(1);
   }
 
-  // Build the app once before running tests to avoid compilation
-  // overhead on each worker.
-  console.log("Building the app for tests...");
-  const { execa: exec } = await import("execa");
-  await exec("npm", ["run", "build"], { stdio: "inherit" });
-  console.log("Build complete");
+  if (!process.env.SKIP_BUILD) {
+    // Build the app once before running tests to avoid compilation
+    // overhead on each worker.
+    console.log("Building the app for tests...");
+    const { execa: exec } = await import("execa");
+    await exec("npm", ["run", "build"], { stdio: "inherit" });
+    console.log("Build complete");
+  } else {
+    console.log("Skipping build. Set SKIP_BUILD to skip this");
+  }
 
   if (!process.env.SKIP_FIXTURE_CREATION) {
     console.log(
@@ -108,6 +113,8 @@ export default async function globalSetup(): Promise<() => void> {
       await createMarkdownFixture(palm);
       console.log("Creating cobs fixture");
       await createCobsFixture(peerManager, palm);
+      console.log("Creating commits fixture");
+      await createCommitsFixture(palm);
       console.log("All fixtures created");
     } catch (error) {
       console.log("");

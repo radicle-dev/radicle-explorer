@@ -82,21 +82,11 @@ const config: PlaywrightTestConfig = {
     },
   ],
 
-  webServer: [
-    {
-      // Use preview server (pre-built app) for main server - much faster startup
-      command: "npm run serve -- --strictPort --port 3001",
-      port: 3001,
-    },
-    // Required by test tests/e2e/repo/commits.spec.ts "loading more commits, adds them to the commits list"
-    // Keep dev server here since it needs custom runtime config
-    {
-      command: "npm run start -- --strictPort --port 3002",
-      port: 3002,
-      // eslint-disable-next-line @typescript-eslint/naming-convention
-      env: { COMMITS_PER_PAGE: "4" },
-    },
-  ],
+  webServer: {
+    // Use preview server (pre-built app) for main server - much faster startup
+    command: "npm run serve -- --strictPort --port 3001",
+    port: 3001,
+  },
 };
 
 export default config;

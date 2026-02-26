@@ -574,6 +574,49 @@ export async function createMarkdownFixture(peer: RadiclePeer) {
   );
 }
 
+export async function createCommitsFixture(peer: RadiclePeer) {
+  await Fs.mkdir(Path.join(tmpDir, "repos", "commits"));
+  const { repoFolder } = await createRepo(peer, { name: "commits" });
+
+  // Create 30 more commits for a total of 31 using git fast-import for speed
+  const baseDate = 1671125284; // Same as Alice's date
+  const authorName = gitOptions["alice"].GIT_AUTHOR_NAME;
+  const authorEmail = gitOptions["alice"].GIT_AUTHOR_EMAIL;
+
+  // Get the initial commit hash to use as parent
+  const { stdout: initialCommit } = await peer.git(["rev-parse", "HEAD"], {
+    cwd: repoFolder,
+  });
+
+  // Build fast-import data stream
+  let fastImportData = "";
+  for (let i = 1; i <= 30; i++) {
+    const commitDate = baseDate + i;
+    const message = `Commit ${i}`;
+    const parent = i === 1 ? initialCommit.trim() : `:${i - 1}`;
+    fastImportData += `commit refs/heads/main
+mark :${i}
+author ${authorName} <${authorEmail}> ${commitDate} +0000
+committer ${authorName} <${authorEmail}> ${commitDate} +0000
+data ${message.length}
+${message}
+from ${parent}
+
+`;
+  }
+
+  // Write to temp file and pipe it to git fast-import
+  const fastImportFile = Path.join(tmpDir, "repos", "commits-fast-import");
+  await Fs.writeFile(fastImportFile, fastImportData);
+
+  await peer.spawn("bash", ["-c", `git fast-import --force < "${fastImportFile}"`], {
+    cwd: repoFolder,
+  });
+
+  await Fs.unlink(fastImportFile);
+  await peer.git(["push", "rad"], { cwd: repoFolder });
+}
+
 export const aliceMainHead = "7babd25a74eb3752ec24672b5edf0e7ecb4daf24";
 export const aliceMainCommitMessage =
   "Verify that crate::DoubleColon::should_work()";
@@ -589,9 +632,11 @@ export const shortBobHead = formatCommit(bobHead);
 export const sourceBrowsingRid = "rad:z4BwwjPCFNVP27FwVbDFgwVwkjcir";
 export const cobRid = "rad:z3fpY7nttPPa6MBnAv2DccHzQJnqe";
 export const markdownRid = "rad:z2tchH2Ti4LxRKdssPQYs6VHE5rsg";
+export const commitsRid = "rad:z2ysBeUDZnHejYvaToxYopZiUA3oy";
 export const sourceBrowsingUrl = `/nodes/localhost/${sourceBrowsingRid}`;
 export const cobUrl = `/nodes/localhost/${cobRid}`;
 export const markdownUrl = `/nodes/localhost/${markdownRid}`;
+export const commitsUrl = `/nodes/localhost/${commitsRid}`;
 export const shortNodeRemote = "z6MktU…1xB22S";
 export const gitOptions = {
   alice: {

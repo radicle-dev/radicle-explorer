@@ -2,6 +2,7 @@ import {
   aliceMainCommitCount,
   aliceMainCommitMessage,
   bobMainCommitCount,
+  commitsUrl,
   expect,
   gitOptions,
   shortAliceHead,
@@ -89,12 +90,12 @@ test("peer and branch switching", async ({ page }) => {
 test("loading more commits, adds them to the commits list", async ({
   page,
 }) => {
-  await page.goto(`http://localhost:3002${sourceBrowsingUrl}`);
+  await page.goto(commitsUrl);
   await page.getByRole("button", { name: "Commits" }).click();
-  await expect(page.locator("div > div > .teaser")).toHaveCount(4);
+  await expect(page.locator("div > div > .teaser")).toHaveCount(30);
 
   await page.getByRole("button", { name: "More" }).click();
-  await expect(page.locator("div > div > .teaser")).toHaveCount(8);
+  await expect(page.locator("div > div > .teaser")).toHaveCount(31);
 });
 
 test("commit messages with double colon not converted into single colon", async ({
