@@ -41,6 +41,12 @@ Use this when:
 **Note:** If you've made code changes or are getting unexpected test failures,
 remove the `SKIP_SETUP` flag to ensure tests run against the latest build.
 
+**Common usage patterns:**
+
+* First time run: `npm run test:e2e -- --project chromium`
+* Subsequent runs (no code changes): `SKIP_SETUP=true npm run test:e2e -- --project chromium`
+* Single test by line number: `SKIP_SETUP=true npm run test:e2e -- tests/e2e/repo/commits.spec.ts:90 --project chromium`
+
 Proposing changes
 -----------------
 When proposing changes via a patch:
