@@ -53,6 +53,13 @@ export default async function globalSetup(): Promise<() => void> {
     process.exit(1);
   }
 
+  // Build the app once before running tests to avoid compilation
+  // overhead on each worker.
+  console.log("Building the app for tests...");
+  const { execa: exec } = await import("execa");
+  await exec("npm", ["run", "build"], { stdio: "inherit" });
+  console.log("Build complete");
+
   if (!process.env.SKIP_FIXTURE_CREATION) {
     console.log(
       "Recreating static fixtures. Set SKIP_FIXTURE_CREATION to skip this",
