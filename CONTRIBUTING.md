@@ -47,6 +47,16 @@ remove the `SKIP_SETUP` flag to ensure tests run against the latest build.
 * Subsequent runs (no code changes): `SKIP_SETUP=true npm run test:e2e -- --project chromium`
 * Single test by line number: `SKIP_SETUP=true npm run test:e2e -- tests/e2e/repo/commits.spec.ts:90 --project chromium`
 
+**Testing with local radicle-httpd build:**
+
+If you're developing radicle-httpd and want to test changes locally:
+
+    npm run test:e2e:local
+
+This will:
+1. Compile radicle-httpd from the `radicle-httpd/` directory
+2. Run the full test suite against the locally compiled binary
+
 Proposing changes
 -----------------
 When proposing changes via a patch:

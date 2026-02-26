@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -e
+
+echo "🔨 Compiling local radicle-httpd..."
+
+# Ensure radicle-httpd directory exists
+if [ ! -d "radicle-httpd" ]; then
+  echo "❌ radicle-httpd directory not found"
+  exit 1
+fi
+
+# Compile radicle-httpd (debug build for faster compilation)
+cd radicle-httpd
+cargo build
+cd ..
+
+# Verify binary was created
+if [ ! -f "radicle-httpd/target/debug/radicle-httpd" ]; then
+  echo "❌ Compilation failed - binary not found"
+  exit 1
+fi
+
+# Create target directory
+mkdir -p tests/tmp/bin/httpd/local
+
+# Copy binary to test location
+cp radicle-httpd/target/debug/radicle-httpd tests/tmp/bin/httpd/local/radicle-httpd
+
+echo "✅ Local radicle-httpd compiled and ready at tests/tmp/bin/httpd/local/radicle-httpd"

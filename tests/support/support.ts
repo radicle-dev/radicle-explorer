@@ -33,6 +33,8 @@ export const radicleHttpdRelease = (
   await Fs.readFile(`${supportDir}/radicle-httpd-release`, "utf8")
 ).trim();
 
+export const useLocalHttpd = process.env.USE_LOCAL_HTTPD === "true";
+
 // Assert that binaries are installed and are the correct version.
 export async function assertBinariesInstalled(
   binary: string,

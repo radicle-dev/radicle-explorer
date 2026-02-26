@@ -6,6 +6,7 @@ import {
   radicleHttpdRelease,
   removeWorkspace,
   tmpDir,
+  useLocalHttpd,
 } from "@tests/support/support.js";
 import {
   defaultConfig,
@@ -24,12 +25,9 @@ const heartwoodBinaryPath = Path.join(
   "heartwood",
   heartwoodRelease,
 ).trim();
-const httpdBinaryPath = Path.join(
-  tmpDir,
-  "bin",
-  "httpd",
-  radicleHttpdRelease,
-).trim();
+const httpdBinaryPath = useLocalHttpd
+  ? Path.join(tmpDir, "bin", "httpd", "local").trim()
+  : Path.join(tmpDir, "bin", "httpd", radicleHttpdRelease).trim();
 
 process.env.PATH = [
   heartwoodBinaryPath,
@@ -42,14 +40,19 @@ export default async function globalSetup(): Promise<() => void> {
     await assertBinariesInstalled("rad", heartwoodRelease, heartwoodBinaryPath);
     await assertBinariesInstalled(
       "radicle-httpd",
-      radicleHttpdRelease,
+      useLocalHttpd ? "pre-release" : radicleHttpdRelease,
       httpdBinaryPath,
     );
   } catch (error) {
     console.error(error);
     console.log("");
-    console.log("To download the required test binaries, run:");
-    console.log(" 👉 ./scripts/install-binaries");
+    if (useLocalHttpd) {
+      console.log("To compile local radicle-httpd binary, run:");
+      console.log(" 👉 ./scripts/compile-local-httpd");
+    } else {
+      console.log("To download the required test binaries, run:");
+      console.log(" 👉 ./scripts/install-binaries");
+    }
     console.log("");
     process.exit(1);
   }
@@ -62,7 +65,7 @@ export default async function globalSetup(): Promise<() => void> {
   if (shouldSetup) {
     console.log("⚡ Starting parallel setup...");
   } else {
-    console.log("⏭️  Skipping setup (SKIP_SETUP is set)");
+    console.log("⏭️ Skipping setup (SKIP_SETUP is set)");
   }
 
   // Run build and fixture setup in parallel
@@ -161,6 +164,25 @@ export default async function globalSetup(): Promise<() => void> {
   if (shouldSetup) {
     console.log("🚀 Setup complete, ready to run tests");
   }
+
+  // Print binary versions
+  const { execa: exec } = await import("execa");
+  const { stdout: radVersion } = await exec("rad", ["--version"]);
+  const { stdout: gitRemoteRadVersion } = await exec("git-remote-rad", [
+    "--version",
+  ]);
+  const { stdout: httpdVersion } = await exec("radicle-httpd", ["--version"]);
+  // radicle-httpd outputs logging lines, extract just the version line (last line)
+  const httpdVersionClean =
+    httpdVersion.trim().split("\n").pop() || httpdVersion;
+  console.log("");
+  console.log("Binary versions:");
+  console.log(`  rad: ${radVersion.trim()}`);
+  console.log(`  git-remote-rad: ${gitRemoteRadVersion.trim()}`);
+  console.log(
+    `  radicle-httpd: ${httpdVersionClean}${useLocalHttpd ? " (local)" : ""}`,
+  );
+  console.log("");
 
   return async () => {
     await peerManager.shutdown();
