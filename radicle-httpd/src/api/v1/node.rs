@@ -77,7 +77,9 @@ async fn node_handler(State(ctx): State<Context>) -> impl IntoResponse {
         .unwrap_or_default()
         .map(|node| node.agent);
 
-    // Work around /node endpoint being slow to respond.
+    // The call to `is_running` is a blocking call, which has been, anecdotally, slow to respond.
+    // Spawn a thread with a timeout to ensure that the call to `is_running` does not slow down the
+    // response of the `/node` route too much.
     let node_state = {
         let socket = ctx.profile.socket();
         let is_running = timeout(
