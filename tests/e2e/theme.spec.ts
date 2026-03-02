@@ -17,11 +17,13 @@ test("default theme", async ({ page }) => {
 test("theme persistence", async ({ page }) => {
   await page.goto(sourceBrowsingFixture);
   await expect(
-    page.getByRole("banner").getByRole("link", { name: "source-browsing" }),
+    page
+      .getByRole("navigation", { name: "Breadcrumb" })
+      .getByRole("link", { name: "source-browsing" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Settings" }).click();
 
-  await page.getByText("System").click();
+  await page.getByRole("button", { name: "Code Font System" }).click();
   await page.getByRole("button", { name: "Light Mode" }).click();
 
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
@@ -36,7 +38,9 @@ test("theme persistence", async ({ page }) => {
 test("change theme", async ({ page }) => {
   await page.goto(sourceBrowsingFixture);
   await expect(
-    page.getByRole("banner").getByRole("link", { name: "source-browsing" }),
+    page
+      .getByRole("navigation", { name: "Breadcrumb" })
+      .getByRole("link", { name: "source-browsing" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Settings" }).click();
 
@@ -44,35 +48,35 @@ test("change theme", async ({ page }) => {
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   await expect(page.locator("body")).toHaveCSS(
     "background-color",
-    "rgb(245, 245, 255)",
+    "rgb(248, 249, 250)",
   );
   // Source highlighting reacts to theme change.
-  await expect(page.getByText("() {")).toHaveCSS("color", "rgb(35, 37, 99)");
+  await expect(page.getByText("() {")).toHaveCSS("color", "rgb(11, 13, 18)");
 
   await page.getByRole("button", { name: "Dark Mode" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await expect(page.locator("body")).toHaveCSS(
     "background-color",
-    "rgb(10, 13, 16)",
+    "rgb(0, 6, 15)",
   );
   // Source highlighting reacts to theme change.
-  await expect(page.getByText("() {")).toHaveCSS("color", "rgb(249, 249, 251)");
+  await expect(page.getByText("() {")).toHaveCSS("color", "rgb(255, 255, 255)");
 });
 
 test("change code font", async ({ page }) => {
   await page.goto(sourceBrowsingFixture);
   await expect(
-    page.getByRole("banner").getByRole("link", { name: "source-browsing" }),
+    page
+      .getByRole("navigation", { name: "Breadcrumb" })
+      .getByRole("link", { name: "source-browsing" }),
   ).toBeVisible();
 
   await page.getByRole("button", { name: "Settings" }).click();
 
-  await page.getByText("System").click();
-  await expect(page.getByText("System")).toHaveClass(/selected/);
+  await page.getByRole("button", { name: "Code Font System" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-codefont", "system");
 
-  await page.getByText("JetBrains Mono").click();
-  await expect(page.getByText("JetBrains Mono")).toHaveClass(/selected/);
+  await page.getByRole("button", { name: "Code Font JetBrains Mono" }).click();
   await expect(page.locator("html")).toHaveAttribute(
     "data-codefont",
     "jetbrains",

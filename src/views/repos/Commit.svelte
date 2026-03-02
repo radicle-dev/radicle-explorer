@@ -46,20 +46,19 @@
 
 <style>
   .commit {
-    background-color: var(--color-background-float);
+    background-color: var(--color-surface-subtle);
   }
   .header {
     padding: 1rem;
-    border-radius: var(--border-radius-small);
-    border-bottom: 1px solid var(--color-border-hint);
+    border-radius: var(--border-radius-md);
+    border-bottom: 1px solid var(--color-border-subtle);
   }
   .title {
     display: flex;
     align-items: center;
-    font-weight: var(--font-weight-semibold);
   }
   .description {
-    font-family: var(--font-family-monospace);
+    font: var(--txt-code-regular);
     white-space: pre-wrap;
     margin-top: 1.5rem;
   }
@@ -82,7 +81,7 @@
       Commits
     </Link>
     <Separator />
-    <span class="id">
+    <span class="txt-id">
       <div class="global-hide-on-small-desktop-down">
         {commit.commit.id}
       </div>
@@ -95,7 +94,7 @@
     <div class="header">
       <div style="display:flex; flex-direction: column; gap: 0.5rem;">
         <span class="title">
-          <InlineTitle fontSize="large" content={header.summary} />
+          <InlineTitle fontSize="heading-l" content={header.summary} />
           <div class="button-container">
             <Link
               route={{
@@ -121,9 +120,9 @@
           </div>
         </span>
         <CommitAuthorship {header}>
-          <Id id={header.id} style="commit" ariaLabel="commit-id" />
+          <Id id={header.id} ariaLabel="commit-id" />
         </CommitAuthorship>
-        <span class="txt-small">
+        <span class="txt-body-m-regular">
           {header.parents.length === 1 ? "Parent" : "Parents"}:
           {#each header.parents as parent, i}
             {i > 0 ? " + " : ""}
@@ -135,13 +134,13 @@
                 node: baseUrl,
                 commit: parent,
               }}>
-              <span class="global-commit">{formatObjectId(parent)}</span>
+              <span class="txt-id">{formatObjectId(parent)}</span>
             </Link>
           {/each}
         </span>
       </div>
       {#if header.description}
-        <pre class="description txt-small">{@html dompurify.sanitize(
+        <pre class="description">{@html dompurify.sanitize(
             convertUrlsToExternalLinks(escape(header.description)),
           )}</pre>
       {/if}

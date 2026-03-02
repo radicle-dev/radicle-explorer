@@ -21,14 +21,14 @@
 
 <style>
   .header {
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
     margin-bottom: 0.75rem;
   }
   .body {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
   }
   .review {
     display: inline-flex;
@@ -36,14 +36,17 @@
     gap: 0.5rem;
   }
   .review-accept {
-    color: var(--color-foreground-success);
+    color: var(--color-text-open);
   }
   .review-reject {
-    color: var(--color-foreground-red);
+    color: var(--color-feedback-error-text);
   }
-  .txt-missing .review-accept,
-  .txt-missing .review-reject {
-    color: var(--color-foreground-dim);
+  .review-missing {
+    color: var(--color-text-tertiary);
+  }
+  .review-missing .review-accept,
+  .review-missing .review-reject {
+    color: var(--color-text-tertiary);
   }
   @media (max-width: 1349.98px) {
     .wrapper {
@@ -74,7 +77,7 @@
     {#each sortedReviews as { latest, review }}
       <div
         class="review"
-        class:txt-missing={!latest}
+        class:review-missing={!latest}
         title={!latest
           ? `This review was on a previous revision. Please ask ${review.author.alias} to re-review`
           : ""}>
@@ -86,7 +89,7 @@
           {:else if review.verdict === "reject"}
             <Icon name="cross" />
           {:else}
-            <Icon name="chat" />
+            <Icon name="comment" />
           {/if}
         </span>
         <NodeId
@@ -95,7 +98,9 @@
           alias={review.author.alias} />
       </div>
     {:else}
-      <div class="txt-missing no-reviews">No reviews</div>
+      <div class="no-reviews" style:color="var(--color-text-tertiary)">
+        No reviews
+      </div>
     {/each}
   </div>
 </div>

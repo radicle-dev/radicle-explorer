@@ -10,8 +10,7 @@
 <style>
   .label {
     display: block;
-    font-size: var(--font-size-small);
-    font-weight: var(--font-weight-regular);
+    font: var(--txt-body-m-regular);
     margin-bottom: 0.75rem;
   }
 </style>
@@ -24,7 +23,7 @@
     on:click={() => {
       toggle();
     }}>
-    <Icon name="branch" />
+    <Icon name="checkout" />
     <span class="global-hide-on-small-desktop-down">Checkout</span>
   </Button>
 

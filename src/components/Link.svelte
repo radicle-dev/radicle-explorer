@@ -9,6 +9,7 @@
   export let styleHoverState: boolean = false;
   export let styleTextOverflow: boolean = false;
   export let title: string | undefined = undefined;
+  export let ariaLabel: string | undefined = undefined;
   export let style: string | undefined = undefined;
 
   const dispatch = createEventDispatcher<{
@@ -44,6 +45,7 @@
   class:hover-style={styleHoverState}
   on:click={navigateToRoute}
   href={routeToPath(route)}
+  aria-label={ariaLabel}
   {title}
   {style}>
   <slot />

@@ -183,22 +183,34 @@ test("files with special characters in the filename", async ({ page }) => {
   await sourceTree.getByText("special").click();
 
   await sourceTree.getByText("+plus+").click();
-  await expect(page.getByRole("banner")).toContainText("+plus");
+  await expect(
+    page.getByRole("navigation", { name: "Breadcrumb" }),
+  ).toContainText("+plus");
 
   await sourceTree.getByText("-dash-").click();
-  await expect(page.getByRole("banner")).toContainText("-dash-");
+  await expect(
+    page.getByRole("navigation", { name: "Breadcrumb" }),
+  ).toContainText("-dash-");
 
   await sourceTree.getByText(":colon:").click();
-  await expect(page.getByRole("banner")).toContainText(":colon:");
+  await expect(
+    page.getByRole("navigation", { name: "Breadcrumb" }),
+  ).toContainText(":colon:");
 
   await sourceTree.getByText(";semicolon;").click();
-  await expect(page.getByRole("banner")).toContainText(";semicolon;");
+  await expect(
+    page.getByRole("navigation", { name: "Breadcrumb" }),
+  ).toContainText(";semicolon;");
 
   await sourceTree.getByText("@at@").click();
-  await expect(page.getByRole("banner")).toContainText("@at@");
+  await expect(
+    page.getByRole("navigation", { name: "Breadcrumb" }),
+  ).toContainText("@at@");
 
   await sourceTree.getByText("_underscore_").click();
-  await expect(page.getByRole("banner")).toContainText("_underscore_");
+  await expect(
+    page.getByRole("navigation", { name: "Breadcrumb" }),
+  ).toContainText("_underscore_");
 
   // TODO: fix these errors in `radicle-httpd` for the following edge cases.
   //
@@ -210,13 +222,19 @@ test("files with special characters in the filename", async ({ page }) => {
   // );
 
   await sourceTree.getByText("spaces are okay").click();
-  await expect(page.getByRole("banner")).toContainText("spaces are okay");
+  await expect(
+    page.getByRole("navigation", { name: "Breadcrumb" }),
+  ).toContainText("spaces are okay");
 
   await sourceTree.getByText("~tilde~").click();
-  await expect(page.getByRole("banner")).toContainText("~tilde~");
+  await expect(
+    page.getByRole("navigation", { name: "Breadcrumb" }),
+  ).toContainText("~tilde~");
 
   await sourceTree.getByText("👹👹👹").click();
-  await expect(page.getByRole("banner")).toContainText("👹👹👹");
+  await expect(
+    page.getByRole("navigation", { name: "Breadcrumb" }),
+  ).toContainText("👹👹👹");
 });
 
 test("binary files", async ({ page }) => {

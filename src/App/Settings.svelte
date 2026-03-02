@@ -8,8 +8,6 @@
   } from "@app/lib/appearance";
 
   import Button from "@app/components/Button.svelte";
-  import Icon from "@app/components/Icon.svelte";
-  import Radio from "@app/components/Radio.svelte";
 </script>
 
 <style>
@@ -18,7 +16,7 @@
     flex-direction: column;
     align-items: center;
     gap: 1.5rem;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
   }
 
   .item {
@@ -38,64 +36,56 @@
 <div class="settings">
   <div class="item">
     <div>Theme</div>
-    <div class="right">
-      <Radio>
-        <Button
-          ariaLabel="Light Mode"
-          styleBorderRadius="0"
-          variant={!$followSystemTheme && $theme === "light"
-            ? "selected"
-            : "not-selected"}
-          on:click={() => {
-            theme.set("light");
-            followSystemTheme.set(false);
-          }}>
-          <Icon name="sun" />
-        </Button>
-        <div class="global-spacer"></div>
-        <Button
-          ariaLabel="Dark Mode"
-          styleBorderRadius="0"
-          variant={!$followSystemTheme && $theme === "dark"
-            ? "selected"
-            : "not-selected"}
-          on:click={() => {
-            theme.set("dark");
-            followSystemTheme.set(false);
-          }}>
-          <Icon name="moon" />
-        </Button>
-        <div class="global-spacer"></div>
-        <Button
-          ariaLabel="System Theme"
-          styleBorderRadius="0"
-          variant={$followSystemTheme ? "selected" : "not-selected"}
-          on:click={() => {
-            theme.set(loadTheme());
-            followSystemTheme.set(true);
-          }}>
-          <Icon name="device" />
-        </Button>
-      </Radio>
+    <div class="right" style:display="flex" style:gap="0.25rem">
+      <Button
+        ariaLabel="Light Mode"
+        styleBorderRadius="0"
+        variant={!$followSystemTheme && $theme === "light"
+          ? "gray"
+          : "background"}
+        on:click={() => {
+          theme.set("light");
+          followSystemTheme.set(false);
+        }}>
+        Light
+      </Button>
+      <Button
+        ariaLabel="Dark Mode"
+        styleBorderRadius="0"
+        variant={!$followSystemTheme && $theme === "dark"
+          ? "gray"
+          : "background"}
+        on:click={() => {
+          theme.set("dark");
+          followSystemTheme.set(false);
+        }}>
+        Dark
+      </Button>
+      <Button
+        ariaLabel="System Theme"
+        styleBorderRadius="0"
+        variant={$followSystemTheme ? "gray" : "background"}
+        on:click={() => {
+          theme.set(loadTheme());
+          followSystemTheme.set(true);
+        }}>
+        System
+      </Button>
     </div>
   </div>
   <div class="item">
     <div>Code Font</div>
-    <div class="right">
-      <Radio>
-        {#each codeFonts as font}
-          <Button
-            styleBorderRadius="0"
-            styleFontFamily={font.fontFamily}
-            on:click={() => codeFont.set(font.storedName)}
-            variant={$codeFont === font.storedName
-              ? "selected"
-              : "not-selected"}>
-            {font.displayName}
-          </Button>
-          <div class="global-spacer"></div>
-        {/each}
-      </Radio>
+    <div class="right" style:display="flex" style:gap="0.25rem">
+      {#each codeFonts as font}
+        <Button
+          ariaLabel={`Code Font ${font.displayName}`}
+          styleBorderRadius="0"
+          styleFontFamily={font.fontFamily}
+          on:click={() => codeFont.set(font.storedName)}
+          variant={$codeFont === font.storedName ? "gray" : "background"}>
+          {font.displayName}
+        </Button>
+      {/each}
     </div>
   </div>
 </div>

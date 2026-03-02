@@ -13,7 +13,7 @@
     align-items: center;
     flex-wrap: wrap;
     gap: 0.5rem;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
   }
   .summary {
     display: flex;
@@ -26,7 +26,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
     margin-top: 2rem;
     word-break: break-word;
   }

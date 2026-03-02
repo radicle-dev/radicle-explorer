@@ -7,7 +7,7 @@
     height: 100vh;
     width: 100vw;
     position: fixed;
-    z-index: 100;
+    z-index: 300;
     justify-content: center;
     overflow: scroll;
     display: flex;

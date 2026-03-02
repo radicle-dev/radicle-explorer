@@ -19,10 +19,10 @@
 
 <div
   class="item"
-  style="justify-content: space-between; display: flex; text-wrap: nowrap; font-size: var(--font-size-small); ">
+  style="justify-content: space-between; display: flex; text-wrap: nowrap; font: var(--txt-body-m-regular); ">
   <span>Seeding</span>
   <div class="global-flex-item" style:gap="0.25rem">
-    <Icon name="seedling" />{formatter.format(count).toLowerCase()}
+    <Icon name="seed" />{formatter.format(count).toLowerCase()}
     <slot />
   </div>
 </div>

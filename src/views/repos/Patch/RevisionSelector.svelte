@@ -20,7 +20,7 @@
 <Popover
   popoverPadding="0"
   popoverPositionTop="3rem"
-  popoverBorderRadius="var(--border-radius-small)">
+  popoverBorderRadius="var(--border-radius-md)">
   <Button
     let:expanded
     slot="toggle"
@@ -30,15 +30,15 @@
     disabled={patch.revisions.length === 1}>
     <span
       style:color={patch.revisions.length > 1
-        ? "var(--color-foreground-contrast)"
-        : "var(--color-foregroung-disabled)"}>
+        ? "var(--color-text-primary)"
+        : "var(--color-text-disabled)"}>
       Revision
     </span>
     <span
       style:color={patch.revisions.length > 1
-        ? "var(--color-fill-secondary)"
-        : "var(--color-foregroung-disabled)"}
-      style:font-family="var(--font-family-monospace)">
+        ? "var(--color-text-brand)"
+        : "var(--color-text-disabled)"}
+      style:font="var(--txt-code-regular)">
       {utils.formatObjectId(view.revision)}
     </span>
     <Icon name={expanded ? "chevron-up" : "chevron-down"} />
@@ -60,13 +60,13 @@
         <DropdownListItem selected={item.id === view.revision}>
           <span
             style:color={item.id === view.revision
-              ? "var(--color-foreground-contrast)"
-              : "var(--color-fill-gray)"}>
+              ? "var(--color-text-primary)"
+              : "var(--color-text-tertiary)"}>
             Revision
           </span>
           <span
-            style:color="var(--color-fill-secondary)"
-            style:font-family="var(--font-family-monospace)">
+            style:color="var(--color-text-brand)"
+            style:font="var(--txt-code-regular)">
             {utils.formatObjectId(item.id)}
           </span>
         </DropdownListItem>

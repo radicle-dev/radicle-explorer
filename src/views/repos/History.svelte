@@ -83,9 +83,8 @@
     margin-left: 1rem;
     margin-top: 3rem;
     margin-bottom: 1rem;
-    font-size: var(--font-size-small);
-    font-weight: var(--font-weight-medium);
-    color: var(--color-foreground-dim);
+    font: var(--txt-body-m-regular);
+    color: var(--color-text-tertiary);
   }
   .group-header:first-child {
     margin-top: 0;
@@ -162,7 +161,7 @@
       <div class="message">
         <ErrorMessage
           title="Couldn't load commits"
-          description="Make sure you are able to connect to the seed <code>${baseUrlToString(
+          description="Make sure you are able to connect to the seed <code>{baseUrlToString(
             api.baseUrl,
           )}</code>"
           {error} />
@@ -172,7 +171,7 @@
     <div class="message">
       <ErrorMessage
         title="Couldn't load repo stats"
-        description="Make sure you are able to connect to the seed <code>${baseUrlToString(
+        description="Make sure you are able to connect to the seed <code>{baseUrlToString(
           api.baseUrl,
         )}</code>"
         {error} />

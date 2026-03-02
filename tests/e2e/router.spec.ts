@@ -35,7 +35,7 @@ test("navigation between node and repo pages", async ({ page }) => {
   await expectBackAndForwardNavigationWorks("/nodes/localhost", page);
   await expectUrlPersistsReload(page);
 
-  await page.getByRole("link", { name: "Radicle logo localhost" }).click();
+  await page.getByRole("link", { name: "Home" }).click();
   await expect(page).toHaveURL("/nodes/localhost");
 });
 

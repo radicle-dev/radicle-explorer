@@ -75,8 +75,8 @@
 
 <style>
   .code :global(.line-number) {
-    font-family: var(--font-family-monospace);
-    color: var(--color-foreground-disabled);
+    font: var(--txt-code-regular);
+    color: var(--color-text-disabled);
     text-align: right;
     padding: 0;
     user-select: none;
@@ -87,12 +87,12 @@
   }
   .code :global(.line-number:hover) {
     cursor: pointer;
-    color: var(--color-foreground-dim);
+    color: var(--color-text-tertiary);
   }
 
   .code :global(.content) {
     display: inline;
-    font-family: var(--font-family-monospace);
+    font: var(--txt-code-regular);
     margin: 0;
   }
 
@@ -100,16 +100,16 @@
     line-height: 22px; /* This seems to be the line-height of a pre code block */
   }
   .code :global(.highlight) {
-    background-color: var(--color-fill-float-hover);
-    box-shadow: 0 0 0 1px var(--color-fill-secondary);
+    background-color: var(--color-surface-mid);
+    box-shadow: 0 0 0 1px var(--color-border-brand);
   }
   .code :global(.highlight td:first-child) {
-    background-color: var(--color-fill-float-hover);
-    border-left: 1px solid var(--color-fill-secondary);
+    background-color: var(--color-surface-mid);
+    border-left: 1px solid var(--color-border-brand);
   }
   .code :global(.highlight td:last-child) {
-    background-color: var(--color-fill-float-hover);
-    border-right: 1px solid var(--color-fill-secondary);
+    background-color: var(--color-surface-mid);
+    border-right: 1px solid var(--color-border-brand);
   }
 
   .code :global(.line-content) {
@@ -121,7 +121,7 @@
     width: 100%;
     border-spacing: 0;
     overflow-x: auto;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
     padding-top: 1rem;
     margin-bottom: 1.5rem;
   }
@@ -172,14 +172,14 @@
               // eslint-disable-next-line
               preview = true;
             }}>
-            <Icon name="eye-open" />Preview
+            <Icon name="eye" />Preview
           </Button>
           <div class="global-spacer"></div>
         </Radio>
       {/if}
       <a href="{rawPath}/{blob.path}" target="_blank" rel="noreferrer">
         <Button variant="gray-white">
-          Raw <Icon name="arrow-box-up-right" />
+          Raw <Icon name="open-external" />
         </Button>
       </a>
     </div>

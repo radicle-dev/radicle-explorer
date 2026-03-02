@@ -65,25 +65,25 @@
     flex: 1;
     flex-direction: column;
     min-width: 0;
-    background-color: var(--color-background-float);
+    background-color: var(--color-surface-subtle);
   }
   .bottom {
     padding: 0 1rem 2.5rem 1rem;
-    background-color: var(--color-background-default);
+    background-color: var(--color-surface-base);
     height: 100%;
-    border-top: 1px solid var(--color-border-hint);
+    border-top: 1px solid var(--color-border-subtle);
   }
   .connector {
     width: 1px;
     height: 1.5rem;
     margin-left: 1.25rem;
-    background-color: var(--color-fill-separator);
+    background-color: var(--color-border-subtle);
   }
   .metadata {
     display: flex;
     flex-direction: column;
     padding: 1rem;
-    border-left: 1px solid var(--color-border-hint);
+    border-left: 1px solid var(--color-border-subtle);
     gap: 1.5rem;
     width: 20rem;
   }
@@ -94,8 +94,8 @@
   }
 
   .author-metadata {
-    color: var(--color-fill-gray);
-    font-size: var(--font-size-small);
+    color: var(--color-text-tertiary);
+    font: var(--txt-body-m-regular);
   }
   .title {
     overflow: hidden;
@@ -103,8 +103,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-weight: var(--font-weight-semibold);
-    font-size: var(--font-size-large);
+    font: var(--txt-heading-l);
     word-break: break-word;
   }
   .reactions {
@@ -112,11 +111,6 @@
     gap: 0.5rem;
     align-items: center;
     margin-left: -0.25rem;
-  }
-  .id {
-    font-size: var(--font-size-small);
-    font-family: var(--font-family-monospace);
-    font-weight: var(--font-weight-semibold);
   }
   @media (max-width: 719.98px) {
     .bottom {
@@ -143,7 +137,7 @@
       Issues
     </Link>
     <Separator />
-    <span class="id">
+    <span class="txt-id">
       <div class="global-hide-on-small-desktop-down">
         {issue.id}
       </div>
@@ -160,22 +154,22 @@
           <div style="display: flex; gap: 1rem; width: 100%;">
             {#if issue.title}
               <div class="title">
-                <InlineTitle fontSize="large" content={issue.title} />
+                <InlineTitle fontSize="heading-l" content={issue.title} />
               </div>
             {:else}
-              <span class="txt-missing">No title</span>
+              <span style:color="var(--color-text-tertiary)">No title</span>
             {/if}
           </div>
           <Share />
         </svelte:fragment>
         <svelte:fragment slot="state">
           {#if issue.state.status === "open"}
-            <Badge size="tiny" variant="positive">
+            <Badge size="tiny" variant="open">
               <Icon name="issue" />
               {capitalize(issue.state.status)}
             </Badge>
           {:else}
-            <Badge size="tiny" variant="negative">
+            <Badge size="tiny" variant="merged">
               <Icon name="issue" />
               {capitalize(issue.state.status)} as
               {issue.state.reason}
@@ -219,7 +213,7 @@
                 repo.payloads["xyz.radicle.project"].meta.head,
               )} />
           {:else}
-            <span class="txt-missing">No description</span>
+            <span style:color="var(--color-text-tertiary)">No description</span>
           {/if}
           <div class="reactions">
             {#if issue.discussion[0].reactions.length > 0}

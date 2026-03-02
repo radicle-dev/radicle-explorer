@@ -19,7 +19,7 @@
 <style>
   .avatar {
     display: block;
-    box-shadow: 0 0 0 1px var(--color-border-match-background);
+    box-shadow: 0 0 0 1px var(--color-border-subtle);
     width: inherit;
     object-fit: cover;
     background-size: cover;
@@ -27,11 +27,11 @@
   }
   .small {
     width: 1rem;
-    border-radius: var(--border-radius-round);
+    border-radius: var(--border-radius-full);
   }
   .large {
     width: 4rem;
-    border-radius: var(--border-radius-small);
+    border-radius: var(--border-radius-md);
   }
 </style>
 

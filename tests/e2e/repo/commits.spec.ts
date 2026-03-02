@@ -198,10 +198,7 @@ test("pushing changes while viewing history", async ({ page, peerManager }) => {
   const branchSelectorCommitButton = page.getByTitle("Current HEAD").first();
   await expect(branchSelectorCommitButton).toHaveText("516fa74 first change");
 
-  await page
-    .getByRole("banner")
-    .getByRole("link", { name: "alice-project" })
-    .click();
+  await page.getByRole("link", { name: "alice-project" }).nth(1).click();
   await expect(page).toHaveURL(`${alice.uiUrl()}/${rid}`);
   await page.getByRole("link", { name: "Commits 2" }).click();
 

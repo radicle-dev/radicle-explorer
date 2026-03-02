@@ -7,16 +7,16 @@
 <style>
   .radio {
     display: flex;
-    border-radius: var(--border-radius-tiny);
+    border-radius: var(--border-radius-sm);
     justify-content: center;
     align-items: center;
     overflow: hidden;
   }
   .outline {
     display: flex;
-    border: 1px solid var(--color-fill-secondary);
+    border: 1px solid var(--color-border-brand);
     padding: 3px;
-    border-radius: var(--border-radius-small);
+    border-radius: var(--border-radius-sm);
     gap: 0.25rem;
   }
 </style>

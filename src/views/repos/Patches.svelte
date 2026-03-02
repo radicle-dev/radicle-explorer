@@ -73,10 +73,17 @@
   ];
 
   const stateColor: Record<PatchState["status"], string> = {
-    draft: "var(--color-fill-gray)",
-    open: "var(--color-fill-success)",
-    archived: "var(--color-foreground-yellow)",
-    merged: "var(--color-fill-primary)",
+    draft: "var(--color-text-draft)",
+    open: "var(--color-text-open)",
+    archived: "var(--color-text-archived)",
+    merged: "var(--color-text-merged)",
+  };
+
+  const stateBackground: Record<PatchState["status"], string> = {
+    draft: "var(--color-surface-draft)",
+    open: "var(--color-surface-open)",
+    archived: "var(--color-surface-archived)",
+    merged: "var(--color-surface-merged)",
   };
 
   $: showMoreButton =
@@ -100,20 +107,20 @@
     justify-content: center;
   }
   .dropdown-button-counter {
-    border-radius: var(--border-radius-tiny);
-    background-color: var(--color-fill-counter);
-    color: var(--color-foreground-contrast);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-alpha-subtle);
+    color: var(--color-text-primary);
     padding: 0 0.25rem;
   }
   .dropdown-list-counter {
-    border-radius: var(--border-radius-tiny);
-    background-color: var(--color-fill-ghost);
-    color: var(--color-foreground-dim);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-mid);
+    color: var(--color-text-tertiary);
     padding: 0 0.25rem;
   }
   .selected {
-    background-color: var(--color-fill-counter);
-    color: var(--color-foreground-dim);
+    background-color: var(--color-surface-alpha-subtle);
+    color: var(--color-text-tertiary);
   }
   .placeholder {
     height: calc(100% - 4rem);
@@ -144,7 +151,7 @@
     <Popover
       popoverPadding="0"
       popoverPositionTop="2.5rem"
-      popoverBorderRadius="var(--border-radius-small)">
+      popoverBorderRadius="var(--border-radius-md)">
       <Button
         let:expanded
         slot="toggle"
@@ -152,7 +159,11 @@
         on:click={toggle}
         ariaLabel="filter-dropdown"
         title="Filter patches by state">
-        <div style:color={stateColor[status]}>
+        <div
+          style:color={stateColor[status]}
+          style:background={stateBackground[status]}
+          style:padding="0.25rem 0.25rem"
+          style:border-radius="var(--border-radius-sm)">
           <Icon name="patch" />
         </div>
         {capitalize(status)}
@@ -173,7 +184,11 @@
             search: `status=${item}`,
           }}>
           <DropdownListItem selected={item === status}>
-            <div style:color={stateColor[item]}>
+            <div
+              style:color={stateColor[item]}
+              style:background={stateBackground[item]}
+              style:padding="0.25rem 0.25rem"
+              style:border-radius="var(--border-radius-sm)">
               <Icon name="patch" />
             </div>
             <div
@@ -205,7 +220,7 @@
   {#if error}
     <ErrorMessage
       title="Couldn't load patches"
-      description="Please make sure you are able to connect to the seed <code>${baseUrlToString(
+      description="Please make sure you are able to connect to the seed <code>{baseUrlToString(
         api.baseUrl,
       )}</code>"
       {error} />

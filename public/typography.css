@@ -1,30 +1,23 @@
 @font-face {
-  font-family: "Inter";
+  font-family: "Booton";
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("fonts/Inter-Regular.woff2");
+  src: url("fonts/Booton-Regular.woff2");
 }
 
 @font-face {
-  font-family: "Inter";
-  font-weight: 500;
+  font-family: "Booton";
+  font-weight: 468;
   font-display: swap;
-  src: url("fonts/Inter-Medium.woff2");
+  src: url("fonts/Booton-Medium.woff2");
 }
 
 @font-face {
-  font-family: "Inter";
+  font-family: "Booton";
   font-weight: 600;
   font-display: swap;
-  src: url("fonts/Inter-SemiBold.woff2");
-}
-
-@font-face {
-  font-family: "Inter";
-  font-weight: 700;
-  font-display: swap;
-  src: url("fonts/Inter-Bold.woff2");
+  src: url("fonts/Booton-SemiBold.woff2");
 }
 
 @font-face {
@@ -58,85 +51,133 @@
 }
 
 :root {
-  --font-family-sans-serif: Inter, sans-serif;
-  --font-family-monospace: monospace;
-  --font-weight-regular: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
-  --font-size-tiny: 0.75rem; /* 12px */
-  --font-size-small: 0.875rem; /* 14px */
-  --font-size-regular: 1rem; /* 16px */
-  --font-size-medium: 1.25rem; /* 20px */
-  --font-size-large: 1.5rem; /* 24px */
-  --font-size-x-large: 2rem; /* 32px */
-  --font-size-xx-large: 3rem; /* 48px */
+  --txt-heading-xxs: 600 0.75rem/1rem Booton, sans-serif;
+  --txt-heading-xs: 600 0.875rem/1.25rem Booton, sans-serif;
+  --txt-heading-s: 600 1rem/1.25rem Booton, sans-serif;
+  --txt-heading-m: 600 1.125rem/1.25rem Booton, sans-serif;
+  --txt-heading-l: 600 1.375rem/1.75rem Booton, sans-serif;
+  --txt-heading-xl: 600 1.75rem/2rem Booton, sans-serif;
+  --txt-heading-xxl: 600 2rem/2.25rem Booton, sans-serif;
+
+  --txt-body-s-regular: 400 0.75rem/1rem Booton, sans-serif;
+  --txt-body-s-medium: 468 0.75rem/1rem Booton, sans-serif;
+  --txt-body-s-semibold: 600 0.75rem/1rem Booton, sans-serif;
+
+  --txt-body-m-regular: 400 0.875rem/1.25rem Booton, sans-serif;
+  --txt-body-m-medium: 468 0.875rem/1.25rem Booton, sans-serif;
+  --txt-body-m-semibold: 600 0.875rem/1.25rem Booton, sans-serif;
+
+  --txt-body-l-regular: 400 1rem/1.5rem Booton, sans-serif;
+  --txt-body-l-medium: 468 1rem/1.5rem Booton, sans-serif;
+  --txt-body-l-semibold: 600 1rem/1.5rem Booton, sans-serif;
 }
 
 [data-codefont="system"] {
-  --font-family-monospace: monospace;
+  --txt-code-regular: 400 0.875rem/1.25rem monospace;
+  --txt-code-semibold: 600 0.875rem/1.25rem monospace;
 }
 
 [data-codefont="jetbrains"] {
-  --font-family-monospace: "JetBrains Mono";
+  --txt-code-regular: 400 0.875rem/1.25rem "JetBrains Mono";
+  --txt-code-semibold: 600 0.875rem/1.25rem "JetBrains Mono";
 }
 
 html {
   -ms-text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;
   -webkit-text-size-adjust: 100%;
-  font-family: var(--font-family-sans-serif);
-  font-feature-settings: "zero";
+  font-family: Booton, sans-serif;
   /* The root element font size has to be set in px,
    * otherwise Safari breaks. */
   font-size: 16px;
-  font-weight: var(--font-weight-regular);
-  line-height: 1.5;
+  font-weight: 400;
+  line-height: 1.25;
 }
 
-p {
-  margin: 1rem 0;
-}
-.txt-tiny {
-  font-size: var(--font-size-tiny);
-}
-.txt-small {
-  font-size: var(--font-size-small);
-}
-.txt-regular {
-  font-size: var(--font-size-regular);
-}
-.txt-medium {
-  font-size: var(--font-size-medium);
-}
-.txt-large {
-  font-size: var(--font-size-large);
-}
-.txt-huge {
-  font-size: var(--font-size-x-large);
-}
-.txt-humongous {
-  font-size: var(--font-size-xx-large);
+.txt-heading-xxs {
+  font: var(--txt-heading-xxs);
 }
 
-.txt-monospace {
-  font-family: var(--font-family-monospace);
+.txt-heading-xs {
+  font: var(--txt-heading-xs);
 }
-.txt-bold {
-  font-weight: var(--font-weight-bold) !important;
+
+.txt-heading-s {
+  font: var(--txt-heading-s);
 }
-.txt-semibold {
-  font-weight: var(--font-weight-semibold) !important;
+
+.txt-heading-m {
+  font: var(--txt-heading-m);
 }
-.txt-missing {
-  color: var(--color-foreground-dim);
+
+.txt-heading-l {
+  font: var(--txt-heading-l);
 }
+
+.txt-heading-xl {
+  font: var(--txt-heading-xl);
+}
+
+.txt-heading-xxl {
+  font: var(--txt-heading-xxl);
+}
+
+.txt-body-s-regular {
+  font: var(--txt-body-s-regular);
+}
+
+.txt-body-s-medium {
+  font: var(--txt-body-s-medium);
+}
+
+.txt-body-s-semibold {
+  font: var(--txt-body-s-semibold);
+}
+
+.txt-body-m-regular {
+  font: var(--txt-body-m-regular);
+}
+
+.txt-body-m-medium {
+  font: var(--txt-body-m-medium);
+}
+
+.txt-body-m-semibold {
+  font: var(--txt-body-m-semibold);
+}
+
+.txt-body-l-regular {
+  font: var(--txt-body-l-regular);
+}
+
+.txt-body-l-medium {
+  font: var(--txt-body-l-medium);
+}
+
+.txt-body-l-semibold {
+  font: var(--txt-body-l-semibold);
+}
+
+.txt-code-regular {
+  font: var(--txt-code-regular);
+}
+
+.txt-code-semibold {
+  font: var(--txt-code-semibold);
+}
+
+.txt-id {
+  color: var(--color-text-tertiary);
+  font: var(--txt-code-regular);
+}
+
 .txt-emoji {
   height: 1em;
   width: 1em;
   margin: 0 0.05em 0 0.1em;
   vertical-align: -0.1em;
 }
+
 .txt-overflow {
   overflow: hidden;
   text-overflow: ellipsis;

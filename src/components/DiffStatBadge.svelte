@@ -1,39 +1,37 @@
 <script lang="ts">
-  export let insertions: number;
-  export let deletions: number;
-  export let hoverable: boolean = false;
+  interface Props {
+    insertions: number;
+    deletions: number;
+    hoverable?: boolean;
+  }
+
+  const { insertions, deletions, hoverable }: Props = $props();
 </script>
 
 <style>
   .badge {
     display: flex;
-    font-size: var(--font-size-tiny);
-    font-weight: var(--font-weight-bold);
-    font-family: var(--font-family-monospace);
+    font: var(--txt-body-s-regular);
     height: var(--button-tiny-height);
     white-space: nowrap;
-    border-radius: var(--border-radius-round);
     overflow: hidden;
+    position: relative;
+    border-radius: var(--border-radius-sm);
   }
-  .hoverable:hover .positive {
-    background-color: var(--color-fill-diff-green);
-  }
-  .hoverable:hover .negative {
-    background-color: var(--color-fill-diff-red);
+  .badge:hover {
+    background-color: var(--color-surface-alpha-mid);
   }
   .positive {
     display: flex;
-    padding: 0 6px;
+    padding: 0 4px;
     align-items: center;
-    color: var(--color-foreground-success);
-    background-color: var(--color-fill-diff-green-light);
+    color: var(--color-text-open);
   }
   .negative {
     display: flex;
-    padding: 0 6px;
+    padding: 0 4px;
     align-items: center;
-    color: var(--color-foreground-red);
-    background-color: var(--color-fill-diff-red-light);
+    color: var(--color-feedback-error-text);
   }
 </style>
 

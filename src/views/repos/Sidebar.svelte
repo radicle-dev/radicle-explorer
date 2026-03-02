@@ -4,11 +4,9 @@
 
   import Button from "@app/components/Button.svelte";
   import ContextRepo from "@app/views/repos/Sidebar/ContextRepo.svelte";
-  import Help from "@app/App/Help.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Link from "@app/components/Link.svelte";
   import Popover from "@app/components/Popover.svelte";
-  import Settings from "@app/App/Settings.svelte";
 
   const SIDEBAR_STATE_KEY = "sidebarState";
 
@@ -72,18 +70,18 @@
   }
 
   .counter {
-    border-radius: var(--border-radius-tiny);
-    background-color: var(--color-fill-ghost);
-    color: var(--color-foreground-dim);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-mid);
+    color: var(--color-text-tertiary);
     padding: 0 0.25rem;
   }
   .selected {
-    background-color: var(--color-fill-counter);
-    color: var(--color-foreground-contrast);
+    background-color: var(--color-surface-alpha-subtle);
+    color: var(--color-text-primary);
   }
   .hover {
-    background-color: var(--color-fill-ghost-hover);
-    color: var(--color-foreground-contrast);
+    background-color: var(--color-surface-strong);
+    color: var(--color-text-primary);
   }
   .title-counter {
     display: flex;
@@ -111,10 +109,10 @@
   .box {
     padding: 1rem;
     margin-bottom: 0.5rem;
-    background-color: var(--color-background-float);
-    border: 1px solid var(--color-border-hint);
-    font-size: var(--font-size-small);
-    border-radius: var(--border-radius-small);
+    background-color: var(--color-surface-subtle);
+    border: 1px solid var(--color-border-subtle);
+    font: var(--txt-body-m-regular);
+    border-radius: var(--border-radius-md);
   }
   .repo.expanded {
     opacity: 1;
@@ -137,16 +135,6 @@
     height: 0;
     overflow: hidden;
   }
-  .horizontal-buttons {
-    display: flex;
-    gap: 0.5rem;
-    opacity: 0;
-    transition: opacity 30ms ease-in-out;
-  }
-  .horizontal-buttons.expanded {
-    opacity: 1;
-    transition: opacity 150ms ease-in-out;
-  }
   .icon {
     transform: rotate(180deg);
     transition: transform 150ms ease-in-out;
@@ -157,7 +145,6 @@
   .bottom {
     display: flex;
     flex-direction: column;
-    justify-items: flex-end;
   }
 </style>
 
@@ -250,42 +237,14 @@
         <Button
           stylePadding="0 0.75rem"
           variant="background"
-          title="Settings"
-          slot="toggle"
-          let:toggle
-          on:click={toggle}>
-          <Icon name="settings" />
-        </Button>
-
-        <Settings slot="popover" />
-      </Popover>
-
-      <Popover popoverPositionBottom="0" popoverPositionLeft="3rem">
-        <Button
-          stylePadding="0 0.75rem"
-          variant="background"
-          title="Help"
-          slot="toggle"
-          let:toggle
-          on:click={toggle}>
-          <Icon name="help" />
-        </Button>
-
-        <Help slot="popover" />
-      </Popover>
-
-      <Popover popoverPositionBottom="0" popoverPositionLeft="3rem">
-        <Button
-          stylePadding="0 0.75rem"
-          variant="background"
           title="Info"
           slot="toggle"
           let:toggle
           on:click={toggle}>
-          <Icon name="info" />
+          <Icon name="guide" />
         </Button>
 
-        <div slot="popover" class="txt-small" style:width="18rem">
+        <div slot="popover" class="txt-body-m-regular" style:width="18rem">
           <ContextRepo
             {baseUrl}
             repoThreshold={repo.threshold}
@@ -302,37 +261,6 @@
             <Icon name="chevron-left" />
           </div>
         </Button>
-        <div class="global-flex-item">
-          <div class="horizontal-buttons" class:expanded>
-            <Popover popoverPositionBottom="2.5rem" popoverPositionLeft="0">
-              <Button
-                variant="outline"
-                title="Settings"
-                slot="toggle"
-                let:toggle
-                on:click={toggle}>
-                <Icon name="settings" />
-                Settings
-              </Button>
-
-              <Settings slot="popover" />
-            </Popover>
-          </div>
-          <div class="horizontal-buttons" class:expanded>
-            <Popover popoverPositionBottom="2.5rem" popoverPositionLeft="0">
-              <Button
-                variant="outline"
-                title="Help"
-                slot="toggle"
-                let:toggle
-                on:click={toggle}>
-                <Icon name="help" />
-                Help
-              </Button>
-              <Help slot="popover" />
-            </Popover>
-          </div>
-        </div>
       </div>
     {/if}
   </div>

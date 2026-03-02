@@ -1,26 +1,24 @@
 <script lang="ts">
   import type { ComponentProps } from "svelte";
-
   import debounce from "lodash/debounce";
+
+  import Icon from "@app/components/Icon.svelte";
 
   import { formatObjectId } from "@app/lib/utils";
   import { toClipboard } from "@app/lib/utils";
 
-  import Icon from "./Icon.svelte";
-
   export let id: string;
   export let shorten: boolean = true;
-  export let style: "oid" | "commit" | "none" = "oid";
   export let ariaLabel: string | undefined = undefined;
   export let styleWidth: string | undefined = undefined;
   export let title: string | undefined = undefined;
 
-  let icon: ComponentProps<Icon>["name"] = "clipboard";
+  let icon: ComponentProps<Icon>["name"] = "copy";
   const text = "Click to copy";
   let tooltip = text;
 
   const restoreIcon = debounce(() => {
-    icon = "clipboard";
+    icon = "copy";
     tooltip = text;
     visible = false;
   }, 1000);
@@ -54,36 +52,30 @@
     gap: 0.5rem;
     justify-content: center;
     z-index: 20;
-    background: var(--color-fill-ghost);
-    color: var(--color-fill-gray);
-    border: 1px solid var(--color-border-default);
-    border-radius: var(--border-radius-tiny);
+    background: var(--color-surface-subtle);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-md);
     box-shadow: var(--elevation-low);
-    font-family: var(--font-family-sans-serif);
-    font-size: var(--font-size-small);
-    font-weight: var(--font-weight-regular);
+    font: var(--txt-body-m-regular);
     white-space: nowrap;
-    padding: 0.125rem 0.5rem;
-  }
-  .target-commit:hover {
-    color: var(--color-foreground-contrast);
-  }
-  .target-oid:hover {
-    color: var(--color-foreground-emphasized-hover);
+    width: max-content;
+    padding: 0.25rem 0.5rem;
   }
 </style>
 
 <div class="container" style:width={styleWidth} {title}>
   <!-- svelte-ignore a11y-click-events-have-key-events -->
   <div
-    style:display="flex"
+    style:display="inline-flex"
+    style:flex-wrap="wrap"
     on:mouseenter={() => {
       setVisible(true);
     }}
     on:mouseleave={() => {
       setVisible(false);
     }}
-    class="target-{style} global-{style}"
+    class="txt-id"
     style:cursor="copy"
     aria-label={ariaLabel}
     on:click|preventDefault|stopPropagation={async () => {

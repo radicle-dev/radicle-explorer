@@ -88,7 +88,7 @@ export const test = base.extend<{
         route => {
           return route.fulfill({
             status: 200,
-            path: "./public/radicle.svg",
+            path: "./public/favicon.png",
           });
         },
       );

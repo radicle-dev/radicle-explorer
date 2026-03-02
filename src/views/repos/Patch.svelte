@@ -90,15 +90,15 @@
 
   function badgeColor(status: string): ComponentProps<Badge>["variant"] {
     if (status === "draft") {
-      return "foreground";
+      return "draft";
     } else if (status === "open") {
-      return "positive";
+      return "open";
     } else if (status === "archived") {
-      return "caution";
+      return "archived";
     } else if (status === "merged") {
-      return "primary";
+      return "merged";
     } else {
-      return "foreground";
+      return "draft";
     }
   }
 
@@ -241,16 +241,15 @@
     flex: 1;
     flex-direction: column;
     min-width: 0;
-    background-color: var(--color-background-float);
+    background-color: var(--color-surface-subtle);
   }
   .metadata {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
     padding: 1rem;
-    border-left: 1px solid var(--color-border-hint);
-    border-left: 1px solid var(--color-border-hint);
+    border-left: 1px solid var(--color-border-subtle);
     width: 20rem;
   }
   .title {
@@ -259,43 +258,37 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-weight: var(--font-weight-semibold);
-    font-size: var(--font-size-large);
+    font: var(--txt-heading-l);
     word-break: break-word;
   }
   .bottom {
-    background-color: var(--color-background-default);
+    background-color: var(--color-surface-base);
     padding: 1rem 1rem 0.5rem 1rem;
     height: 100%;
   }
   .tabs {
-    font-size: var(--font-size-tiny);
+    font: var(--txt-body-s-regular);
     display: flex;
     align-items: center;
     justify-content: left;
     flex-wrap: wrap;
     position: relative;
     margin-top: 1rem;
-    box-shadow: inset 0 -1px 0 var(--color-border-hint);
+    box-shadow: inset 0 -1px 0 var(--color-border-subtle);
   }
   .tabs-spacer {
     width: 1rem;
     height: 100%;
   }
   .author-metadata {
-    color: var(--color-fill-gray);
-    font-size: var(--font-size-small);
+    color: var(--color-text-tertiary);
+    font: var(--txt-body-m-regular);
   }
   .revision-description {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
     width: 100%;
-  }
-  .id {
-    font-size: var(--font-size-small);
-    font-family: var(--font-family-monospace);
-    font-weight: var(--font-weight-semibold);
   }
   @media (max-width: 719.98px) {
     .patch {
@@ -325,7 +318,7 @@
       Patches
     </Link>
     <Separator />
-    <span class="id">
+    <span class="txt-id">
       <div class="global-hide-on-small-desktop-down">
         {patch.id}
       </div>
@@ -340,10 +333,10 @@
         <svelte:fragment slot="title">
           {#if patch.title}
             <div class="title">
-              <InlineTitle fontSize="large" content={patch.title} />
+              <InlineTitle fontSize="heading-l" content={patch.title} />
             </div>
           {:else}
-            <span class="txt-missing">No title</span>
+            <span style:color="var(--color-text-tertiary)">No title</span>
           {/if}
           <div class="global-flex-item">
             <Share />
@@ -407,7 +400,9 @@
                 content={description}
                 rawPath={rawPath(patch.id)} />
             {:else}
-              <span class="txt-missing">No description available</span>
+              <span style:color="var(--color-text-tertiary)">
+                No description available
+              </span>
             {/if}
             {#if firstRevision.revisionReactions.length > 0}
               <Reactions reactions={firstRevision.revisionReactions} />

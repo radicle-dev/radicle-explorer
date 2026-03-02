@@ -11,7 +11,7 @@
     gap: 1rem;
     display: flex;
     flex-direction: column;
-    font-size: var(--font-size-regular);
+    font: var(--txt-body-l-regular);
   }
 
   .pair {

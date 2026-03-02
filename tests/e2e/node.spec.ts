@@ -100,7 +100,7 @@ test("edit seed bookmarks", async ({ page }) => {
   await expect(page.locator(".dropdown > .dropdown-item")).toHaveCount(2);
 
   // Test that new seed is persisted and opened when we go to the landing page.
-  await page.getByRole("link", { name: "Radicle logo" }).click();
+  await page.getByRole("link", { name: "Home" }).click();
   await expect(page.getByText("seed.example.tld").first()).toBeVisible();
 
   // Test removing a bookmark.

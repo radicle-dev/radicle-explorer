@@ -33,8 +33,7 @@
 
 <style>
   .popover {
-    font-size: var(--font-size-small);
-    font-weight: var(--font-weight-regular);
+    font: var(--txt-body-m-regular);
   }
   label {
     display: block;
@@ -44,7 +43,7 @@
 
 <Popover popoverPositionTop="2.5rem" popoverPositionRight="0">
   <Button slot="toggle" let:toggle on:click={toggle} variant="outline">
-    <Icon name="download" />
+    <Icon name="checkout" />
     <span class="global-hide-on-small-desktop-down">Clone</span>
   </Button>
 

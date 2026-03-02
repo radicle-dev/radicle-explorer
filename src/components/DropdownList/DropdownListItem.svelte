@@ -14,32 +14,30 @@
     gap: 0.375rem;
     padding: 0.5rem 0.375rem;
     white-space: nowrap;
-    border-radius: var(--border-radius-tiny);
-    font-size: var(--font-size-small);
-    font-weight: var(--font-weight-regular);
-    color: var(--color-foreground-contrast);
+    border-radius: var(--border-radius-sm);
+    font: var(--txt-body-m-regular);
+    color: var(--color-text-primary);
   }
   .item.disabled {
-    color: var(--color-foreground-disabled);
+    color: var(--color-text-disabled);
   }
   .item:hover,
   .selected {
-    background-color: var(--color-fill-ghost);
+    background-color: var(--color-surface-mid);
   }
   .selected {
-    font-weight: var(--font-weight-semibold);
-    color: var(--color-foreground-contrast);
-    background-color: var(--color-fill-ghost);
+    color: var(--color-text-primary);
+    background-color: var(--color-surface-mid);
   }
   .item:hover.selected {
-    background-color: var(--color-fill-ghost-hover);
+    background-color: var(--color-surface-strong);
   }
   .item:hover.selected.disabled {
-    background-color: var(--color-fill-ghost);
+    background-color: var(--color-surface-mid);
   }
   .item:hover.disabled {
     cursor: not-allowed;
-    background-color: var(--color-background-float);
+    background-color: var(--color-surface-subtle);
   }
 </style>
 

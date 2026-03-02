@@ -1,100 +1,100 @@
 <script lang="ts">
   export let variant:
-    | "caution"
-    | "foreground"
+    | "archived"
     | "background"
-    | "outline"
-    | "yellow"
-    | "neutral"
-    | "negative"
-    | "positive"
-    | "primary"
-    | "foreground-emphasized"
     | "delegate"
-    | "secondary";
+    | "draft"
+    | "foreground"
+    | "foreground-emphasized"
+    | "merged"
+    | "negative"
+    | "neutral"
+    | "open"
+    | "outline"
+    | "positive"
+    | "private";
   export let round: boolean = false;
   export let style: string | undefined = undefined;
   export let size: "tiny" | "small" | "medium" = "tiny";
   export let title: string | undefined = undefined;
+  export let onClick: (() => void) | undefined = undefined;
 </script>
 
 <style>
   .badge {
-    border-radius: var(--border-radius-round);
-    font-size: var(--font-size-tiny);
-    font-weight: var(--font-weight-bold);
-    line-height: 1.6;
+    border-radius: var(--border-radius-sm);
     height: var(--button-tiny-height);
+    font: var(--txt-body-s-regular);
     display: flex;
     white-space: nowrap;
     align-items: center;
     gap: 0.25rem;
   }
-  .background {
-    color: currentColor;
-    background: var(--color-background-float);
-  }
   .foreground {
-    color: var(--color-foreground-dim);
-    background: var(--color-fill-ghost);
+    color: var(--color-text-tertiary);
+    background: var(--color-surface-mid);
   }
   .foreground-emphasized {
-    background-color: var(--color-fill-selected);
-    color: var(--color-foreground-emphasized-hover);
+    background-color: var(--color-surface-brand-primary);
+    color: var(--color-text-on-brand);
+  }
+  .background {
+    color: var(--color-text-primary);
+    background: transparent;
   }
   .delegate {
-    color: var(--color-foreground-primary);
-    background: var(--color-fill-delegate);
+    color: var(--color-text-merged);
+    background: var(--color-surface-merged);
   }
   .neutral {
-    color: var(--color-foreground-contrast);
-    background: var(--color-fill-ghost);
+    color: var(--color-text-primary);
+    background: var(--color-surface-mid);
   }
   .positive {
-    color: var(--color-foreground-success);
-    background-color: var(--color-fill-diff-green-light);
+    color: var(--color-text-open);
+    background-color: var(--color-feedback-success-bg);
   }
-  .secondary {
-    color: var(--color-fill-secondary-hover);
-    background-color: var(--color-fill-counter-emphasized);
-  }
-  .yellow {
-    color: var(--color-fill-yellow);
-    background-color: var(--color-fill-yellow);
+  .private {
+    color: var(--color-feedback-warning-text);
+    background-color: var(--color-feedback-warning-bg);
   }
   .outline {
-    border: 1px solid var(--color-border-hint);
+    border: 1px solid var(--color-border-subtle);
     background-color: transparent;
   }
-  .outline:hover {
-    border-color: var(--color-fill-secondary);
-  }
   .negative {
-    color: var(--color-foreground-red);
-    background-color: var(--color-fill-diff-red-light);
+    color: var(--color-feedback-error-text);
+    background-color: var(--color-feedback-error-bg);
   }
-  .primary {
-    color: var(--color-foreground-primary);
-    background: var(--color-fill-delegate);
+  .draft {
+    color: var(--color-text-tertiary);
+    background: var(--color-surface-mid);
   }
-  .caution {
-    color: var(--color-foreground-yellow);
-    background: var(--color-fill-private);
+  .archived {
+    color: var(--color-text-archived);
+    background: var(--color-surface-archived);
+  }
+  .open {
+    color: var(--color-text-open);
+    background: var(--color-surface-open);
+  }
+  .merged {
+    color: var(--color-text-merged);
+    background: var(--color-surface-merged);
   }
   .tiny {
     height: 1.5rem;
-    font-size: var(--font-size-tiny);
-    font-weight: var(--font-weight-semibold);
+    font: var(--txt-body-s-regular);
     padding: 0.25rem 0.5rem;
   }
   .small {
     height: 2rem;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
     padding: 0.5rem 0.75rem;
   }
   .medium {
     height: 2.5rem;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
     padding: 0.75rem 1rem;
   }
   .round {
@@ -104,31 +104,30 @@
   }
 </style>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
 <span
   role="button"
   tabindex="0"
-  on:click
-  on:mouseenter
-  on:mouseleave
   class="badge"
+  onclick={onClick}
   {style}
   {title}
   class:round
   class:tiny={size === "tiny"}
   class:small={size === "small"}
   class:medium={size === "medium"}
-  class:caution={variant === "caution"}
-  class:yellow={variant === "yellow"}
+  class:private={variant === "private"}
   class:delegate={variant === "delegate"}
   class:outline={variant === "outline"}
   class:foreground-emphasized={variant === "foreground-emphasized"}
-  class:background={variant === "background"}
   class:foreground={variant === "foreground"}
   class:neutral={variant === "neutral"}
   class:negative={variant === "negative"}
   class:positive={variant === "positive"}
-  class:primary={variant === "primary"}
-  class:secondary={variant === "secondary"}>
+  class:draft={variant === "draft"}
+  class:archived={variant === "archived"}
+  class:open={variant === "open"}
+  class:merged={variant === "merged"}
+  class:background={variant === "background"}>
   <slot />
 </span>

@@ -67,8 +67,13 @@
 
   const stateOptions: IssueState["status"][] = ["open", "closed"];
   const stateColor: Record<IssueState["status"], string> = {
-    open: "var(--color-fill-success)",
-    closed: "var(--color-foreground-red)",
+    open: "var(--color-text-open)",
+    closed: "var(--color-text-merged)",
+  };
+
+  const stateBackground: Record<IssueState["status"], string> = {
+    open: "var(--color-surface-open)",
+    closed: "var(--color-surface-merged)",
   };
 
   $: showMoreButton =
@@ -91,20 +96,20 @@
     justify-content: center;
   }
   .dropdown-button-counter {
-    border-radius: var(--border-radius-tiny);
-    background-color: var(--color-fill-counter);
-    color: var(--color-foreground-contrast);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-alpha-subtle);
+    color: var(--color-text-primary);
     padding: 0 0.25rem;
   }
   .dropdown-list-counter {
-    border-radius: var(--border-radius-tiny);
-    background-color: var(--color-fill-ghost);
-    color: var(--color-foreground-dim);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-mid);
+    color: var(--color-text-tertiary);
     padding: 0 0.25rem;
   }
   .selected {
-    background-color: var(--color-fill-counter);
-    color: var(--color-foreground-dim);
+    background-color: var(--color-surface-alpha-subtle);
+    color: var(--color-text-tertiary);
   }
   .placeholder {
     height: calc(100% - 4rem);
@@ -135,7 +140,7 @@
     <Popover
       popoverPadding="0"
       popoverPositionTop="2.5rem"
-      popoverBorderRadius="var(--border-radius-small)">
+      popoverBorderRadius="var(--border-radius-md)">
       <Button
         let:expanded
         slot="toggle"
@@ -143,7 +148,11 @@
         on:click={toggle}
         ariaLabel="filter-dropdown"
         title="Filter issues by state">
-        <div style:color={stateColor[status]}>
+        <div
+          style:color={stateColor[status]}
+          style:background={stateBackground[status]}
+          style:padding="0.25rem 0.25rem"
+          style:border-radius="var(--border-radius-sm)">
           <Icon name="issue" />
         </div>
         {capitalize(status)}
@@ -165,7 +174,11 @@
             status: item,
           }}>
           <DropdownListItem selected={item === status}>
-            <div style:color={stateColor[item]}>
+            <div
+              style:color={stateColor[item]}
+              style:background={stateBackground[item]}
+              style:padding="0.25rem 0.25rem"
+              style:border-radius="var(--border-radius-sm)">
               <Icon name="issue" />
             </div>
             <div
@@ -197,7 +210,7 @@
   {#if error}
     <ErrorMessage
       title="Couldn't load issues"
-      description="Please make sure you are able to connect to the seed <code>${baseUrlToString(
+      description="Please make sure you are able to connect to the seed <code>{baseUrlToString(
         api.baseUrl,
       )}</code>"
       {error} />

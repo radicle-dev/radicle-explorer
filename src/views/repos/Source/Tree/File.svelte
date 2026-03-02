@@ -7,29 +7,26 @@
 
 <style>
   .file {
-    border-radius: var(--border-radius-tiny);
+    border-radius: var(--border-radius-sm);
     cursor: pointer;
     display: flex;
-    line-height: 1.5em;
     margin: 0.25rem 0;
     padding: 0.25rem 0.875rem;
     width: 100%;
     gap: 0.25rem;
-    font-weight: var(--font-weight-regular);
   }
 
   .file:hover {
-    background-color: var(--color-fill-ghost);
+    background-color: var(--color-surface-mid);
   }
 
   .file.active {
-    color: var(--color-foreground-contrast) !important;
-    background-color: var(--color-fill-ghost);
-    font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary) !important;
+    background-color: var(--color-surface-mid);
   }
 
   .file.active:hover {
-    background-color: var(--color-fill-ghost-hover);
+    background-color: var(--color-surface-strong);
   }
 
   .name {
@@ -37,23 +34,23 @@
     white-space: nowrap;
     text-overflow: ellipsis !important;
     overflow: hidden;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
   }
   .icon-container {
-    color: var(--color-foreground-dim);
+    color: var(--color-text-tertiary);
     display: flex;
     justify-content: center;
     align-items: center;
     margin-right: 0.125rem;
   }
   .active .icon-container {
-    color: var(--color-foreground-contrast);
+    color: var(--color-text-primary);
   }
 </style>
 
 <div class="file" class:active>
   <div class="icon-container">
-    <Icon name="file" />
+    <Icon name="document" />
   </div>
   <span class="name">{name}</span>
 </div>

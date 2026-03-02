@@ -19,6 +19,6 @@
 <Layout>
   <div class="container">
     <IconLarge name="desert" />
-    <div class="title txt-medium txt-bold">{title}</div>
+    <div class="title txt-heading-m">{title}</div>
   </div>
 </Layout>

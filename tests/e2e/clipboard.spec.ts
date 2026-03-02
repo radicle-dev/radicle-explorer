@@ -4,6 +4,7 @@ import {
   sourceBrowsingRid,
   test,
   cobUrl,
+  markdownUrl,
 } from "@tests/support/fixtures.js";
 
 // We explicitly run all clipboard tests withing the context of a single test
@@ -38,14 +39,22 @@ test("copy to clipboard", async ({ page, browserName, context }) => {
   // `rad clone` URL.
   {
     await page.getByRole("button", { name: "Clone" }).first().click();
-    await page.getByText("rad clone").locator(".clipboard").first().click();
+    await page
+      .locator(".cmd:has-text('rad clone')")
+      .locator(".clipboard")
+      .first()
+      .click();
     await expectClipboard(`rad clone ${sourceBrowsingRid}`);
   }
 
   // `git clone` URL.
   {
     await page.getByRole("button", { name: "Git" }).click();
-    await page.getByText("git clone").locator(".clipboard").first().click();
+    await page
+      .locator(".cmd:has-text('git clone')")
+      .locator(".clipboard")
+      .first()
+      .click();
     await expectClipboard(
       `git clone http://localhost/${sourceBrowsingRid.replace(
         "rad:",
@@ -64,6 +73,19 @@ test("copy to clipboard", async ({ page, browserName, context }) => {
     await page.getByRole("button", { name: "Draft" }).click();
     await page.getByRole("button", { name: "783d33c", exact: true }).click();
     await expectClipboard("783d33c5b14e13234d4d7affa98bd0b52d1b1ea3");
+  }
+
+  // Markdown code block copy.
+  {
+    await page.goto(`${markdownUrl}/tree/main/cheatsheet.md#code`);
+    const codeBlock = page
+      .locator("div.pre-wrapper")
+      .filter({ hasText: "Inline `code` has `back-ticks around` it." })
+      .first();
+    await codeBlock.hover();
+    await codeBlock.getByRole("button", { name: "Copy" }).click();
+    await page.pause();
+    await expectClipboard("Inline `code` has `back-ticks around` it.\n");
   }
 
   // Clear the system clipboard contents so developers don't wonder why there's

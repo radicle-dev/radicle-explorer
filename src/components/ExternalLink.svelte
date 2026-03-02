@@ -8,7 +8,6 @@
 
 <style>
   a {
-    font-weight: var(--font-weight-semibold);
     color: inherit;
     display: inline-flex;
     align-items: center;
@@ -18,21 +17,21 @@
   a:hover {
     text-decoration: underline;
     text-underline-offset: 2px;
-    color: var(--color-fill-secondary);
+    color: var(--color-text-brand);
   }
 
   .icon {
-    color: var(--color-foreground-dim);
+    color: var(--color-text-tertiary);
     position: relative;
     bottom: 1px;
   }
 
   a:hover .icon {
-    color: var(--color-fill-secondary-hover);
+    color: var(--color-surface-brand-secondary);
   }
 </style>
 
 <a {href} target="_blank" rel="noreferrer">
   <slot>{href}</slot>
-  <span class="icon"><Icon name="arrow-box-up-right" /></span>
+  <span class="icon"><Icon name="open-external" /></span>
 </a>

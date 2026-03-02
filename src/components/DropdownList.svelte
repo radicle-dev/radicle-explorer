@@ -7,13 +7,13 @@
 <style>
   .dropdown {
     align-items: center;
-    border-radius: var(--border-radius-small);
+    border-radius: var(--border-radius-sm);
     max-height: 60vh;
     overflow-y: auto;
   }
   .dropdown-item {
     padding: 0.25rem 0.25rem 0 0.25rem;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
   }
 </style>
 

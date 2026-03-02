@@ -16,11 +16,11 @@
     padding: 0.5rem;
     z-index: 1;
     gap: 0.5rem;
-    border-top: 1px solid var(--color-fill-separator);
-    background-color: var(--color-background-default);
+    border-top: 1px solid var(--color-border-subtle);
+    background-color: var(--color-surface-base);
   }
   .divider {
-    border-bottom: 1px solid var(--color-fill-separator);
+    border-bottom: 1px solid var(--color-border-subtle);
     margin: 1.5rem 0;
   }
 </style>
@@ -29,12 +29,7 @@
   <Link
     style="width: 100%; display: flex; align-items: center; justify-content: center;"
     route={{ resource: "nodes", params: undefined }}>
-    <img
-      width="16"
-      height="16"
-      class="logo"
-      alt="Radicle logo"
-      src="/radicle.svg" />
+    <Icon name="logo" />
   </Link>
 
   <slot />

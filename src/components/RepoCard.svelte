@@ -12,10 +12,10 @@
   } from "@app/lib/utils";
 
   import ActivityDiagram from "@app/components/ActivityDiagram.svelte";
-  import Badge from "@app/components/Badge.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
   import Link from "@app/components/Link.svelte";
+  import RepoAvatar from "@app/components/RepoAvatar.svelte";
 
   export let compact = false;
   export let repoInfo: RepoInfo;
@@ -31,15 +31,17 @@
 
 <style>
   .repo-card {
+    container-type: inline-size;
     height: 10rem;
-    border: 1px solid var(--color-border-default);
-    border-radius: var(--border-radius-small);
-    background-color: var(--color-background-float);
-    padding: 0.75rem 1rem;
+    background-color: var(--color-surface-canvas);
+    padding: 1rem;
     position: relative;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    border: 1px solid var(--color-border-subtle);
+    margin-top: -1px;
+    margin-left: -1px;
   }
 
   .repo-card.compact {
@@ -47,59 +49,30 @@
   }
 
   .repo-card:hover {
-    background-color: var(--color-fill-float-hover);
+    background-color: var(--color-surface-subtle);
+  }
+
+  .content-and-activity {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .content {
+    flex: 1;
+    min-width: 0;
   }
 
   .activity {
-    position: absolute;
-    bottom: 1.5rem;
-    right: 0;
-    width: calc(100% - 3rem);
-    max-width: 22rem;
-  }
-
-  .activity > .fadeout-overlay {
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-      to right,
-      var(--color-background-float) 20%,
-      rgba(255, 255, 255, 0) 100%
-    );
-  }
-
-  .repo-card:hover .fadeout-overlay {
-    background: linear-gradient(
-      to right,
-      var(--color-fill-float-hover) 20%,
-      rgba(255, 255, 255, 0) 100%
-    );
-  }
-
-  .title {
-    display: flex;
-    flex-direction: column;
-    gap: 0.125rem;
-    position: relative;
-  }
-
-  .title * {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .title p {
-    color: var(--color-foreground-dim);
+    flex: 1;
+    max-width: 12rem;
+    align-self: flex-end;
   }
 
   .headline-and-badges {
     display: flex;
-    justify-content: space-between;
     gap: 0.5rem;
+    margin-bottom: 1rem;
   }
 
   .badges {
@@ -118,11 +91,6 @@
     padding: 0.25rem;
   }
 
-  h4,
-  p {
-    margin: 0;
-  }
-
   .stats-row {
     position: relative;
     display: flex;
@@ -130,6 +98,22 @@
     height: 1.5rem;
     align-items: center;
     white-space: nowrap;
+  }
+
+  .icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--color-brand-bg);
+    color: var(--color-text-on-brand);
+  }
+
+  @container (max-width: 20rem) {
+    .activity {
+      display: none;
+    }
   }
 </style>
 
@@ -140,61 +124,65 @@
     node: baseUrl,
   }}>
   <div class="repo-card" class:compact>
-    <div class="activity">
-      <div class="fadeout-overlay"></div>
-      <ActivityDiagram
-        id={repo.rid}
-        viewBoxHeight={200}
-        styleColor="var(--color-foreground-primary)"
-        activity={repoInfo.activity} />
-    </div>
-    <div class="title">
-      <div class="headline-and-badges">
-        <h4 use:twemoji>{project.data.name}</h4>
-        <div class="badges">
-          {#if isPrivate}
-            <div
-              title="Private"
-              class="badge"
-              style="background-color: var(--color-fill-private); color: var(--color-foreground-yellow)">
-              <Icon name="lock" />
-            </div>
-          {/if}
-          <slot name="delegate" />
-          <Badge
-            variant="neutral"
-            size="tiny"
-            style="padding: 0 0.372rem; gap: 0.125rem;">
-            <Icon name="seedling" />
-            {repoInfo.repo.seeding}
-          </Badge>
-        </div>
+    <div class="headline-and-badges txt-overflow">
+      <div class="icon">
+        <RepoAvatar
+          rid={repoInfo.repo.rid}
+          name={project.data.name}
+          styleWidth="1.5rem" />
       </div>
-      <p class="txt-small" use:twemoji>
-        {project.data.description}
-      </p>
+      <div class="txt-body-l-semibold" use:twemoji>{project.data.name}</div>
+      <div class="badges" style:margin-left="auto">
+        {#if isPrivate}
+          <div
+            title="Private"
+            class="badge"
+            style="background-color: var(--color-feedback-warning-bg); color: var(--color-feedback-warning-text)">
+            <Icon name="lock" />
+          </div>
+        {/if}
+        <slot name="delegate" />
+      </div>
+    </div>
+    <div class="content-and-activity">
+      <div class="content">
+        <div class="txt-body-m-regular txt-overflow" use:twemoji>
+          {project.data.description}
+        </div>
+        <span style:text-overflow="ellipsis">
+          <Id id={repo.rid} title={repo.rid}>
+            {formatRepositoryId(repo.rid)}
+          </Id>
+        </span>
+      </div>
+      <div class="activity">
+        <ActivityDiagram
+          id={repo.rid}
+          viewBoxHeight={100}
+          styleColor="var(--color-text-brand)"
+          activity={repoInfo.activity} />
+      </div>
     </div>
     <div>
-      <div class="stats-row txt-tiny" style:color="var(--color-foreground-dim)">
+      <div
+        class="stats-row txt-code-regular"
+        style:color="var(--color-text-tertiary)">
+        <Icon name="seed" />
+        {repoInfo.repo.seeding} ·
         <Icon name="issue" />
         {project.meta.issues.open} ·
         <Icon name="patch" />
         {project.meta.patches.open}
         {#await api.repo.getCommitBySha(repo.rid, project.meta.head) then { commit }}
           <span
+            class="txt-body-m-regular"
+            style:margin-left="auto"
             style:overflow="hidden"
             style:text-overflow="ellipsis"
             title={absoluteTimestamp(commit.committer.time)}>
-            · Updated {formatTimestamp(commit.committer.time)}
+            Updated {formatTimestamp(commit.committer.time)}
           </span>
         {/await}
-        <span class="global-flex-item" style:margin-left="auto">
-          <Id id={repo.rid} title={repo.rid}>
-            <span style:font-size="var(--font-size-tiny)">
-              {formatRepositoryId(repo.rid)}
-            </span>
-          </Id>
-        </span>
       </div>
     </div>
   </div>

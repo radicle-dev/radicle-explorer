@@ -19,9 +19,9 @@
 
 <div class="section" style:padding-top="0.5rem">
   Policy:
-  <span class="txt-bold">{capitalize(policy)}</span>
+  <span class="txt-body-m-semibold">{capitalize(policy)}</span>
 </div>
-<div class="txt-missing text">
+<div class="text" style:color="var(--color-text-tertiary)">
   {#if policy === "allow"}
     All discovered repositories will be seeded.
   {:else if policy === "block"}
@@ -32,9 +32,9 @@
 {#if policy === "allow"}
   <div class="section" style:padding-top="0.5rem">
     Scope:
-    <span class="txt-bold">{capitalize(scope)}</span>
+    <span class="txt-body-m-semibold">{capitalize(scope)}</span>
   </div>
-  <div class="txt-missing text">
+  <div class="text" style:color="var(--color-text-tertiary)">
     {#if scope === "all"}
       All changes in seeded repositories, made by any peer, will be synced.
     {:else if scope === "followed"}

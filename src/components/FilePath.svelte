@@ -11,17 +11,16 @@
 
 <style>
   .file-path {
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
     white-space: nowrap;
   }
 
   .path {
-    color: var(--color-fill-gray);
-    font-weight: var(--font-weight-regular);
+    color: var(--color-text-tertiary);
   }
 
   .filename {
-    font-weight: var(--font-weight-semibold);
+    font: var(--txt-body-m-regular);
   }
 </style>
 

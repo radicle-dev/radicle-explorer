@@ -6,8 +6,8 @@
 
 <style>
   .comments {
-    color: var(--color-foreground-dim);
-    font-size: var(--font-size-tiny);
+    color: var(--color-text-tertiary);
+    font: var(--txt-body-s-regular);
     display: flex;
     align-items: center;
     gap: 0.25rem;
@@ -16,6 +16,6 @@
 </style>
 
 <div class="comments">
-  <Icon name="chat" />
+  <Icon name="comment" />
   <span>{commentCount}</span>
 </div>

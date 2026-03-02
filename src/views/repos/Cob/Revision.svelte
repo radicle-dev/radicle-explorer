@@ -71,25 +71,25 @@
   function verdictIconColor(verdict?: Verdict | null) {
     switch (verdict) {
       case "accept":
-        return "var(--color-foreground-success)";
+        return "var(--color-text-open)";
       case "reject":
-        return "var(--color-foreground-red)";
+        return "var(--color-feedback-error-text)";
       default:
-        return "var(--color-fill-gray)";
+        return "var(--color-text-tertiary)";
     }
   }
 
   function badgeColor({ status }: PatchState): string | undefined {
     if (status === "draft") {
-      return "var(--color-fill-gray)";
+      return "var(--color-text-tertiary)";
     } else if (status === "open") {
-      return "var(--color-foreground-success)";
+      return "var(--color-text-open)";
     } else if (status === "archived") {
-      return "var(--color-foreground-yellow)";
+      return "var(--color-text-archived)";
     } else if (status === "merged") {
-      return "var(--color-fill-primary)";
+      return "var(--color-text-merged)";
     } else {
-      return "var(--color-foreground-success)";
+      return "var(--color-text-open)";
     }
   }
 
@@ -124,26 +124,26 @@
 
 <style>
   .action {
-    border-radius: var(--border-radius-small);
+    border-radius: var(--border-radius-md);
     min-height: 2.5rem;
     display: flex;
     align-items: center;
   }
   .merge {
-    border: 1px solid var(--color-border-merged);
-    background-color: var(--color-fill-merged);
+    border: 1px solid var(--color-text-merged);
+    background-color: var(--color-surface-merged);
   }
   .positive-review {
-    border: 1px solid var(--color-fill-diff-green);
-    background-color: var(--color-fill-diff-green-light);
+    border: 1px solid var(--color-feedback-success-border);
+    background-color: var(--color-feedback-success-bg);
   }
   .comment-review {
-    border: 1px solid var(--color-border-hint);
-    background-color: var(--color-fill-float);
+    border: 1px solid var(--color-border-subtle);
+    background-color: var(--color-surface-subtle);
   }
   .negative-review {
-    border: 1px solid var(--color-fill-diff-red);
-    background-color: var(--color-fill-diff-red-light);
+    border: 1px solid var(--color-feedback-error-border);
+    background-color: var(--color-feedback-error-bg);
   }
 
   .diff-error {
@@ -152,10 +152,10 @@
   .revision {
     display: flex;
     flex-direction: column;
-    border-radius: var(--border-radius-small);
+    border-radius: var(--border-radius-sm);
   }
   .revision-box {
-    border-radius: var(--border-radius-small);
+    border-radius: var(--border-radius-sm);
   }
   .revision-header {
     display: flex;
@@ -163,21 +163,20 @@
     justify-content: center;
     background: none;
     padding: 0.5rem;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
     height: 3rem;
   }
   .revision-name {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-weight: var(--font-weight-medium);
   }
   .revision-data {
     gap: 0.5rem;
     display: flex;
     align-items: center;
     margin-left: auto;
-    color: var(--color-foreground-dim);
+    color: var(--color-text-tertiary);
   }
   .revision-description {
     margin-left: 2.75rem;
@@ -185,22 +184,19 @@
     max-width: fit-content;
   }
   .author-metadata {
-    color: var(--color-fill-gray);
-    font-size: var(--font-size-small);
-  }
-  .compare-dropdown-item {
-    font-weight: var(--font-weight-regular);
+    color: var(--color-text-tertiary);
+    font: var(--txt-body-m-regular);
   }
   .patch-header {
-    background-color: var(--color-fill-float);
-    border-bottom: 1px solid var(--color-fill-separator);
-    border-top: 1px solid var(--color-fill-separator);
+    background-color: var(--color-surface-subtle);
+    border-bottom: 1px solid var(--color-border-subtle);
+    border-top: 1px solid var(--color-border-subtle);
     display: flex;
     flex-direction: column;
     justify-content: center;
     min-height: 2.5rem;
     padding: 0.5rem 0;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
     gap: 0.5rem;
   }
   .authorship-header {
@@ -211,11 +207,11 @@
     padding: 0 0.5rem;
     min-height: 1.5rem;
     gap: 0.5rem;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
   }
   .timestamp {
-    font-size: var(--font-size-small);
-    color: var(--color-fill-gray);
+    font: var(--txt-body-m-regular);
+    color: var(--color-text-tertiary);
   }
   .actions {
     display: flex;
@@ -232,7 +228,7 @@
     margin-left: 1.25rem;
     gap: 0.5rem;
     padding: 1rem 0.5rem 1rem 1rem;
-    border-left: 1px solid var(--color-fill-separator);
+    border-left: 1px solid var(--color-border-subtle);
   }
   .commit:last-of-type::after {
     content: "";
@@ -240,25 +236,25 @@
     left: -18.5px;
     top: 14px;
     bottom: -1rem;
-    border-left: 4px solid var(--color-background-default);
+    border-left: 4px solid var(--color-surface-base);
   }
   .expanded {
-    box-shadow: 0 0 0 1px var(--color-border-hint);
+    box-shadow: 0 0 0 1px var(--color-border-subtle);
   }
   .commit-dot {
-    border-radius: var(--border-radius-round);
+    border-radius: var(--border-radius-full);
     width: 4px;
     height: 4px;
     position: absolute;
     top: 0.625rem;
     left: -18.5px;
-    background-color: var(--color-fill-separator);
+    background-color: var(--color-border-subtle);
   }
   .connector {
     width: 1px;
     height: 1.5rem;
     margin-left: 1.25rem;
-    background-color: var(--color-fill-separator);
+    background-color: var(--color-border-subtle);
   }
   @media (max-width: 719.98px) {
     .revision-box {
@@ -309,13 +305,13 @@
           popoverPadding="0"
           popoverPositionTop={expanded ? "3rem" : "2.5rem"}
           popoverPositionRight="0"
-          popoverBorderRadius="var(--border-radius-small)">
+          popoverBorderRadius="var(--border-radius-md)">
           <IconButton
             slot="toggle"
             let:toggle
             on:click={toggle}
             title="toggle-context-menu">
-            <Icon name="more" />
+            <Icon name="ellipsis-vertical" />
           </IconButton>
           <DropdownList
             slot="popover"
@@ -344,10 +340,7 @@
                 <DropdownListItem selected={false}>
                   <span class="compare-dropdown-item">
                     Compare to base:
-                    <span
-                      style:color="var(--color-fill-gray)"
-                      style:font-weight="var(--font-weight-bold)"
-                      style:font-family="var(--font-family-monospace)">
+                    <span class="txt-id">
                       {utils.formatObjectId(revisionBase)}
                     </span>
                   </span>
@@ -363,9 +356,8 @@
                       )}`}>
                   <span class="compare-dropdown-item">
                     Compare to previous revision: <span
-                      style:color="var(--color-fill-secondary)"
-                      style:font-weight="var(--font-weight-bold)"
-                      style:font-family="var(--font-family-monospace)">
+                      style:color="var(--color-text-brand)"
+                      class="txt-id">
                       {utils.formatObjectId(previousRevId)}
                     </span>
                   </span>
@@ -391,13 +383,13 @@
               alias={revisionAuthor.alias} />
             {#if patchId === revisionId}
               opened this patch on base
-              <Id id={revisionBase} style="commit" />
+              <Id id={revisionBase} />
             {:else}
               updated to
               <Id id={revisionId} />
               {#if previousRevBase && previousRevBase !== revisionBase}
                 on base
-                <Id id={revisionBase} style="commit" />
+                <Id id={revisionBase} />
               {/if}
             {/if}
             <span
@@ -417,7 +409,7 @@
             {/if}
           </div>
           {#if revisionDescription && !first}
-            <div class="revision-description txt-small">
+            <div class="revision-description txt-body-m-regular">
               <Markdown
                 breaks
                 rawPath={rawPath(revisionBase)}
@@ -448,11 +440,11 @@
       </div>
       {#if error}
         <div
-          class="diff-error txt-monospace txt-small"
-          style:border-radius="var(--border-radius-small)">
+          class="diff-error txt-code-regular"
+          style:border-radius="var(--border-radius-md)">
           <ErrorMessage
             title="Failed to load diff for this revision"
-            description="Make sure you are able to connect to the seed <code>${utils.baseUrlToString(
+            description="Make sure you are able to connect to the seed <code>{utils.baseUrlToString(
               api.baseUrl,
             )}</code>"
             {error} />
@@ -473,7 +465,7 @@
           <div class="connector"></div>
           <div class="action merge">
             <div class="authorship-header">
-              <div style:color="var(--color-fill-primary)">
+              <div style:color="var(--color-text-merged)">
                 <Icon name="patch" />
               </div>
 
@@ -486,11 +478,11 @@
               merged revision
               <Id id={element.inner.revision} />
               at commit
-              <Id id={element.inner.commit} style="commit" />
+              <Id id={element.inner.commit} />
               <span
                 class="timestamp"
-                title={utils.absoluteTimestamp(revisionTimestamp)}>
-                {utils.formatTimestamp(revisionTimestamp)}
+                title={utils.absoluteTimestamp(element.inner.timestamp)}>
+                {utils.formatTimestamp(element.inner.timestamp)}
               </span>
             </div>
           </div>
@@ -520,7 +512,7 @@
                 {:else if review.verdict === "reject"}
                   <Icon name="cross" />
                 {:else}
-                  <Icon name="chat" />
+                  <Icon name="comment" />
                 {/if}
               </div>
             </CommentComponent>

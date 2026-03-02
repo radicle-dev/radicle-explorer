@@ -38,18 +38,16 @@
     padding: 0.25rem 0.875rem;
     margin: 0.25rem 0;
     user-select: none;
-    line-height: 1.5rem;
     white-space: nowrap;
   }
   .folder:hover {
-    background-color: var(--color-fill-ghost);
-    border-radius: var(--border-radius-tiny);
+    background-color: var(--color-surface-mid);
+    border-radius: var(--border-radius-sm);
   }
 
   .folder-name {
     margin-left: 0.25rem;
-    font-size: var(--font-size-small);
-    font-weight: var(--font-weight-regular);
+    font: var(--txt-body-m-regular);
   }
 
   .container {
@@ -65,13 +63,12 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    color: var(--color-foreground-dim);
+    color: var(--color-text-tertiary);
     margin-right: 0.125rem;
   }
 
   .expanded {
-    font-weight: var(--font-weight-medium);
-    color: var(--color-foreground-contrast);
+    color: var(--color-text-primary);
   }
 </style>
 

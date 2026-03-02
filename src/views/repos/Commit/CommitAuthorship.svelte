@@ -13,7 +13,7 @@
 <style>
   .authorship {
     display: flex;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
     gap: 0.5rem;
     flex-wrap: wrap;
     align-items: center;
@@ -24,13 +24,10 @@
     flex-wrap: nowrap;
     white-space: nowrap;
     gap: 0.5rem;
-    font-family: var(--font-family-monospace);
-    font-weight: var(--font-weight-semibold);
   }
   .avatar {
     width: 1rem;
     height: 1rem;
-    border-radius: var(--border-radius-round);
   }
 </style>
 

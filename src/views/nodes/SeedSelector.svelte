@@ -75,7 +75,7 @@
 
 <style>
   .container {
-    justify-content: space-between;
+    justify-content: flex-start;
     width: 100%;
   }
   .popover {
@@ -84,7 +84,7 @@
   }
 
   .validation-message {
-    color: var(--color-foreground-red);
+    color: var(--color-feedback-error-text);
     margin-top: 0.5rem;
     margin-left: 0.5rem;
     display: flex;
@@ -102,23 +102,9 @@
   .target {
     display: flex;
     flex-direction: row;
+    align-items: center;
     gap: 0.5rem;
     max-width: 19.5rem;
-  }
-
-  @media (max-width: 1010.98px) {
-    .target {
-      max-width: 10rem;
-    }
-    .container {
-      justify-content: flex-start;
-    }
-  }
-
-  @media (max-width: 719.98px) {
-    .target {
-      max-width: 14.5rem;
-    }
   }
 </style>
 
@@ -127,9 +113,9 @@
     bind:expanded
     popoverPositionTop="2.5rem"
     popoverPadding="0.25rem"
-    popoverBorderRadius="var(--border-radius-small)">
+    popoverBorderRadius="var(--border-radius-md)">
     <div class="target" slot="toggle" title="Switch preferred seed" let:toggle>
-      <div class="txt-medium txt-semibold txt-overflow">
+      <div class="txt-body-m-semibold txt-overflow">
         {baseUrl.hostname}
       </div>
       <IconButton on:click={toggle} ariaLabel="Toggle seed selector dropdown">
@@ -138,8 +124,8 @@
     </div>
 
     <svelte:fragment slot="popover">
-      <div style:width="16rem">
-        <div class="txt-small" style:margin="0.5rem 0.5rem">
+      <div style:min-width="16rem">
+        <div class="txt-body-s-regular" style:margin="0.5rem 0.5rem">
           Navigate to seed
         </div>
         <div style:padding="0 0.25rem">
@@ -153,7 +139,9 @@
             on:submit={navigateToSeed} />
         </div>
         {#if validationMessage}
-          <span class="validation-message txt-small">{validationMessage}</span>
+          <span class="validation-message txt-body-s-regular">
+            {validationMessage}
+          </span>
         {/if}
         <div class="popover" style:padding-top="0.75rem">
           <DropdownList items={$bookmarkedSeeds} styleDropdownPadding="0">
@@ -167,14 +155,14 @@
               selected={isEqual(baseUrl, item)}>
               <div class="flex-wrapper">
                 <div class="global-flex-item txt-overflow">
-                  <Icon name="seedling" />
+                  <Icon name="seed" />
                   <div class="txt-overflow">{item.hostname}</div>
                 </div>
                 <IconButton
                   ariaLabel="Remove bookmark"
                   stopPropagation
                   on:click={() => removeBookmark(item)}>
-                  <Icon name="bookmark-on" />
+                  <Icon name="bookmark-fill" />
                 </IconButton>
               </div>
             </DropdownListItem>
@@ -189,17 +177,20 @@
               let:item>
               <div class="flex-wrapper">
                 <div class="global-flex-item txt-overflow">
-                  <Icon name="seedling" />
+                  <Icon name="seed" />
                   <div class="txt-overflow">{item.hostname}</div>
                 </div>
                 <IconButton disabled title="Default seeds can't be removed">
-                  <Icon name="bookmark-on" />
+                  <Icon name="bookmark-fill" />
                 </IconButton>
               </div>
             </DropdownListItem>
           </DropdownList>
           {#if !$bookmarkedSeeds.length && !config.preferredSeeds.length}
-            <span class="txt-missing txt-small" style:padding="0.5rem">
+            <span
+              class="txt-body-m-regular"
+              style:padding="0.5rem"
+              style:color="var(--color-text-tertiary)">
               No default or bookmarked seeds
             </span>
           {/if}
@@ -226,9 +217,9 @@
       }
     }}>
     {#if some($bookmarkedSeeds, baseUrl) || some(config.preferredSeeds, baseUrl)}
-      <Icon name="bookmark-on" />
+      <Icon name="bookmark-fill" />
     {:else}
-      <Icon name="bookmark-off" />
+      <Icon name="bookmark" />
     {/if}
   </IconButton>
 </div>

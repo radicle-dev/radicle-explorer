@@ -2,7 +2,7 @@
   import type { BaseUrl } from "@http-client";
   import { formatNodeId, parseNodeId, truncateId } from "@app/lib/utils";
 
-  import Avatar from "./Avatar.svelte";
+  import UserAvatar from "./UserAvatar.svelte";
   import Link from "./Link.svelte";
 
   export let baseUrl: BaseUrl;
@@ -16,12 +16,21 @@
     align-items: center;
     gap: 0.375rem;
     height: 1rem;
-    font-family: var(--font-family-monospace);
-    font-weight: var(--font-weight-semibold);
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
+  }
+  .avatar-container {
+    width: 1rem;
+    height: 1rem;
+    overflow: hidden;
+  }
+  .avatar-container :global(img) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
   .no-alias {
-    color: var(--color-foreground-dim);
+    color: var(--color-text-tertiary);
   }
 </style>
 
@@ -30,7 +39,9 @@
     styleHoverState
     style="display: flex; gap: 0.375rem; align-items: center;"
     route={{ resource: "users", did: nodeId, baseUrl }}>
-    <Avatar variant="small" {nodeId} />
+    <div class="avatar-container">
+      <UserAvatar {nodeId} styleWidth="1rem" />
+    </div>
     {#if alias}
       <span class="txt-overflow">
         {alias}

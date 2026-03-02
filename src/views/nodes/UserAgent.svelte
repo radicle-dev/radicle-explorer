@@ -6,9 +6,8 @@
 
 <style>
   .agent {
-    color: var(--color-fill-gray);
-    font-family: var(--font-family-monospace);
-    font-size: var(--font-size-small);
+    color: var(--color-text-tertiary);
+    font: var(--txt-code-regular);
     max-width: 19rem;
     margin-right: 2.25rem;
   }
@@ -18,7 +17,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
     width: 100%;
   }
   @media (max-width: 1010.98px) {
@@ -30,7 +29,7 @@
 
 <div class="item">
   <div style:white-space="nowrap">User Agent</div>
-  <Id ariaLabel="agent" id={agent} shorten={false} style="none">
+  <Id ariaLabel="agent" id={agent} shorten={false}>
     <div class="agent">
       <div class="txt-overflow">{agent}</div>
     </div>
