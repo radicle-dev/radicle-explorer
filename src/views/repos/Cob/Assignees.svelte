@@ -8,7 +8,7 @@
 
 <style>
   .header {
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
     margin-bottom: 0.75rem;
   }
   .body {
@@ -17,7 +17,7 @@
     flex-direction: row;
     width: 100%;
     gap: 0.5rem;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
   }
   @media (max-width: 1349.98px) {
     .wrapper {

@@ -22,10 +22,10 @@
   .teaser {
     display: flex;
     padding: 1.25rem;
-    background-color: var(--color-background-float);
+    background-color: var(--color-surface-subtle);
   }
   .teaser:hover {
-    background-color: var(--color-fill-float-hover);
+    background-color: var(--color-surface-mid);
   }
   .message {
     align-items: center;
@@ -44,11 +44,11 @@
     align-items: flex-start;
     gap: 1rem;
     margin-left: auto;
-    color: var(--color-foreground-dim);
-    font-size: var(--font-size-tiny);
+    color: var(--color-text-tertiary);
+    font: var(--txt-body-s-regular);
   }
   .summary {
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
   }
   .summary::after {
     content: "";
@@ -66,7 +66,7 @@
   }
   .commit-message {
     margin: 0.5rem 0;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
   }
   pre {
     white-space: pre-wrap;
@@ -86,7 +86,7 @@
         }}>
         <div style="position: relative;">
           <div class="summary" use:twemoji>
-            <InlineTitle fontSize="regular" content={commit.summary} />
+            <InlineTitle fontSize="body-m-regular" content={commit.summary} />
           </div>
         </div>
       </Link>
@@ -104,7 +104,7 @@
       </div>
     {/if}
     <CommitAuthorship header={commit}>
-      <Id id={commit.id} style="commit" />
+      <Id id={commit.id} />
     </CommitAuthorship>
   </div>
   <div class="right">

@@ -19,7 +19,7 @@
 
 <style>
   .policies {
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
     display: flex;
     flex-direction: column;
   }
@@ -39,7 +39,7 @@
     </div>
     <div
       style="display: flex; flex-direction: row; gap: 0.5rem; align-items: center;">
-      <div class="txt-bold">
+      <div class="txt-body-m-semibold">
         {capitalize(shortScope)}
       </div>
       <IconButton on:click={() => (expandedNode = !expandedNode)}>

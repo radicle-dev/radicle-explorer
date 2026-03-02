@@ -21,14 +21,14 @@
 
 <style>
   .header {
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
     margin-bottom: 0.75rem;
   }
   .body {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
   }
   .review {
     display: inline-flex;
@@ -36,14 +36,14 @@
     gap: 0.5rem;
   }
   .review-accept {
-    color: var(--color-foreground-success);
+    color: var(--color-text-open);
   }
   .review-reject {
-    color: var(--color-foreground-red);
+    color: var(--color-feedback-error-text);
   }
   .txt-missing .review-accept,
   .txt-missing .review-reject {
-    color: var(--color-foreground-dim);
+    color: var(--color-text-tertiary);
   }
   @media (max-width: 1349.98px) {
     .wrapper {
@@ -86,7 +86,7 @@
           {:else if review.verdict === "reject"}
             <Icon name="cross" />
           {:else}
-            <Icon name="chat" />
+            <Icon name="comment" />
           {/if}
         </span>
         <NodeId

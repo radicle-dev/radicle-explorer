@@ -18,7 +18,7 @@
     flex-direction: column;
     align-items: center;
     gap: 1.5rem;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
   }
 
   .item {

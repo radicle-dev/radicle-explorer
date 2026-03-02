@@ -77,8 +77,8 @@
         </div>
         <div class="global-flex-item">
           <span
-            class="txt-monospace"
-            style="color: var(--color-foreground-dim);">
+            class="txt-code-regular"
+            style="color: var(--color-text-tertiary);">
             {formatCommit(head)}
           </span>
         </div>

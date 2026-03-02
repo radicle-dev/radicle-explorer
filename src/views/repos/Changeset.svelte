@@ -41,25 +41,25 @@
     align-items: center;
     justify-content: space-between;
     padding: 1rem 1rem 0.5rem 1rem;
-    background-color: var(--color-background-default);
+    background-color: var(--color-surface-base);
   }
   .additions {
-    color: var(--color-foreground-success);
+    color: var(--color-text-open);
     white-space: nowrap;
   }
   .deletions {
-    color: var(--color-foreground-red);
+    color: var(--color-feedback-error-text);
     white-space: nowrap;
   }
   .diff-list {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
-    background-color: var(--color-background-default);
+    background-color: var(--color-surface-base);
     padding: 1rem;
   }
   .summary {
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
   }
   @media (max-width: 719.98px) {
     .diff-list {
@@ -85,10 +85,10 @@
   {#if diff.stats.filesChanged > 1}
     <IconButton on:click={() => (expanded = !expanded)}>
       {#if expanded === true}
-        <Icon name="collapse" />
+        <Icon name="collapse-vertical" />
         <span class="global-hide-on-mobile-down">Collapse all</span>
       {:else}
-        <Icon name="expand" />
+        <Icon name="expand-vertical" />
         <span class="global-hide-on-mobile-down">Expand all</span>
       {/if}
     </IconButton>

@@ -49,9 +49,6 @@
     padding: 0.5rem 0;
     gap: 0.5rem;
   }
-  .card:not(:last-child) {
-    box-shadow: -1px 0 0 0 var(--color-fill-separator);
-  }
   .card-header {
     display: flex;
     align-items: center;
@@ -60,34 +57,33 @@
     padding: 0 0.75rem;
     min-height: 1.5rem;
     gap: 0.5rem;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
   }
   .code-location {
-    font-family: var(--font-family-monospace);
-    background-color: var(--color-fill-ghost);
-    font-size: var(--font-size-tiny);
-    border-radius: var(--border-radius-tiny);
+    font: var(--txt-code-regular);
+    background-color: var(--color-surface-mid);
+    border-radius: var(--border-radius-sm);
     padding: 0.125rem 0.25rem;
   }
   .reply-dot {
-    border-radius: var(--border-radius-round);
+    border-radius: var(--border-radius-full);
     width: 4px;
     height: 4px;
     position: absolute;
     top: 10px;
     left: -2.5px;
-    background-color: var(--color-fill-separator);
+    background-color: var(--color-border-subtle);
   }
   .card-metadata {
-    color: var(--color-fill-gray);
-    font-size: var(--font-size-small);
+    color: var(--color-text-tertiary);
+    font: var(--txt-body-m-regular);
   }
   .card-body {
     display: flex;
     align-items: center;
     min-height: 1.625rem;
     word-wrap: break-word;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
     padding: 0 2.25rem;
   }
   .card-empty-body {
@@ -102,8 +98,8 @@
     margin-left: -0.375rem;
   }
   .timestamp {
-    font-size: var(--font-size-small);
-    color: var(--color-fill-gray);
+    font: var(--txt-body-m-regular);
+    color: var(--color-text-tertiary);
   }
   .card-header-no-icon {
     padding-left: 1rem;
@@ -118,7 +114,7 @@
     position: absolute;
     top: -9px;
     left: -1px;
-    background-color: var(--color-fill-separator);
+    background-color: var(--color-border-subtle);
   }
 </style>
 

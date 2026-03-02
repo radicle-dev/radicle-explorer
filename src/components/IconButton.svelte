@@ -18,26 +18,26 @@
   .button {
     user-select: none;
     background-color: transparent;
-    border-radius: var(--border-radius-tiny);
-    color: var(--color-foreground-dim);
+    border-radius: var(--border-radius-sm);
+    color: var(--color-text-tertiary);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 8px 6px;
     gap: 0.25rem;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
   }
   .inline {
     display: inline-flex;
   }
   .button:hover {
-    color: var(--color-foreground-contrast);
-    background-color: var(--color-fill-ghost);
+    color: var(--color-text-primary);
+    background-color: var(--color-surface-strong);
   }
   .disabled,
   .disabled:hover {
-    color: var(--color-fill-counter);
+    color: var(--color-surface-alpha-subtle);
     background-color: unset;
   }
 </style>

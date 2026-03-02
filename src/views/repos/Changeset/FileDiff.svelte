@@ -250,9 +250,9 @@
 
 <style>
   .container {
-    font-size: var(--font-size-small);
-    background: var(--color-background-float);
-    border-radius: 0 0 var(--border-radius-small) var(--border-radius-small);
+    font: var(--txt-body-m-regular);
+    background: var(--color-surface-subtle);
+    border-radius: 0 0 var(--border-radius-md) var(--border-radius-md);
     overflow-x: auto;
   }
   .actions {
@@ -270,7 +270,7 @@
     margin-right: 0.5rem;
   }
   .diff {
-    font-family: var(--font-family-monospace);
+    font: var(--txt-code-regular);
     table-layout: fixed;
     border-collapse: collapse;
     margin: 0.5rem 0;
@@ -279,73 +279,73 @@
     vertical-align: top;
   }
   .diff-line.type-addition > * {
-    background-color: var(--color-fill-diff-green-light);
+    background-color: var(--color-feedback-success-bg);
   }
   .diff-line.type-deletion > * {
-    background-color: var(--color-fill-diff-red-light);
+    background-color: var(--color-feedback-error-bg);
   }
 
   .diff-line.selected > * {
-    background-color: var(--color-fill-float-hover);
+    background-color: var(--color-surface-mid);
   }
   .diff-line.selected.type-addition > * {
-    background-color: var(--color-fill-diff-green);
+    background-color: var(--color-feedback-success-bg-selected);
   }
   .diff-line.selected.type-deletion > * {
-    background-color: var(--color-fill-diff-red);
+    background-color: var(--color-feedback-error-bg-selected);
   }
 
   .type-addition > .diff-line-number,
   .type-addition > .diff-line-type {
-    color: var(--color-foreground-success);
+    color: var(--color-text-open);
   }
   .type-deletion > .diff-line-number,
   .type-deletion > .diff-line-type {
-    color: var(--color-foreground-red);
+    color: var(--color-feedback-error-text);
   }
 
   .diff-line.selected .selection-indicator-left {
-    background-color: var(--color-fill-secondary);
+    background-color: var(--color-surface-brand-primary);
   }
   .type-addition.diff-line.selected .selection-indicator-left {
-    background-color: var(--color-fill-secondary);
+    background-color: var(--color-surface-brand-primary);
   }
   .type-deletion.diff-line.selected .selection-indicator-left {
-    background-color: var(--color-fill-secondary);
+    background-color: var(--color-surface-brand-primary);
   }
 
   .diff-line.selected .selection-indicator-right {
-    background-color: var(--color-fill-secondary);
+    background-color: var(--color-surface-brand-primary);
   }
   .type-addition.diff-line.selected .selection-indicator-right {
-    background-color: var(--color-fill-secondary);
+    background-color: var(--color-surface-brand-primary);
   }
   .type-deletion.diff-line.selected .selection-indicator-right {
-    background-color: var(--color-fill-secondary);
+    background-color: var(--color-surface-brand-primary);
   }
 
   .selection-start {
-    box-shadow: 0 -1px 0 0 var(--color-fill-secondary);
+    box-shadow: 0 -1px 0 0 var(--color-surface-brand-primary);
     z-index: 1;
   }
   .selection-end {
-    box-shadow: 0 1px 0 0 var(--color-fill-secondary);
+    box-shadow: 0 1px 0 0 var(--color-surface-brand-primary);
     z-index: 1;
   }
 
   .selection-start.selection-end {
-    box-shadow: 0 0 0 1px var(--color-fill-secondary);
+    box-shadow: 0 0 0 1px var(--color-surface-brand-primary);
     z-index: 1;
   }
 
   .diff-line-number {
-    font-family: var(--font-family-monospace);
+    font: var(--txt-code-regular);
     text-align: right;
     user-select: none;
     line-height: 1.5rem;
     min-width: 3rem;
     cursor: pointer;
-    color: var(--color-foreground-disabled);
+    color: var(--color-text-disabled);
   }
   .diff-line-number.left {
     position: relative;
@@ -383,7 +383,7 @@
   }
   .diff-expand-header {
     padding-left: 0.5rem;
-    color: var(--color-foreground-dim);
+    color: var(--color-text-tertiary);
   }
 </style>
 
@@ -433,7 +433,7 @@
                 window.location.hash = "";
                 preview = true;
               }}>
-              <Icon name="eye-open" />Preview
+              <Icon name="eye" />Preview
             </Button>
           </Radio>
         {/if}

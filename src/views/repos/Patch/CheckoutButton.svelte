@@ -10,8 +10,7 @@
 <style>
   .label {
     display: block;
-    font-size: var(--font-size-small);
-    font-weight: var(--font-weight-regular);
+    font: var(--txt-body-m-regular);
     margin-bottom: 0.75rem;
   }
 </style>

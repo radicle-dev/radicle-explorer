@@ -19,7 +19,7 @@
 
 <div class="section" style:padding-top="0.5rem">
   Policy:
-  <span class="txt-bold">{capitalize(policy)}</span>
+  <span class="txt-body-m-semibold">{capitalize(policy)}</span>
 </div>
 <div class="txt-missing text">
   {#if policy === "allow"}
@@ -32,7 +32,7 @@
 {#if policy === "allow"}
   <div class="section" style:padding-top="0.5rem">
     Scope:
-    <span class="txt-bold">{capitalize(scope)}</span>
+    <span class="txt-body-m-semibold">{capitalize(scope)}</span>
   </div>
   <div class="txt-missing text">
     {#if scope === "all"}

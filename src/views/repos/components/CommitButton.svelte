@@ -17,13 +17,11 @@
 
   $: commitShortId = formatCommit(commit.id);
   $: if (variant === "right") {
-    styleBorderRadius =
-      "0 var(--border-radius-tiny) var(--border-radius-tiny) 0";
+    styleBorderRadius = "0 var(--border-radius-sm) var(--border-radius-sm) 0";
   } else if (variant === "standalone") {
-    styleBorderRadius = "var(--border-radius-tiny)";
+    styleBorderRadius = "var(--border-radius-sm)";
   } else if (variant === "left") {
-    styleBorderRadius =
-      "var(--border-radius-tiny) 0 0 var(--border-radius-tiny)";
+    styleBorderRadius = "var(--border-radius-sm) 0 0 var(--border-radius-sm)";
   } else if (variant === "center") {
     styleBorderRadius = "0";
   } else {
@@ -59,7 +57,7 @@
     {styleMinWidth}
     {styleBorderRadius}>
     <div class="txt-overflow commit">
-      <div class="identifier global-commit">
+      <div class="identifier txt-id">
         {commitShortId}
       </div>
       <span

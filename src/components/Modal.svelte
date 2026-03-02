@@ -10,10 +10,9 @@
 <style>
   .modal {
     padding: 2rem;
-    border-radius: var(--border-radius-regular);
-    font-family: var(--font-family-sans-serif);
-    background: var(--color-background-float);
-    border: 1px solid var(--color-border-hint);
+    border-radius: var(--border-radius-lg);
+    background: var(--color-surface-subtle);
+    border: 1px solid var(--color-border-subtle);
     box-shadow: var(--elevation-low);
     min-width: 34rem;
     max-width: 100vw;
@@ -27,18 +26,17 @@
     justify-content: center;
   }
   .title {
-    font-size: var(--font-size-large);
-    font-weight: var(--font-weight-semibold);
+    font: var(--txt-heading-l);
     text-align: center;
     text-overflow: ellipsis;
     overflow: hidden;
   }
   .subtitle {
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
     text-align: center;
   }
   .body {
-    font-size: var(--font-size-regular);
+    font: var(--txt-body-l-regular);
     display: flex;
     justify-content: center;
   }

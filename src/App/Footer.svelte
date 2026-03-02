@@ -11,10 +11,10 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-size: var(--font-size-small);
-    color: var(--color-foreground-dim);
+    font: var(--txt-body-m-regular);
+    color: var(--color-text-tertiary);
     height: 2.3125rem;
-    background-color: var(--color-background-dip);
+    background-color: var(--color-surface-base);
     padding: 0 1rem;
   }
 
@@ -34,7 +34,7 @@
   }
 
   a:hover {
-    color: var(--color-fill-secondary);
+    color: var(--color-surface-brand-primary);
   }
 </style>
 
@@ -63,7 +63,7 @@
       rel="noreferrer"
       href="https://radicle.xyz">
       radicle.xyz
-      <Icon name="arrow-box-up-right" />
+      <Icon name="open-external" />
     </a>
   </div>
 </div>

@@ -257,9 +257,8 @@
     word-break: break-word;
   }
   .front-matter {
-    font-size: var(--font-size-tiny);
-    font-family: var(--font-family-monospace);
-    border: 1px dashed var(--color-border-default);
+    font: var(--txt-body-s-regular);
+    border: 1px dashed var(--color-border-mid);
     padding: 0.5rem;
     margin-bottom: 2rem;
   }
@@ -274,19 +273,17 @@
   }
 
   .markdown :global(h1) {
-    font-size: calc(var(--font-size-x-large) * 0.75);
-    font-weight: var(--font-weight-semibold);
+    font: var(--txt-heading-l);
     padding: 1rem 0 0.5rem 0;
     margin: 0 0 0.75rem;
-    border-bottom: 1px solid var(--color-border-hint);
+    border-bottom: 1px solid var(--color-border-subtle);
   }
 
   .markdown :global(h2) {
-    font-size: var(--font-size-medium);
-    font-weight: var(--font-weight-regular);
+    font: var(--txt-heading-m);
     padding: 0.25rem 0;
     margin: 2rem 0 0.5rem;
-    border-bottom: 1px solid var(--color-border-hint);
+    border-bottom: 1px solid var(--color-border-subtle);
   }
 
   .markdown :global(.pre-wrapper) {
@@ -302,8 +299,8 @@
   }
 
   .markdown :global(radicle-clipboard) {
-    background-color: var(--color-fill-ghost);
-    border-radius: var(--border-radius-small);
+    background-color: var(--color-surface-mid);
+    border-radius: var(--border-radius-md);
   }
 
   .markdown :global(.pre-wrapper:hover > radicle-clipboard) {
@@ -311,29 +308,26 @@
   }
 
   .markdown :global(h3) {
-    font-size: calc(var(--font-size-medium) * 0.9);
-    font-weight: var(--font-weight-semibold);
+    font: var(--txt-heading-m);
     padding: 0.5rem 0;
     margin: 1rem 0 0.25rem;
   }
 
   .markdown :global(h4) {
-    font-weight: var(--font-weight-semibold);
-    font-size: var(--font-size-regular);
+    font: var(--txt-body-l-semibold);
     padding: 0.5rem 0;
     margin: 1rem 0 0.125rem;
   }
 
   .markdown :global(h5),
   .markdown :global(h6) {
-    font-weight: var(--font-weight-semibold);
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-semibold);
     padding: 0.35rem 0;
     margin: 1rem 0 0.125rem;
   }
 
   .markdown :global(h6) {
-    color: var(--color-foreground-dim);
+    color: var(--color-text-tertiary);
   }
 
   .markdown :global(p) {
@@ -348,7 +342,7 @@
 
   .markdown :global(li.task-item) {
     list-style-type: none;
-    color: var(--color-foreground-dim);
+    color: var(--color-text-tertiary);
   }
   .markdown :global(li.task-item radicle-icon-small) {
     margin-right: 0.2rem;
@@ -359,14 +353,14 @@
   }
 
   .markdown :global(blockquote) {
-    color: var(--color-foreground-dim);
-    border-left: 0.3rem solid var(--color-fill-ghost);
+    color: var(--color-text-tertiary);
+    border-left: 0.3rem solid var(--color-surface-mid);
     padding: 0 0 0 1rem;
     margin: 1rem 0 1rem 0;
   }
 
   .markdown :global(strong) {
-    font-weight: var(--font-weight-semibold);
+    font-weight: 600;
   }
 
   .markdown :global(.footnote-ref) {
@@ -377,11 +371,11 @@
   .markdown :global(.footnote-ref),
   .markdown :global(.footnote > .marker),
   .markdown :global(.footnote > .ref-arrow) {
-    color: var(--color-foreground-dim);
+    color: var(--color-text-tertiary);
   }
   .markdown :global(.footnote-ref:hover),
   .markdown :global(.footnote .ref-arrow:hover) {
-    color: var(--color-foreground);
+    color: var(--color-text-primary);
   }
   .markdown :global(.footnote) {
     margin-bottom: 0;
@@ -397,10 +391,9 @@
   }
 
   .markdown :global(code) {
-    font-family: var(--font-family-monospace);
-    font-size: var(--font-size-small);
-    background-color: var(--color-fill-ghost);
-    border-radius: var(--border-radius-tiny);
+    font: var(--txt-code-regular);
+    background-color: var(--color-surface-mid);
+    border-radius: var(--border-radius-sm);
     padding: 0.125rem 0.25rem;
   }
 
@@ -414,11 +407,10 @@
   }
 
   .markdown :global(pre) {
-    font-family: var(--font-family-monospace);
-    font-size: var(--font-size-regular);
-    background-color: var(--color-fill-ghost);
+    font: var(--txt-code-regular);
+    background-color: var(--color-surface-mid);
     padding: 1rem !important;
-    border-radius: var(--border-radius-small);
+    border-radius: var(--border-radius-md);
     overflow: scroll;
     scrollbar-width: none;
   }
@@ -434,13 +426,13 @@
   }
   .markdown :global(a) {
     text-decoration: underline;
-    text-decoration-color: var(--color-foreground-dim);
+    text-decoration-color: var(--color-text-tertiary);
   }
   .markdown :global(a.no-underline) {
     text-decoration: none;
   }
   .markdown :global(a:hover) {
-    text-decoration-color: var(--color-foreground-contrast);
+    text-decoration-color: var(--color-text-primary);
   }
 
   .markdown :global(hr) {
@@ -449,7 +441,7 @@
     overflow: hidden;
     background: transparent;
     border: 0;
-    border-bottom: 1px solid var(--color-border-hint);
+    border-bottom: 1px solid var(--color-border-subtle);
   }
 
   .markdown :global(ol) {
@@ -480,19 +472,19 @@
   .markdown :global(table) {
     margin: 1.5rem 0;
     border-collapse: collapse;
-    border-radius: var(--border-radius-regular);
+    border-radius: var(--border-radius-lg);
     border-style: hidden;
-    box-shadow: 0 0 0 1px var(--color-border-hint);
+    box-shadow: 0 0 0 1px var(--color-border-subtle);
     overflow: hidden;
   }
   .markdown :global(td) {
     text-align: left;
     text-overflow: ellipsis;
-    border: 1px solid var(--color-border-hint);
+    border: 1px solid var(--color-border-subtle);
     padding: 0.5rem 1rem;
   }
   .markdown :global(tr:nth-child(even)) {
-    background-color: var(--color-background-default);
+    background-color: var(--color-surface-base);
   }
   .markdown :global(th) {
     text-align: center;
@@ -520,7 +512,7 @@
       <tbody>
         {#each frontMatter as [key, val]}
           <tr>
-            <td><span class="txt-bold">{key}</span></td>
+            <td><span class="txt-body-m-semibold">{key}</span></td>
             <td>{val}</td>
           </tr>
         {/each}

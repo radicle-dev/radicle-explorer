@@ -5,9 +5,8 @@
 <style>
   kbd {
     align-items: center;
-    border-radius: var(--border-radius-tiny);
-    border: 1px solid var(--color-border-default);
-    font-family: var(--font-family-sans-serif);
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--color-border-mid);
     justify-content: center;
     padding: 0 0.25rem;
   }

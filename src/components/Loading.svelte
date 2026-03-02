@@ -44,15 +44,15 @@
   .spinner > div {
     width: 18px;
     height: 18px;
-    background-color: var(--color-fill-secondary);
-    border-radius: var(--border-radius-round);
+    background-color: var(--color-surface-brand-primary);
+    border-radius: var(--border-radius-full);
     display: inline-block;
     -webkit-animation: sk-bouncedelay 1.4s infinite ease-in-out both;
     animation: sk-bouncedelay 1.4s infinite ease-in-out both;
   }
 
   .spinner.grayscale > div {
-    background-color: var(--color-fill-ghost);
+    background-color: var(--color-surface-mid);
   }
 
   .spinner.condensed > div {

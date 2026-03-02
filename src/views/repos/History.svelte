@@ -83,9 +83,8 @@
     margin-left: 1rem;
     margin-top: 3rem;
     margin-bottom: 1rem;
-    font-size: var(--font-size-small);
-    font-weight: var(--font-weight-medium);
-    color: var(--color-foreground-dim);
+    font: var(--txt-body-m-medium);
+    color: var(--color-text-tertiary);
   }
   .group-header:first-child {
     margin-top: 0;

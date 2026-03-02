@@ -33,8 +33,7 @@
 
 <style>
   .popover {
-    font-size: var(--font-size-small);
-    font-weight: var(--font-weight-regular);
+    font: var(--txt-body-m-regular);
   }
   label {
     display: block;

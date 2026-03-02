@@ -8,8 +8,8 @@
 
 <style>
   .submodule {
-    color: var(--color-foreground-dim);
-    border-radius: var(--border-radius-tiny);
+    color: var(--color-text-tertiary);
+    border-radius: var(--border-radius-sm);
     display: flex;
     line-height: 1.5em;
     margin: 0.25rem 0;
@@ -23,8 +23,7 @@
     white-space: nowrap;
     text-overflow: ellipsis !important;
     overflow: hidden;
-    font-size: var(--font-size-small);
-    font-weight: var(--font-weight-regular);
+    font: var(--txt-body-m-regular);
   }
   .icon-container {
     display: flex;
@@ -38,7 +37,7 @@
   class="submodule"
   title="This is a git submodule, for more information look at the nearest .gitmodules file">
   <div class="icon-container">
-    <Icon name="repo" />
+    <Icon name="repository" />
   </div>
   <span class="name">{name} @ {formatCommit(oid)}</span>
 </div>

@@ -12,10 +12,10 @@
   .placeholder {
     align-items: center;
     text-align: center;
-    color: var(--color-foreground-dim);
+    color: var(--color-text-tertiary);
     display: flex;
     flex-direction: column;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
     gap: 0.5rem;
     justify-content: center;
   }

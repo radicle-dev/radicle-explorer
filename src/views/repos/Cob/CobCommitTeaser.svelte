@@ -21,7 +21,7 @@
 <style>
   .teaser {
     display: flex;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
     align-items: start;
     padding: 0.125rem 0;
   }
@@ -49,7 +49,7 @@
   }
   .commit-message {
     margin: 0.5rem 0;
-    font-size: var(--font-size-tiny);
+    font: var(--txt-body-s-regular);
   }
   pre {
     white-space: pre-wrap;
@@ -68,7 +68,7 @@
           commit: commit.id,
         }}>
         <div class="summary" use:twemoji>
-          <InlineTitle fontSize="small" content={commit.summary} />
+          <InlineTitle fontSize="body-m-regular" content={commit.summary} />
         </div>
       </Link>
       {#if commit.description}
@@ -88,7 +88,7 @@
     {/if}
     <div class="global-hide-on-small-desktop-up">
       <CompactCommitAuthorship {commit}>
-        <Id id={commit.id} style="commit" />
+        <Id id={commit.id} />
       </CompactCommitAuthorship>
     </div>
   </div>
@@ -96,7 +96,7 @@
     <div style="display: flex; gap: 0.5rem; height: 21px; align-items: center;">
       <div class="global-hide-on-mobile-down">
         <CompactCommitAuthorship {commit}>
-          <Id id={commit.id} style="commit" />
+          <Id id={commit.id} />
         </CompactCommitAuthorship>
       </div>
       <IconButton title="Browse repo at this commit">

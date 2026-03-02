@@ -38,14 +38,22 @@ test("copy to clipboard", async ({ page, browserName, context }) => {
   // `rad clone` URL.
   {
     await page.getByRole("button", { name: "Clone" }).first().click();
-    await page.getByText("rad clone").locator(".clipboard").first().click();
+    await page
+      .locator(".cmd:has-text('rad clone')")
+      .locator(".clipboard")
+      .first()
+      .click();
     await expectClipboard(`rad clone ${sourceBrowsingRid}`);
   }
 
   // `git clone` URL.
   {
     await page.getByRole("button", { name: "Git" }).click();
-    await page.getByText("git clone").locator(".clipboard").first().click();
+    await page
+      .locator(".cmd:has-text('git clone')")
+      .locator(".clipboard")
+      .first()
+      .click();
     await expectClipboard(
       `git clone http://localhost/${sourceBrowsingRid.replace(
         "rad:",

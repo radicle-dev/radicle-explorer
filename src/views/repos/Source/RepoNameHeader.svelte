@@ -41,9 +41,9 @@
   .title {
     align-items: center;
     gap: 0.5rem;
-    color: var(--color-foreground-contrast);
+    color: var(--color-text-primary);
     display: flex;
-    font-size: var(--font-size-large);
+    font: var(--txt-heading-l);
     justify-content: left;
     text-align: left;
     text-overflow: ellipsis;
@@ -52,17 +52,14 @@
   .description {
     padding: 0 1rem 1rem 1rem;
   }
-  .repo-name {
-    font-weight: var(--font-weight-semibold);
-  }
   .repo-name:hover {
     color: inherit;
   }
   .description :global(a) {
-    border-bottom: 1px solid var(--color-foreground-dim);
+    border-bottom: 1px solid var(--color-text-tertiary);
   }
   .description :global(a:hover) {
-    border-bottom: 1px solid var(--color-foreground-contrast);
+    border-bottom: 1px solid var(--color-text-primary);
   }
   .id {
     padding-left: 1rem;
@@ -90,7 +87,7 @@
       </Link>
     </span>
     {#if repo.visibility.type === "private"}
-      <Badge variant="yellow" size="tiny">
+      <Badge variant="private" size="tiny">
         <Icon name="lock" />
         Private
       </Badge>

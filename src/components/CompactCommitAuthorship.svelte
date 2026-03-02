@@ -10,7 +10,7 @@
 <style>
   .authorship {
     display: flex;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
     column-gap: 0.5rem;
     align-items: center;
     white-space: nowrap;
@@ -21,18 +21,15 @@
     flex-wrap: nowrap;
     white-space: nowrap;
     gap: 0.5rem;
-    font-family: var(--font-family-monospace);
-    font-weight: var(--font-weight-semibold);
+    font: var(--txt-code-semibold);
   }
   .label {
-    font-family: var(--font-family-sans-serif);
-    font-weight: var(--font-weight-regular);
-    color: var(--color-foreground-dim);
+    color: var(--color-text-tertiary);
   }
   .avatar {
     width: 1rem;
     height: 1rem;
-    border-radius: var(--border-radius-round);
+    border-radius: var(--border-radius-full);
   }
 </style>
 

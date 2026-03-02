@@ -7,10 +7,10 @@
 </script>
 
 <Button size="regular" disabled>
-  <span style:color="var(--color-foregroung-disabled)">Compare</span>
+  <span style:color="var(--color-text-disabled)">Compare</span>
   <span
-    style:color="var(--color-foregroung-disabled)"
-    style:font-family="var(--font-family-monospace)">
+    style:color="var(--color-text-disabled)"
+    style:font="var(--txt-code-regular)">
     {fromCommit.substring(0, 6)}..{toCommit.substring(0, 6)}
   </span>
   <Icon name="chevron-down" />

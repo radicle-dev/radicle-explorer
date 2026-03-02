@@ -22,20 +22,20 @@
   }
 
   .counter {
-    border-radius: var(--border-radius-tiny);
-    background-color: var(--color-fill-ghost);
-    color: var(--color-foreground-dim);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-mid);
+    color: var(--color-text-tertiary);
     padding: 0 0.25rem;
   }
 
   .selected {
-    background-color: var(--color-fill-counter);
-    color: var(--color-foreground-contrast);
+    background-color: var(--color-surface-alpha-subtle);
+    color: var(--color-text-primary);
   }
 
   .hover {
-    background-color: var(--color-fill-ghost-hover);
-    color: var(--color-foreground-contrast);
+    background-color: var(--color-surface-strong);
+    color: var(--color-text-primary);
   }
 
   .title-counter {

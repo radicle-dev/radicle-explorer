@@ -44,19 +44,19 @@ test("change theme", async ({ page }) => {
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   await expect(page.locator("body")).toHaveCSS(
     "background-color",
-    "rgb(245, 245, 255)",
+    "rgb(248, 249, 250)",
   );
   // Source highlighting reacts to theme change.
-  await expect(page.getByText("() {")).toHaveCSS("color", "rgb(35, 37, 99)");
+  await expect(page.getByText("() {")).toHaveCSS("color", "rgb(11, 13, 18)");
 
   await page.getByRole("button", { name: "Dark Mode" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await expect(page.locator("body")).toHaveCSS(
     "background-color",
-    "rgb(10, 13, 16)",
+    "rgb(0, 6, 15)",
   );
   // Source highlighting reacts to theme change.
-  await expect(page.getByText("() {")).toHaveCSS("color", "rgb(249, 249, 251)");
+  await expect(page.getByText("() {")).toHaveCSS("color", "rgb(255, 255, 255)");
 });
 
 test("change code font", async ({ page }) => {

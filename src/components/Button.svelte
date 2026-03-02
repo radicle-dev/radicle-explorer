@@ -42,10 +42,8 @@
     display: flex;
     align-items: center;
     border: none;
-    border-radius: var(--border-radius-tiny);
-    font-family: var(--font-family-sans-serif);
-    font-weight: var(--font-weight-semibold);
-    font-size: var(--font-size-small);
+    border-radius: var(--border-radius-sm);
+    font: var(--txt-body-m-semibold);
     font-feature-settings: inherit;
     white-space: nowrap;
     gap: 0.5rem;
@@ -53,7 +51,7 @@
   }
 
   button:disabled {
-    color: var(--color-foreground-disabled);
+    color: var(--color-text-disabled);
   }
   button:disabled.not-allowed {
     cursor: not-allowed;
@@ -70,243 +68,243 @@
   }
 
   .large {
-    border-radius: var(--border-radius-small);
+    border-radius: var(--border-radius-md);
     height: var(--button-regular-height);
     padding: 0 1rem;
   }
 
   .background {
-    color: var(--color-foreground-contrast);
-    background-color: var(--color-background-default);
-    font-weight: var(--font-weight-regular);
+    color: var(--color-text-primary);
+    background-color: var(--color-surface-base);
+    font: var(--txt-body-m-regular);
   }
   .background[disabled] {
-    color: var(--color-foreground-disabled);
-    background-color: var(--color-background-default);
-    font-weight: var(--font-weight-regular);
+    color: var(--color-text-disabled);
+    background-color: var(--color-surface-base);
   }
   .background:not([disabled]):hover {
-    color: var(--color-foreground-contrast);
-    background-color: var(--color-fill-ghost);
+    color: var(--color-text-primary);
+    background-color: var(--color-surface-mid);
   }
 
   .gray {
-    background-color: var(--color-fill-ghost);
-    color: var(--color-foreground-contrast);
+    background-color: var(--color-surface-mid);
+    color: var(--color-text-primary);
   }
   .gray[disabled] {
-    background-color: var(--color-fill-ghost);
-    color: var(--color-foreground-disabled);
+    background-color: var(--color-surface-mid);
+    color: var(--color-text-disabled);
   }
   .gray:not([disabled]):hover {
-    background-color: var(--color-fill-ghost-hover);
-    color: var(--color-foreground-contrast);
+    background-color: var(--color-surface-strong);
+    color: var(--color-text-primary);
   }
 
   .gray-white {
-    background-color: var(--color-fill-ghost);
-    color: var(--color-foreground-contrast);
+    background-color: var(--color-surface-mid);
+    color: var(--color-text-primary);
   }
   .gray-white[disabled] {
-    background-color: var(--color-fill-ghost);
-    color: var(--color-foreground-disabled);
+    background-color: var(--color-surface-mid);
+    color: var(--color-text-disabled);
   }
   .gray-white:not([disabled]):hover {
-    background-color: var(--color-fill-ghost-hover);
-    color: var(--color-foreground-contrast);
+    background-color: var(--color-surface-strong);
+    color: var(--color-text-primary);
   }
   .selected {
-    background-color: var(--color-fill-float-hover);
-    color: var(--color-foreground-emphasized);
+    background-color: var(--color-border-alpha-subtle);
+    color: var(--color-surface-brand-primary);
     cursor: default;
   }
   .selected[disabled] {
-    background-color: var(--color-fill-ghost);
-    color: var(--color-foreground-disabled);
+    background-color: var(--color-surface-mid);
+    color: var(--color-text-disabled);
   }
 
   .not-selected {
-    background-color: var(--color-fill-ghost);
-    color: var(--color-foreground-contrast);
-    font-weight: var(--font-weight-normal);
+    background-color: var(--color-surface-mid);
+    color: var(--color-text-primary);
+    font: var(--txt-body-m-regular);
     letter-spacing: 0.02rem;
   }
   .not-selected[disabled] {
-    background-color: var(--color-fill-float-hover);
-    color: var(--color-foreground-disabled);
-    font-weight: var(--font-weight-normal);
+    background-color: var(--color-surface-mid);
+    color: var(--color-text-disabled);
   }
   .not-selected:not([disabled]):hover {
-    background-color: var(--color-fill-ghost-hover);
-    color: var(--color-foreground-contrast);
+    background-color: var(--color-surface-strong);
+    color: var(--color-text-primary);
   }
 
   .none {
     background-color: transparent;
-    color: var(--color-foreground-emphasized);
+    color: var(--color-surface-brand-primary);
   }
   .none[disabled] {
     background-color: transparent;
-    color: var(--color-foreground-emphasized);
+    color: var(--color-surface-brand-primary);
   }
   .none:not([disabled]):hover {
-    background-color: var(--color-fill-ghost);
+    background-color: var(--color-surface-mid);
   }
 
   .outline {
     background-color: transparent;
-    color: var(--color-foreground-contrast);
-    border: 1px solid var(--color-border-hint);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border-subtle);
   }
   .outline[disabled] {
     background-color: transparent;
-    color: var(--color-fill-gray);
+    color: var(--color-text-tertiary);
   }
   .outline:not([disabled]):hover {
     background-color: transparent;
-    border: 1px solid var(--color-border-focus);
+    border: 1px solid var(--color-border-brand);
   }
 
+  /* TODO: This variant was removed in garden - consider removing it */
   .primary-toggle-on {
-    color: var(--color-fill-primary);
-    background-color: var(--color-fill-merged);
-    border: 1px solid var(--color-border-merged);
+    color: var(--color-surface-brand-primary);
+    background-color: var(--color-surface-merged);
+    border: 1px solid var(--color-surface-merged);
   }
 
   .primary-toggle-on[disabled] {
-    color: var(--color-foreground-match-background);
-    background-color: var(--color-fill-primary);
+    color: var(--color-text-on-brand);
+    background-color: var(--color-surface-brand-primary);
   }
 
   .primary-toggle-on:not([disabled]):hover {
-    border: 1px solid var(--color-border-primary);
+    border: 1px solid var(--color-border-brand);
   }
 
   .primary-toggle-off {
     background-color: transparent;
-    color: var(--color-foreground-dim);
-    border: 1px solid var(--color-border-hint);
+    color: var(--color-text-tertiary);
+    border: 1px solid var(--color-border-subtle);
   }
   .primary-toggle-off[disabled] {
     background-color: transparent;
-    color: var(--color-fill-gray);
+    color: var(--color-text-tertiary);
   }
   .primary-toggle-off:not([disabled]):hover {
     background-color: transparent;
-    border: 1px solid var(--color-border-primary);
-    color: var(--color-foreground-dim);
+    border: 1px solid var(--color-border-brand);
+    color: var(--color-text-tertiary);
   }
 
   .secondary-toggle-off {
-    background-color: var(--color-fill-secondary);
-    color: var(--color-foreground-match-background);
+    background-color: var(--color-surface-brand-primary);
+    color: var(--color-text-on-brand);
   }
   .secondary-toggle-off[disabled] {
-    background-color: var(--color-fill-ghost);
-    color: var(--color-foreground-disabled);
+    background-color: var(--color-surface-mid);
+    color: var(--color-text-disabled);
   }
   .secondary-toggle-off:not([disabled]):hover {
-    background-color: var(--color-fill-secondary-hover);
+    background-color: var(--color-surface-brand-secondary);
   }
+  /* TODO: This variant was removed in garden - consider removing it */
   .secondary-toggle-on {
-    background-color: var(--color-fill-selected);
-    color: var(--color-foreground-emphasized);
-    border: 1px solid var(--color-border-selected);
+    background-color: var(--color-surface-brand-primary);
+    color: var(--color-text-on-brand);
+    border: 1px solid var(--color-surface-brand-primary);
   }
   .secondary-toggle-on[disabled] {
-    background-color: var(--color-fill-ghost);
-    color: var(--color-foreground-disabled);
+    background-color: var(--color-surface-mid);
+    color: var(--color-text-disabled);
     border: none;
   }
   .secondary-toggle-on:not([disabled]):hover {
-    background-color: var(--color-fill-selected);
-    border: 1px solid var(--color-border-focus);
+    background-color: var(--color-surface-brand-primary);
+    border: 1px solid var(--color-border-brand);
   }
 
   .naked-toggle {
     background-color: transparent;
-    color: var(--color-foreground-contrast);
+    color: var(--color-text-primary);
     border: 1px solid transparent;
   }
   .naked-toggle[disabled] {
     background-color: transparent;
-    color: var(--color-fill-gray);
+    color: var(--color-text-tertiary);
   }
   .naked-toggle:not([disabled]):hover {
     background-color: transparent;
-    border: 1px solid var(--color-fill-secondary);
+    border: 1px solid var(--color-surface-brand-primary);
   }
 
   .secondary {
-    color: var(--color-foreground-match-background);
-    background-color: var(--color-fill-secondary);
+    color: var(--color-text-on-brand);
+    background-color: var(--color-surface-brand-primary);
   }
 
   .secondary[disabled] {
-    background-color: var(--color-fill-ghost);
-    color: var(--color-foreground-disabled);
+    background-color: var(--color-surface-mid);
+    color: var(--color-text-disabled);
   }
 
   .secondary:not([disabled]):hover {
-    background-color: var(--color-fill-secondary-hover);
+    background-color: var(--color-surface-brand-secondary);
   }
 
   .secondary-mobile {
-    color: var(--color-foreground-dim);
-    background-color: var(--color-background-default);
+    color: var(--color-text-tertiary);
+    background-color: var(--color-surface-base);
   }
 
   .secondary-mobile[disabled] {
-    background-color: var(--color-fill-ghost);
-    color: var(--color-foreground-disabled);
+    background-color: var(--color-surface-mid);
+    color: var(--color-text-disabled);
   }
 
   .secondary-mobile:not([disabled]):active {
-    color: var(--color-foreground-match-background);
-    background-color: var(--color-fill-secondary);
+    color: var(--color-text-on-brand);
+    background-color: var(--color-surface-brand-primary);
   }
 
   .secondary-mobile-toggle {
-    color: var(--color-foreground-dim);
-    background-color: var(--color-background-default);
+    color: var(--color-text-tertiary);
+    background-color: var(--color-surface-base);
   }
 
   .secondary-mobile-toggle[disabled] {
-    background-color: var(--color-fill-ghost);
-    color: var(--color-foreground-disabled);
+    background-color: var(--color-surface-mid);
+    color: var(--color-text-disabled);
   }
 
   .tab {
     background-color: transparent;
-    color: var(--color-foreground-contrast);
-    border: 1px solid var(--color-border-hint);
-    border-radius: 4px 4px 0 0;
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-md) var(--border-radius-md) 0 0;
     font-weight: normal;
     letter-spacing: 0.3px;
   }
 
   .tab[disabled] {
-    background-color: var(--color-background-default);
-    color: var(--color-foreground-disabled);
+    background-color: var(--color-surface-base);
+    color: var(--color-text-disabled);
     border: none;
-    border-bottom: 1px solid var(--color-border-hint);
+    border-bottom: 1px solid var(--color-border-subtle);
   }
 
   .tab:not([disabled]):hover {
-    background-color: var(--color-fill-float-hover);
+    background-color: var(--color-border-alpha-subtle);
   }
 
   .tab-active {
-    background-color: var(--color-background-default);
-    border: 1px solid var(--color-fill-separator);
-    border-bottom: 1px solid var(--color-background-default);
-    border-radius: 4px 4px 0 0;
-    color: var(--color-foreground-contrast);
+    background-color: var(--color-surface-base);
+    border: 1px solid var(--color-border-subtle);
+    border-bottom: 1px solid var(--color-surface-base);
+    border-radius: var(--border-radius-md) var(--border-radius-md) 0 0;
+    color: var(--color-text-primary);
   }
 
   .tab-active[disabled] {
-    background-color: var(--color-background-default);
-    color: var(--color-foreground-disabled);
+    background-color: var(--color-surface-base);
+    color: var(--color-text-disabled);
   }
 </style>
 

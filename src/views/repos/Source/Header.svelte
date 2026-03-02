@@ -67,7 +67,7 @@
   }
 
   .header {
-    font-size: var(--font-size-tiny);
+    font: var(--txt-body-s-regular);
     display: flex;
     gap: 0.375rem;
     align-items: center;
@@ -80,15 +80,15 @@
     position: absolute;
     left: -1rem;
     bottom: 0;
-    border-bottom: 1px solid var(--color-fill-separator);
+    border-bottom: 1px solid var(--color-border-subtle);
     width: calc(100% + 1rem);
     z-index: -1;
   }
 
   .counter {
-    border-radius: var(--border-radius-tiny);
-    background-color: var(--color-fill-ghost);
-    color: var(--color-foreground-dim);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-mid);
+    color: var(--color-text-tertiary);
     padding: 0 0.25rem;
   }
 
@@ -99,8 +99,8 @@
   }
 
   .selected {
-    background-color: var(--color-fill-ghost);
-    color: var(--color-foreground-contrast);
+    background-color: var(--color-surface-mid);
+    color: var(--color-text-primary);
   }
 </style>
 
@@ -127,7 +127,7 @@
       <Link route={baseRoute}>
         <Button
           variant="not-selected"
-          styleBorderRadius="0 var(--border-radius-tiny) var(--border-radius-tiny) 0">
+          styleBorderRadius="0 var(--border-radius-sm) var(--border-radius-sm) 0">
           <Icon name="cross" />
         </Button>
       </Link>
@@ -146,7 +146,7 @@
         revision,
       }}>
       <Button size="large" variant={filesLinkActive ? "tab-active" : "tab"}>
-        <Icon name="file" />Files
+        <Icon name="document" />Files
       </Button>
     </Link>
 

@@ -62,8 +62,8 @@
 <style>
   .subtitle,
   .pagination {
-    font-size: var(--font-size-small);
-    color: var(--color-foreground-dim);
+    font: var(--txt-body-m-regular);
+    color: var(--color-text-tertiary);
   }
   .pagination {
     display: flex;
@@ -75,8 +75,8 @@
   }
   .repo-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(21rem, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(32rem, 1fr));
+    gap: 0;
   }
   .empty-state {
     display: flex;
@@ -85,7 +85,7 @@
     justify-content: center;
     gap: 0.5rem;
     height: 35vh;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
   }
   .text-button {
     background: none;
@@ -107,12 +107,12 @@
   .footer {
     display: flex;
     gap: 0.5rem 1rem;
-    margin-top: 1rem;
+    margin: 1rem;
   }
 
   @media (max-width: 1010.98px) {
-    .repos {
-      margin-top: 3rem;
+    .repo-grid {
+      grid-template-columns: 1fr;
     }
     .footer {
       flex-direction: column;

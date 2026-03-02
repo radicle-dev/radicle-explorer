@@ -62,7 +62,7 @@
   import CompareButton from "@app/views/repos/Patch/CompareButton.svelte";
   import DiffStatBadge from "@app/components/DiffStatBadge.svelte";
   import Embeds from "@app/views/repos/Cob/Embeds.svelte";
-  import Icon from "@app/components/Icon.svelte";
+  import Icon, { type Props as IconProps } from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
   import InlineTitle from "@app/views/repos/components/InlineTitle.svelte";
   import Labels from "@app/views/repos/Cob/Labels.svelte";
@@ -90,21 +90,21 @@
 
   function badgeColor(status: string): ComponentProps<Badge>["variant"] {
     if (status === "draft") {
-      return "foreground";
+      return "draft";
     } else if (status === "open") {
-      return "positive";
+      return "open";
     } else if (status === "archived") {
-      return "caution";
+      return "archived";
     } else if (status === "merged") {
-      return "primary";
+      return "merged";
     } else {
-      return "foreground";
+      return "draft";
     }
   }
 
   type Tab = "activity" | "changes";
 
-  let tabs: Record<Tab, { icon: ComponentProps<Icon>["name"]; route: Route }>;
+  let tabs: Record<Tab, { icon: IconProps["name"]; route: Route }>;
   $: {
     const baseRoute = {
       resource: "repo.patch",
@@ -241,16 +241,16 @@
     flex: 1;
     flex-direction: column;
     min-width: 0;
-    background-color: var(--color-background-float);
+    background-color: var(--color-surface-subtle);
   }
   .metadata {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
     padding: 1rem;
-    border-left: 1px solid var(--color-border-hint);
-    border-left: 1px solid var(--color-border-hint);
+    border-left: 1px solid var(--color-border-subtle);
+    border-left: 1px solid var(--color-border-subtle);
     width: 20rem;
   }
   .title {
@@ -259,32 +259,31 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-weight: var(--font-weight-semibold);
-    font-size: var(--font-size-large);
+    font: var(--txt-heading-l);
     word-break: break-word;
   }
   .bottom {
-    background-color: var(--color-background-default);
+    background-color: var(--color-surface-base);
     padding: 1rem 1rem 0.5rem 1rem;
     height: 100%;
   }
   .tabs {
-    font-size: var(--font-size-tiny);
+    font: var(--txt-body-s-regular);
     display: flex;
     align-items: center;
     justify-content: left;
     flex-wrap: wrap;
     position: relative;
     margin-top: 1rem;
-    box-shadow: inset 0 -1px 0 var(--color-border-hint);
+    box-shadow: inset 0 -1px 0 var(--color-border-subtle);
   }
   .tabs-spacer {
     width: 1rem;
     height: 100%;
   }
   .author-metadata {
-    color: var(--color-fill-gray);
-    font-size: var(--font-size-small);
+    color: var(--color-text-tertiary);
+    font: var(--txt-body-m-regular);
   }
   .revision-description {
     display: flex;
@@ -293,9 +292,7 @@
     width: 100%;
   }
   .id {
-    font-size: var(--font-size-small);
-    font-family: var(--font-family-monospace);
-    font-weight: var(--font-weight-semibold);
+    font: var(--txt-code-semibold);
   }
   @media (max-width: 719.98px) {
     .patch {
@@ -340,7 +337,7 @@
         <svelte:fragment slot="title">
           {#if patch.title}
             <div class="title">
-              <InlineTitle fontSize="large" content={patch.title} />
+              <InlineTitle fontSize="heading-l" content={patch.title} />
             </div>
           {:else}
             <span class="txt-missing">No title</span>

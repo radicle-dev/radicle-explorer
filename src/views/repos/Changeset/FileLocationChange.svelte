@@ -17,8 +17,8 @@
 
 <style>
   .wrapper {
-    border: 1px solid var(--color-border-default);
-    border-radius: var(--border-radius-small);
+    border: 1px solid var(--color-border-mid);
+    border-radius: var(--border-radius-md);
     line-height: 1.5rem;
   }
   .header {

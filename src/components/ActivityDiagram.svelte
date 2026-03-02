@@ -1,137 +1,124 @@
 <script lang="ts">
   import type { WeeklyActivity } from "@app/lib/commit";
 
-  import { onMount } from "svelte";
+  interface Props {
+    id: string;
+    activity: WeeklyActivity[];
+    viewBoxHeight: number;
+    styleColor: string;
+  }
 
-  export let id: string;
-  export let activity: WeeklyActivity[];
-  export let viewBoxHeight: number;
-  export let styleColor: string;
+  const { id, activity, viewBoxHeight, styleColor }: Props = $props();
 
-  const strokeWidth = 3;
-  const viewBoxWidth = 600;
+  const viewBoxWidth = 493;
 
-  // The path strings to be inserted into the svg <path>.
-  let path = "";
-  let areaPath = "";
+  const totalWeeks = 52;
+  const columns = 16;
+  const cellGap = 4;
+  const maxRows = 5;
+
+  type Rect = { x: number; y: number; opacity: number };
+  let rects: Rect[] = $state([]);
 
   const heightWithPadding = viewBoxHeight + 16;
 
-  // The latest point on the x axis, starting at 0 until `viewBoxWidth`.
-  let lastWidthPoint = viewBoxWidth;
+  let cellSize: number = $state(0);
+  let rows: number = 0;
+  let colWidth: number = 0;
+  let rowHeight: number = 0;
 
-  // The amount of points on the x axis.
-  const widthIteration = viewBoxWidth / 52;
-
-  // The highest value on the y axis.
-  const commitCountArray: number[] = [];
-
-  // The minimal amplitude shown e.g. commitCount = 1 => `minimalHeight`
-  // points of height in the SVG.
-  const minimalHeight = 5;
-
-  let week = 0;
-
-  for (const point of activity) {
-    if (point.week - week > 1) {
-      commitCountArray.push(...new Array(point.week - week).fill(0));
+  $effect(() => {
+    if (activity && activity.length >= 0) {
+      drawDiagram();
     }
-    commitCountArray.push(point.commits.length);
-    week = point.week;
-  }
+  });
 
-  // Formats the points passed in, into a svg path string, without closing
-  // the area.
-  function createPath() {
-    let i = 1;
+  function drawDiagram() {
+    const commitCountArray: number[] = [];
+    let week = 0;
 
-    if (commitCountArray.length < 52) {
-      commitCountArray.push(...new Array(52 - commitCountArray.length).fill(0));
+    for (const point of activity) {
+      if (point.week - week > 1) {
+        commitCountArray.push(...new Array(point.week - week - 1).fill(0));
+      }
+      commitCountArray.push(point.commits.length);
+      week = point.week;
     }
 
-    const maxValue = Math.max(...commitCountArray);
-    const minValue = Math.min(...commitCountArray);
+    if (commitCountArray.length < totalWeeks) {
+      commitCountArray.push(
+        ...new Array(totalWeeks - commitCountArray.length).fill(0),
+      );
+    } else if (commitCountArray.length > totalWeeks) {
+      commitCountArray.splice(totalWeeks);
+    }
 
-    // Normalizes the values to the viewBox dimensions.
-    const normalizedArray = commitCountArray.map(c => {
-      // If we are not crossing the `viewBoxHeight` we want to return the
-      // actual value, and don't want to normalize <`minimalHeight` commit
-      // counts as huge spikes.
-      if (maxValue < viewBoxHeight && c >= minimalHeight) {
-        return c;
-      }
-      // If the value is 0..minimalHeight though we don't want to set it to
-      // the minimalHeight.
-      else if (c > 0 && c < minimalHeight) {
-        return minimalHeight;
-      }
-      // If the count is 0 we have to make sure the normalization is not being
-      // run since it would return NaN.
-      else {
-        return c === 0
-          ? 0
-          : ((viewBoxHeight - 0) * (c - minValue)) / (maxValue - minValue);
-      }
+    const boundaries = Array.from({ length: columns + 1 }, (_, i) =>
+      Math.floor((i * totalWeeks) / columns),
+    );
+    const bucketCounts = Array.from({ length: columns }, (_, i) => {
+      const start = boundaries[i];
+      const end = boundaries[i + 1];
+      let sum = 0;
+      for (let j = start; j < end; j++) sum += commitCountArray[j] ?? 0;
+      return sum;
     });
 
-    const path = normalizedArray.slice(1).reduce(
-      (acc, curr) => {
-        const s = `${viewBoxWidth - widthIteration * i},${
-          viewBoxHeight - curr
-        }`;
-        lastWidthPoint = viewBoxWidth - widthIteration * i;
-        i += 1;
-        return acc.concat(s);
-      },
-      [`M${viewBoxWidth},${viewBoxHeight - normalizedArray[0]}`],
-    );
-    return path.join();
-  }
+    const maxBucket = Math.max(0, ...bucketCounts);
 
-  onMount(() => {
-    // Creates the stroke path with the array of points.
-    path = createPath();
-    // Concats a path closing for it to be the area under the stroke.
-    areaPath = path.concat(
-      `L${lastWidthPoint},${viewBoxHeight}L${viewBoxWidth},${viewBoxHeight}Z`,
+    const maxCellFromWidth = Math.floor(
+      (viewBoxWidth - (columns - 1) * cellGap) / columns,
     );
-  });
+    const maxCellFromHeight = Math.floor(
+      (viewBoxHeight - (maxRows - 1) * cellGap) / maxRows,
+    );
+    cellSize = Math.max(1, Math.min(maxCellFromWidth, maxCellFromHeight));
+    colWidth = cellSize + cellGap + 8;
+    rowHeight = cellSize + cellGap;
+    rows = maxRows;
+
+    function cellsForBucket(count: number): number {
+      if (rows <= 0) return 0;
+      if (maxBucket === 0) return 1;
+      const scaled = Math.round((count / maxBucket) * (rows - 1)) + 1;
+      return Math.max(1, Math.min(rows, scaled));
+    }
+
+    function opacityForRow(rowIndex: number): number {
+      if (rows <= 1) return 1;
+      const t = rowIndex / (rows - 1);
+      return 0.25 + 0.75 * t;
+    }
+
+    const nextRects: Rect[] = [];
+    for (let i = 0; i < columns; i++) {
+      const heightCells = cellsForBucket(bucketCounts[i]);
+      const x = viewBoxWidth - cellSize - i * colWidth;
+      for (let r = 0; r < heightCells; r++) {
+        const y = viewBoxHeight - (r + 1) * rowHeight;
+        nextRects.push({ x, y, opacity: opacityForRow(r) });
+      }
+    }
+    rects = nextRects;
+  }
 </script>
 
 <svg
+  style:min-width="185px"
+  style:flex-shrink="none"
   style:color={styleColor}
   viewBox="0 0 {viewBoxWidth} {heightWithPadding}"
-  xmlns="http://www.w3.org/2000/svg">
-  <linearGradient id={`${id}:fillGradient`} x1="0" y1="1" x2="0" y2="0">
-    <stop offset="0%" stop-color="currentColor" stop-opacity="0" />
-    <stop offset="100%" stop-color="currentColor" stop-opacity="0.2" />
-  </linearGradient>
-  <linearGradient id={`${id}:gradient`} x1="0" y1="1" x2="0" y2="0">
-    <stop offset="0%" stop-color="currentColor" stop-opacity="0.2" />
-    <stop offset="50%" stop-color="currentColor" stop-opacity="0.8" />
-    <stop offset="100%" stop-color="currentColor" stop-opacity="1" />
-  </linearGradient>
-  {#if activity.length > 0}
-    <g>
-      <path
-        fill="transparent"
-        stroke={`url(#${id}:gradient)`}
-        stroke-width={strokeWidth}
-        stroke-linejoin="round"
-        d={path} />
-      <path
-        fill={`url(#${id}:fillGradient)`}
-        stroke="transparent"
-        d={areaPath} />
-    </g>
-  {:else}
-    <!-- If no commits have been made in a year, we show a straight line -->
-    <line
-      x1="0"
-      y1={viewBoxHeight}
-      x2="600"
-      y2={viewBoxHeight}
-      stroke="currentColor"
-      stroke-width={1} />
-  {/if}
+  xmlns="http://www.w3.org/2000/svg"
+  id={`activity-diagram-${id}`}>
+  <g>
+    {#each rects as rect, i (i)}
+      <rect
+        x={rect.x}
+        y={rect.y}
+        width={cellSize}
+        height={cellSize}
+        fill="currentColor"
+        fill-opacity={rect.opacity} />
+    {/each}
+  </g>
 </svg>

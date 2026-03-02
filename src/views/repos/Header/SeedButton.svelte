@@ -13,8 +13,7 @@
 <style>
   .seed-label {
     display: block;
-    font-size: var(--font-size-small);
-    font-weight: var(--font-weight-regular);
+    font: var(--txt-body-m-regular);
     margin-bottom: 0.75rem;
   }
   .title-counter {
@@ -22,20 +21,20 @@
     gap: 0.5rem;
   }
   .counter {
-    font-weight: var(--font-weight-regular);
-    border-radius: var(--border-radius-tiny);
-    background-color: var(--color-fill-ghost-hover);
-    border: 1px solid var(--color-border-secondary-counter);
-    color: var(--color-foreground-contrast);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-strong);
+    /* TODO: Verify this color - original token didn't exist */
+    border: 1px solid var(--color-surface-alpha-subtle);
+    color: var(--color-text-primary);
     padding: 0 0.25rem;
   }
   .not-seeding {
-    background-color: var(--color-fill-secondary-counter);
-    color: var(--color-foreground-match-background);
+    background-color: var(--color-surface-brand-secondary);
+    color: var(--color-text-on-brand);
   }
   .disabled {
-    background-color: var(--color-fill-float-hover);
-    color: var(--color-foreground-disabled);
+    background-color: var(--color-surface-mid);
+    color: var(--color-text-disabled);
   }
 </style>
 
@@ -48,13 +47,10 @@
       toggle();
     }}
     variant="secondary-toggle-off">
-    <Icon name="seedling" />
+    <Icon name="seed" />
     <span class="title-counter">
       <span class="global-hide-on-mobile-down">Seed</span>
-      <span
-        class="counter not-seeding"
-        class:disabled
-        style:font-weight="var(--font-weight-regular)">
+      <span class="counter not-seeding" class:disabled>
         {seedCount}
       </span>
     </span>

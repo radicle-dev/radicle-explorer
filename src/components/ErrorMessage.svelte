@@ -19,27 +19,24 @@
     border-radius: inherit;
     display: flex;
     flex-direction: column;
-    font-family: var(--font-family-sans-serif);
     font-size: inherit;
     padding: 1rem;
-    border-radius: var(--border-radius-small);
+    border-radius: var(--border-radius-md);
     gap: 1rem;
   }
   .label {
-    font-size: var(--font-size-small);
-    font-weight: var(--font-weight-regular);
+    font: var(--txt-body-m-regular);
     max-width: 36rem;
   }
   .error :global(code) {
-    font-family: var(--font-family-monospace);
-    font-size: var(--font-size-small);
-    background-color: var(--color-fill-ghost);
-    border-radius: var(--border-radius-tiny);
+    font: var(--txt-code-regular);
+    background-color: var(--color-surface-mid);
+    border-radius: var(--border-radius-sm);
     padding: 0.125rem 0.25rem;
   }
 
   .help {
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
     text-align: center;
   }
   .command {
@@ -54,7 +51,7 @@
 
 <div class="error">
   <IconLarge name={icon} />
-  <div class="txt-medium txt-bold">
+  <div class="txt-body-m-semibold">
     {title}
   </div>
   <!-- This @html is secure since we don't allow user input -->

@@ -39,7 +39,7 @@
 <div class="item-header">
   <span>Delegates</span>
   <div class="global-flex-item">
-    <span class="txt-bold">
+    <span class="txt-body-m-semibold">
       {repoThreshold}/{repoDelegates.length}
     </span>
     <IconButton on:click={() => (delegateExpanded = !delegateExpanded)}>
@@ -48,7 +48,7 @@
   </div>
 </div>
 {#if delegateExpanded}
-  <div style:color="var(--color-foreground-dim" style:margin-bottom="1rem">
+  <div style:color="var(--color-text-tertiary" style:margin-bottom="1rem">
     {#if repoDelegates.length === 1}
       Any changes accepted by the sole delegate will be included in the
       canonical branch.
@@ -68,7 +68,7 @@
 <div class="item-header">
   <span style:text-wrap="nowrap">Seeding Scope</span>
   <div class="global-flex-item">
-    <span class="txt-bold">
+    <span class="txt-body-m-semibold">
       {capitalize(
         "scope" in seedingPolicy ? seedingPolicy.scope : "not defined",
       )}
@@ -79,7 +79,7 @@
   </div>
 </div>
 {#if policyExpanded}
-  <div style:color="var(--color-foreground-dim)">
+  <div style:color="var(--color-text-tertiary)">
     {#if seedingPolicy.policy === "block"}
       Seeding scope only has an effect when a repository is seeded. This repo
       isn't seeded by the seed node.

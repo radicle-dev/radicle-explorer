@@ -19,15 +19,15 @@
   .comments {
     display: flex;
     flex-direction: column;
-    box-shadow: 0 0 0 1px var(--color-border-hint);
-    border-radius: var(--border-radius-small);
+    box-shadow: 0 0 0 1px var(--color-border-subtle);
+    border-radius: var(--border-radius-md);
   }
   .top-level-comment {
-    background-color: var(--color-background-float);
-    border-radius: var(--border-radius-small);
+    background-color: var(--color-surface-subtle);
+    border-radius: var(--border-radius-md);
   }
   .has-replies {
-    border-bottom: 1px solid var(--color-fill-separator);
+    border-bottom: 1px solid var(--color-border-subtle);
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
   }
@@ -54,7 +54,7 @@
       reactions={root.reactions}
       timestamp={root.timestamp}
       body={root.body}>
-      <Icon name="chat" slot="icon" />
+      <Icon name="comment" slot="icon" />
     </CommentComponent>
   </div>
   {#if replies.length > 0}

@@ -42,9 +42,9 @@
     position: relative;
   }
   .popover {
-    background: var(--color-background-float);
-    border-radius: var(--border-radius-regular);
-    border: 1px solid var(--color-border-hint);
+    background: var(--color-surface-subtle);
+    border-radius: var(--border-radius-lg);
+    border: 1px solid var(--color-border-subtle);
     box-shadow: var(--elevation-low);
     padding: 1rem;
     position: absolute;

@@ -4,16 +4,20 @@
 }
 
 :root {
-  --border-radius-tiny: 2px;
-  --border-radius-small: 4px;
-  --border-radius-regular: 8px;
-  --border-radius-round: 10rem;
+  --border-radius-sm: 0.125rem;
+  --border-radius-md: 0.25rem;
+  --border-radius-lg: 0.5rem;
+  --border-radius-full: 99rem;
 
   --scrollbar-width: 0.5rem;
 
   --button-regular-height: 2.5rem;
   --button-small-height: 2rem;
   --button-tiny-height: 1.5rem;
+
+  --global-header-height: 3.5rem;
+  --global-left-sidebar-width: 20rem;
+  --global-right-sidebar-width: 22.5rem;
 }
 
 html {
@@ -26,18 +30,13 @@ body {
   height: 100%;
   margin: 0;
   padding: 0;
-  color: var(--color-foreground-contrast);
+  color: var(--color-text-primary);
   text-align: left;
-  background-color: var(--color-background-default);
+  background-color: var(--color-surface-base);
   scrollbar-width: thin;
   scrollbar-height: thin;
-  scrollbar-color: var(--color-fill-separator) transparent;
+  scrollbar-color: var(--color-border-subtle) transparent;
   overscroll-behavior: none;
-}
-
-::selection {
-  background: var(--color-fill-yellow-iconic);
-  color: var(--color-foreground-black);
 }
 
 /* Chrome/Edge/Safari scrollbar */
@@ -50,14 +49,14 @@ body {
 }
 *::-webkit-scrollbar-thumb {
   background: transparent;
-  border-radius: var(--border-radius-regular);
+  border-radius: var(--border-radius-lg);
 }
 *::-webkit-scrollbar-corner {
   background: transparent;
 }
 *:hover::-webkit-scrollbar-thumb,
 body::-webkit-scrollbar-thumb {
-  background-color: var(--color-fill-separator);
+  background-color: var(--color-border-subtle);
 }
 
 a {
@@ -69,24 +68,15 @@ pre {
   margin: 0;
 }
 
-.global-oid {
-  color: var(--color-foreground-emphasized);
-  font-size: var(--font-size-small);
-  font-family: var(--font-family-monospace);
-  font-weight: var(--font-weight-regular);
-}
-
-.global-commit {
-  color: var(--color-foreground-dim);
-  font-size: var(--font-size-small);
-  font-family: var(--font-family-monospace);
-  font-weight: var(--font-weight-semibold);
+.txt-id {
+  color: var(--color-text-tertiary);
+  font: var(--txt-code-regular);
 }
 
 .global-counter {
-  border-radius: var(--border-radius-tiny);
-  background-color: var(--color-fill-ghost);
-  color: var(--color-foreground-dim);
+  border-radius: var(--border-radius-sm);
+  background-color: var(--color-surface-mid);
+  color: var(--color-text-tertiary);
   padding: 0 0.25rem;
   display: block;
   min-width: 1.25rem;
@@ -95,7 +85,7 @@ pre {
 .global-spacer {
   width: 1px;
   height: 100%;
-  background-color: var(--color-fill-ghost);
+  background-color: var(--color-surface-mid);
 }
 .global-flex-item {
   display: flex;

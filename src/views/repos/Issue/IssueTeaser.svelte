@@ -27,10 +27,10 @@
   .issue-teaser {
     display: flex;
     padding: 1.25rem;
-    background-color: var(--color-background-float);
+    background-color: var(--color-surface-subtle);
   }
   .issue-teaser:hover {
-    background-color: var(--color-fill-float-hover);
+    background-color: var(--color-surface-mid);
   }
   .content {
     gap: 0.5rem;
@@ -42,7 +42,7 @@
     display: flex;
     flex-direction: column;
     flex-wrap: wrap;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
     gap: 0.5rem;
   }
   .summary {
@@ -61,13 +61,16 @@
     justify-self: center;
     align-self: flex-start;
     margin-right: 0.5rem;
-    padding: 0.25rem 0;
+    padding: 0.25rem 0.25rem;
+    border-radius: var(--border-radius-xs);
   }
   .open {
-    color: var(--color-fill-success);
+    color: var(--color-text-open);
+    background: var(--color-surface-open);
   }
   .closed {
-    color: var(--color-foreground-red);
+    color: var(--color-text-merged);
+    background: var(--color-surface-merged);
   }
 </style>
 
@@ -92,7 +95,7 @@
           {#if !issue.title}
             <span class="txt-missing">No title</span>
           {:else}
-            <InlineTitle fontSize="regular" content={issue.title} />
+            <InlineTitle fontSize="body-m-regular" content={issue.title} />
           {/if}
         </Link>
       </span>

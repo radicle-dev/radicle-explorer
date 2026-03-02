@@ -5,7 +5,7 @@
 <style>
   .loading-bar {
     height: 0.125rem;
-    background-color: var(--color-fill-secondary);
+    background-color: var(--color-surface-brand-primary);
     width: 0%;
     opacity: 0;
     position: fixed;

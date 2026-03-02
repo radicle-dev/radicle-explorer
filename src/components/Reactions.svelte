@@ -24,7 +24,7 @@
 <div class="reactions">
   {#each reactions as { emoji, authors }}
     <div title={authorsToTooltip(authors)}>
-      <div class="reaction txt-tiny" style="padding: 2px 4px;">
+      <div class="reaction txt-body-s-regular" style="padding: 2px 4px;">
         <span>{emoji}</span>
         <span>{authors.length}</span>
       </div>

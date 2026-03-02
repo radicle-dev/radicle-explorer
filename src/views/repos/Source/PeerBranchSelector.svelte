@@ -29,7 +29,7 @@
   const subgridStyle =
     "display: grid; grid-template-columns: subgrid; grid-column: span 2;";
   const highlightSearchStyle = [
-    '<span style="background: var(--color-fill-yellow-iconic); color: var(--color-foreground-black);">',
+    '<span style="background: var(--color-feedback-warning-bg); color: var(--color-text-primary);">',
     "</span>",
   ];
   let searchInput = "";
@@ -62,7 +62,7 @@
 
 <style>
   .dropdown {
-    border-radius: var(--border-radius-small);
+    border-radius: var(--border-radius-md);
     width: 40rem;
     max-height: 60vh;
     overflow-y: auto;
@@ -82,9 +82,9 @@
   .dropdown-header {
     display: grid;
     grid-template-columns: subgrid;
-    font-size: var(--font-size-tiny);
+    font: var(--txt-body-s-regular);
     padding: 0.5rem;
-    color: var(--color-foreground-dim);
+    color: var(--color-text-tertiary);
   }
   .container {
     display: flex;
@@ -98,9 +98,7 @@
     justify-content: center;
     gap: 0.375rem;
     height: 1rem;
-    font-family: var(--font-family-monospace);
-    font-weight: var(--font-weight-semibold);
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-semibold);
   }
   @media (max-width: 719.98px) {
     .dropdown {
@@ -114,12 +112,12 @@
     popoverContainerMinWidth="0"
     popoverPadding="0"
     popoverPositionTop="2.5rem"
-    popoverBorderRadius="var(--border-radius-small)">
+    popoverBorderRadius="var(--border-radius-md)">
     <Button
       slot="toggle"
       let:expanded
       let:toggle
-      styleBorderRadius="var(--border-radius-tiny) 0 0 var(--border-radius-tiny)"
+      styleBorderRadius="var(--border-radius-sm) 0 0 var(--border-radius-sm)"
       styleWidth="100%"
       on:click={toggle}
       title="Change branch"
@@ -227,8 +225,8 @@
                   </span>
                 </div>
                 <div
-                  class="txt-monospace"
-                  style="color: var(--color-foreground-dim);">
+                  class="txt-code-regular"
+                  style="color: var(--color-text-tertiary);">
                   {formatCommit(head)}
                 </div>
               </DropdownListItem>
@@ -236,7 +234,7 @@
           {:else}
             <div
               style="gap: inherit; padding: 0.5rem 0.375rem;"
-              class="subgrid-item txt-missing txt-small">
+              class="subgrid-item txt-missing txt-body-m-regular">
               No entries found
             </div>
           {/each}
@@ -259,8 +257,8 @@
                 </Badge>
               </div>
               <div
-                class="txt-monospace"
-                style="color: var(--color-foreground-dim);">
+                class="txt-code-regular"
+                style="color: var(--color-text-tertiary);">
                 {formatCommit(repo.payloads["xyz.radicle.project"].meta.head)}
               </div>
             </DropdownListItem>

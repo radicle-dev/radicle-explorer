@@ -3,11 +3,13 @@
   import type { BaseUrl, Repo, SeedingPolicy } from "@http-client";
 
   import Button from "@app/components/Button.svelte";
+  import Header from "@app/components/Header.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Link from "@app/components/Link.svelte";
   import MobileFooter from "@app/App/MobileFooter.svelte";
   import Separator from "./Separator.svelte";
   import Sidebar from "@app/views/repos/Sidebar.svelte";
+  import UserAvatar from "@app/components/UserAvatar.svelte";
 
   export let activeTab: ActiveTab | undefined = undefined;
   export let seedingPolicy: SeedingPolicy;
@@ -26,27 +28,11 @@
 
   .desktop-header {
     grid-column: 1 / 4;
-    border-bottom: 1px solid var(--color-fill-separator);
-  }
-
-  header {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 0;
-    padding: 0.5rem 0.5rem 0.5rem 1rem;
-    height: 3.5rem;
-    justify-content: space-between;
-  }
-
-  .logo {
-    height: var(--button-regular-height);
-    margin: 0 0.5rem;
   }
 
   .sidebar {
     grid-column: 1 / 2;
-    border-right: 1px solid var(--color-fill-separator);
+    border-right: 1px solid var(--color-border-subtle);
   }
 
   .content {
@@ -62,11 +48,10 @@
     display: flex;
     align-items: center;
     column-gap: 0.25rem;
-    line-height: 1rem;
-    font-weight: var(--font-weight-semibold);
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-semibold);
     white-space: nowrap;
     flex-wrap: wrap;
+    margin-left: 1rem;
   }
   .breadcrumb {
     display: flex;
@@ -74,10 +59,10 @@
     gap: 0.25rem;
   }
   .breadcrumb :global(a:hover) {
-    color: var(--color-fill-secondary);
+    color: var(--color-surface-brand-primary);
   }
   .avatar {
-    border-radius: var(--border-radius-tiny);
+    border-radius: var(--border-radius-md);
     margin-right: 0.5rem;
   }
 
@@ -100,60 +85,55 @@
 
 <div class="layout">
   <div class="desktop-header">
-    <header>
-      <div class="breadcrumbs">
-        <span class="breadcrumb">
-          <Link
-            style="display: flex; align-items: center; gap: 0.25rem;"
-            route={{
-              resource: "nodes",
-              params: {
-                baseUrl,
-                repoPageIndex: 0,
-              },
-            }}>
-            <img
-              width="24"
-              height="24"
-              class="avatar"
-              alt="Radicle logo"
-              src={nodeAvatarUrl
-                ? nodeAvatarUrl
-                : "/images/default-seed-avatar.png"} />
-            {baseUrl.hostname}
-          </Link>
-        </span>
+    <Header>
+      <svelte:fragment slot="breadcrumbs">
+        <div class="breadcrumbs">
+          <Separator />
+          <span class="breadcrumb">
+            <Link
+              style="display: flex; align-items: center; gap: 0.25rem;"
+              route={{
+                resource: "nodes",
+                params: {
+                  baseUrl,
+                  repoPageIndex: 0,
+                },
+              }}>
+              {#if nodeAvatarUrl}
+                <img
+                  width="24"
+                  height="24"
+                  class="avatar"
+                  alt="Node avatar"
+                  src={nodeAvatarUrl} />
+              {:else}
+                <UserAvatar nodeId={baseUrl.hostname} styleWidth="1.5rem" />
+              {/if}
+              {baseUrl.hostname}
+            </Link>
+          </span>
 
-        <Separator />
+          <Separator />
 
-        <span class="breadcrumb" title={repo.rid}>
-          <Link
-            route={{
-              resource: "repo.source",
-              repo: repo.rid,
-              node: baseUrl,
-            }}>
-            <div class="breadcrumb">
-              {repo.payloads["xyz.radicle.project"].data.name}
-            </div>
-          </Link>
-        </span>
+          <span class="breadcrumb" title={repo.rid}>
+            <Link
+              route={{
+                resource: "repo.source",
+                repo: repo.rid,
+                node: baseUrl,
+              }}>
+              <div class="breadcrumb">
+                {repo.payloads["xyz.radicle.project"].data.name}
+              </div>
+            </Link>
+          </span>
 
-        <div class="breadcrumb">
-          <slot name="breadcrumb" />
+          <div class="breadcrumb">
+            <slot name="breadcrumb" />
+          </div>
         </div>
-      </div>
-      <Link
-        style="display: flex; align-items: center;"
-        route={{ resource: "nodes", params: undefined }}>
-        <img
-          width="24"
-          height="24"
-          class="logo"
-          alt="Radicle logo"
-          src="/radicle.svg" />
-      </Link>
-    </header>
+      </svelte:fragment>
+    </Header>
   </div>
 
   <div class="sidebar global-hide-on-medium-desktop-down">

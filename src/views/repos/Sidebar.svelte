@@ -72,18 +72,18 @@
   }
 
   .counter {
-    border-radius: var(--border-radius-tiny);
-    background-color: var(--color-fill-ghost);
-    color: var(--color-foreground-dim);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-mid);
+    color: var(--color-text-tertiary);
     padding: 0 0.25rem;
   }
   .selected {
-    background-color: var(--color-fill-counter);
-    color: var(--color-foreground-contrast);
+    background-color: var(--color-surface-alpha-subtle);
+    color: var(--color-text-primary);
   }
   .hover {
-    background-color: var(--color-fill-ghost-hover);
-    color: var(--color-foreground-contrast);
+    background-color: var(--color-surface-strong);
+    color: var(--color-text-primary);
   }
   .title-counter {
     display: flex;
@@ -111,10 +111,10 @@
   .box {
     padding: 1rem;
     margin-bottom: 0.5rem;
-    background-color: var(--color-background-float);
-    border: 1px solid var(--color-border-hint);
-    font-size: var(--font-size-small);
-    border-radius: var(--border-radius-small);
+    background-color: var(--color-surface-subtle);
+    border: 1px solid var(--color-border-subtle);
+    font: var(--txt-body-m-regular);
+    border-radius: var(--border-radius-md);
   }
   .repo.expanded {
     opacity: 1;
@@ -282,10 +282,10 @@
           slot="toggle"
           let:toggle
           on:click={toggle}>
-          <Icon name="info" />
+          <Icon name="guide" />
         </Button>
 
-        <div slot="popover" class="txt-small" style:width="18rem">
+        <div slot="popover" class="txt-body-m-regular" style:width="18rem">
           <ContextRepo
             {baseUrl}
             repoThreshold={repo.threshold}

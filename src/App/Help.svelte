@@ -7,10 +7,11 @@
 
 <style>
   .help {
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    width: 100%;
   }
   .item {
     display: flex;
@@ -20,7 +21,7 @@
     gap: 2rem;
   }
   .divider {
-    border-bottom: 1px solid var(--color-fill-separator);
+    border-bottom: 1px solid var(--color-border-subtle);
   }
 </style>
 

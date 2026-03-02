@@ -1,4 +1,4 @@
-<svelte:options customElement="radicle-clipboard" />
+<svelte:options customElement="radicle-copy" />
 
 <script lang="ts">
   import debounce from "lodash/debounce";
@@ -13,10 +13,10 @@
 
   const dispatch = createEventDispatcher<{ copied: null }>();
 
-  let icon: "clipboard" | "checkmark" = "clipboard";
+  let icon: "copy" | "checkmark" = "copy";
 
   const restoreIcon = debounce(() => {
-    icon = "clipboard";
+    icon = "copy";
   }, 800);
 
   export async function copy() {
@@ -28,7 +28,7 @@
 </script>
 
 <style>
-  .clipboard {
+  .copy {
     width: 1.5rem;
     height: 1.5rem;
     cursor: pointer;
@@ -44,7 +44,7 @@
   role="button"
   tabindex="0"
   title={tooltip}
-  class="clipboard"
+  class="copy"
   on:click|stopPropagation={copy}>
   <Icon name={icon} />
 </span>

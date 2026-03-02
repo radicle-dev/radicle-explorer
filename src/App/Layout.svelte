@@ -11,7 +11,7 @@
     height: 100%;
   }
   .header {
-    border-bottom: 1px solid var(--color-fill-separator);
+    border-bottom: 1px solid var(--color-border-subtle);
     display: flex;
     align-items: center;
     gap: 0.5rem;
