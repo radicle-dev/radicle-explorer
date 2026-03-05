@@ -142,6 +142,8 @@
   .markdown-wrapper {
     padding: 2rem;
     background-color: var(--color-surface-canvas);
+    max-width: 75rem;
+    margin: 0 auto;
   }
   @media (max-width: 719.98px) {
     .markdown-wrapper {

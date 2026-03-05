@@ -27,8 +27,8 @@
     padding: 0 0.25rem;
   }
   .not-seeding {
-    background-color: var(--color-surface-brand-secondary);
-    color: var(--color-text-on-brand);
+    background-color: var(--color-surface-mid);
+    color: var(--color-text-secondary);
   }
   .disabled {
     background-color: var(--color-surface-mid);
@@ -44,7 +44,7 @@
     on:click={() => {
       toggle();
     }}
-    variant="secondary-toggle-off">
+    variant="gray">
     <Icon name="seed" />
     <span class="title-counter">
       <span class="global-hide-on-mobile-down">Seed</span>

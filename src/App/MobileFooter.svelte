@@ -29,7 +29,7 @@
   <Link
     style="width: 100%; display: flex; align-items: center; justify-content: center;"
     route={{ resource: "nodes", params: undefined }}>
-    <Icon name="logo" />
+    <Icon name="seed" />
   </Link>
 
   <slot />

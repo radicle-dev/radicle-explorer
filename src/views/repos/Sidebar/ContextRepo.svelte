@@ -2,53 +2,78 @@
   import type { BaseUrl, Repo, SeedingPolicy } from "@http-client";
 
   import capitalize from "lodash/capitalize";
-
-  import IconButton from "@app/components/IconButton.svelte";
-  import Icon from "@app/components/Icon.svelte";
+  import HoverPopover from "@app/components/HoverPopover.svelte";
+  import Link from "@app/components/Link.svelte";
   import NodeId from "@app/components/NodeId.svelte";
+  import UserAvatar from "@app/components/UserAvatar.svelte";
 
   export let baseUrl: BaseUrl;
+
   export let repoThreshold: number;
   export let repoDelegates: Repo["delegates"];
   export let seedingPolicy: SeedingPolicy;
-
-  let delegateExpanded = false;
-  let policyExpanded = false;
 </script>
 
 <style>
-  .item-header {
-    gap: 2rem;
+  .context-repo {
     display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  .row {
+    display: flex;
+    flex-direction: row;
     align-items: center;
-    justify-content: space-between;
-    margin: 0.2rem 0;
+    gap: 0.5rem;
   }
-  .item-header:first-child {
-    margin-top: 0;
+  .label {
+    color: var(--color-text-tertiary);
   }
-  .item-header:last-child {
-    margin-bottom: 0;
+  .value {
+    color: var(--color-text-primary);
   }
-  .nid {
-    height: 21.5px;
-    margin: 0.5rem 0;
+  .avatars {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .avatars :global(.popover) {
+    padding: 0.25rem 0.5rem;
+  }
+  .avatar-popover {
+    white-space: nowrap;
+  }
+  .description {
+    font: var(--txt-body-s-medium);
+    color: var(--color-text-quaternary);
   }
 </style>
 
-<div class="item-header">
-  <span>Delegates</span>
-  <div class="global-flex-item">
-    <span class="txt-body-m-semibold">
+<div class="context-repo">
+  <div class="row">
+    <span class="label txt-body-m-medium">Delegates</span>
+    <span class="value txt-body-m-medium">
       {repoThreshold}/{repoDelegates.length}
     </span>
-    <IconButton on:click={() => (delegateExpanded = !delegateExpanded)}>
-      <Icon name={delegateExpanded ? "chevron-up" : "chevron-down"} />
-    </IconButton>
+    <div class="avatars">
+      {#each repoDelegates as delegate}
+        <HoverPopover>
+          <Link
+            slot="toggle"
+            style="display: flex"
+            route={{ resource: "users", did: delegate.id, baseUrl }}>
+            <UserAvatar nodeId={delegate.id} styleWidth="1rem" />
+          </Link>
+          <div slot="popover" class="avatar-popover">
+            <NodeId {baseUrl} nodeId={delegate.id} alias={delegate.alias} />
+          </div>
+        </HoverPopover>
+      {/each}
+    </div>
   </div>
-</div>
-{#if delegateExpanded}
-  <div style:color="var(--color-text-tertiary)" style:margin-bottom="1rem">
+  <div class="description">
     {#if repoDelegates.length === 1}
       Any changes accepted by the sole delegate will be included in the
       canonical branch.
@@ -57,29 +82,15 @@
       to be included in the canonical branch.
     {/if}
   </div>
-  <div class="delegates">
-    {#each repoDelegates as delegate}
-      <div class="nid">
-        <NodeId {baseUrl} nodeId={delegate.id} alias={delegate.alias} />
-      </div>
-    {/each}
-  </div>
-{/if}
-<div class="item-header">
-  <span style:text-wrap="nowrap">Seeding Scope</span>
-  <div class="global-flex-item">
-    <span class="txt-body-m-semibold">
+  <div class="row">
+    <span class="label txt-body-m-medium">Seeding Scope</span>
+    <span class="value txt-body-m-medium">
       {capitalize(
         "scope" in seedingPolicy ? seedingPolicy.scope : "not defined",
       )}
     </span>
-    <IconButton on:click={() => (policyExpanded = !policyExpanded)}>
-      <Icon name={policyExpanded ? "chevron-up" : "chevron-down"} />
-    </IconButton>
   </div>
-</div>
-{#if policyExpanded}
-  <div style:color="var(--color-text-tertiary)">
+  <div class="description">
     {#if seedingPolicy.policy === "block"}
       Seeding scope only has an effect when a repository is seeded. This repo
       isn't seeded by the seed node.
@@ -89,4 +100,4 @@
       This repository tracks only peers followed by the seed node.
     {/if}
   </div>
-{/if}
+</div>

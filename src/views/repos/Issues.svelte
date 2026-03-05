@@ -1,21 +1,11 @@
 <script lang="ts">
-  import type {
-    BaseUrl,
-    Issue,
-    IssueState,
-    Repo,
-    SeedingPolicy,
-  } from "@http-client";
+  import type { BaseUrl, Issue, IssueState, Repo } from "@http-client";
 
-  import capitalize from "lodash/capitalize";
   import { HttpdClient } from "@http-client";
   import { ISSUES_PER_PAGE } from "./router";
   import { baseUrlToString } from "@app/lib/utils";
-  import { closeFocused } from "@app/components/Popover.svelte";
 
   import Button from "@app/components/Button.svelte";
-  import DropdownList from "@app/components/DropdownList.svelte";
-  import DropdownListItem from "@app/components/DropdownList/DropdownListItem.svelte";
   import ErrorMessage from "@app/components/ErrorMessage.svelte";
   import Icon from "@app/components/Icon.svelte";
   import IssueTeaser from "@app/views/repos/Issue/IssueTeaser.svelte";
@@ -24,12 +14,9 @@
   import List from "@app/components/List.svelte";
   import Loading from "@app/components/Loading.svelte";
   import Placeholder from "@app/components/Placeholder.svelte";
-  import Popover from "@app/components/Popover.svelte";
   import Separator from "./Separator.svelte";
-  import Share from "./Share.svelte";
 
   export let baseUrl: BaseUrl;
-  export let seedingPolicy: SeedingPolicy;
   export let issues: Issue[];
   export let repo: Repo;
   export let status: IssueState["status"];
@@ -65,17 +52,6 @@
     }
   }
 
-  const stateOptions: IssueState["status"][] = ["open", "closed"];
-  const stateColor: Record<IssueState["status"], string> = {
-    open: "var(--color-text-open)",
-    closed: "var(--color-text-merged)",
-  };
-
-  const stateBackground: Record<IssueState["status"], string> = {
-    open: "var(--color-surface-open)",
-    closed: "var(--color-surface-merged)",
-  };
-
   $: showMoreButton =
     !loading &&
     !error &&
@@ -85,8 +61,9 @@
 <style>
   .header {
     display: flex;
-    justify-content: space-between;
+    gap: 0.25rem;
     padding: 1rem;
+    border-bottom: 1px solid var(--color-border-subtle);
   }
   .more {
     margin-top: 2rem;
@@ -95,21 +72,22 @@
     align-items: center;
     justify-content: center;
   }
-  .dropdown-button-counter {
-    border-radius: var(--border-radius-sm);
-    background-color: var(--color-surface-alpha-subtle);
-    color: var(--color-text-primary);
-    padding: 0 0.25rem;
-  }
-  .dropdown-list-counter {
+  .counter {
     border-radius: var(--border-radius-sm);
     background-color: var(--color-surface-mid);
     color: var(--color-text-tertiary);
     padding: 0 0.25rem;
+    min-width: 1.5rem;
+    text-align: center;
   }
   .selected {
     background-color: var(--color-surface-alpha-subtle);
-    color: var(--color-text-tertiary);
+    color: var(--color-text-primary);
+  }
+  .title-counter {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
   .placeholder {
     height: calc(100% - 4rem);
@@ -124,7 +102,7 @@
   }
 </style>
 
-<Layout {nodeAvatarUrl} {seedingPolicy} {baseUrl} {repo} activeTab="issues">
+<Layout {nodeAvatarUrl} {baseUrl} {repo} activeTab="issues">
   <svelte:fragment slot="breadcrumb">
     <Separator />
     <Link
@@ -137,65 +115,40 @@
     </Link>
   </svelte:fragment>
   <div slot="header" class="header">
-    <Popover
-      popoverPadding="0"
-      popoverPositionTop="2.5rem"
-      popoverBorderRadius="var(--border-radius-md)">
-      <Button
-        let:expanded
-        slot="toggle"
-        let:toggle
-        on:click={toggle}
-        ariaLabel="filter-dropdown"
-        title="Filter issues by state">
-        <div
-          style:color={stateColor[status]}
-          style:background={stateBackground[status]}
-          style:padding="0.25rem 0.25rem"
-          style:border-radius="var(--border-radius-sm)">
-          <Icon name={status === "closed" ? "issue-closed" : "issue"} />
+    <Link
+      route={{
+        resource: "repo.issues",
+        repo: repo.rid,
+        node: baseUrl,
+        status: "open",
+      }}>
+      <Button variant={status === "open" ? "gray" : "background"}>
+        <Icon name="issue" />
+        <div class="title-counter">
+          Open
+          <span class="counter" class:selected={status === "open"}>
+            {repo.payloads["xyz.radicle.project"].meta.issues.open}
+          </span>
         </div>
-        {capitalize(status)}
-        <div class="dropdown-button-counter">
-          {repo.payloads["xyz.radicle.project"].meta.issues[status]}
-        </div>
-        <Icon name={expanded ? "chevron-up" : "chevron-down"} />
       </Button>
-
-      <DropdownList slot="popover" items={stateOptions}>
-        <Link
-          on:afterNavigate={() => closeFocused()}
-          slot="item"
-          let:item
-          route={{
-            resource: "repo.issues",
-            repo: repo.rid,
-            node: baseUrl,
-            status: item,
-          }}>
-          <DropdownListItem selected={item === status}>
-            <div
-              style:color={stateColor[item]}
-              style:background={stateBackground[item]}
-              style:padding="0.25rem 0.25rem"
-              style:border-radius="var(--border-radius-sm)">
-              <Icon name={item === "closed" ? "issue-closed" : "issue"} />
-            </div>
-            <div
-              style="display: flex; gap: 1rem;justify-content: space-between; width: 100%;">
-              {capitalize(item)}
-              <div
-                class="dropdown-list-counter"
-                class:selected={item === status}>
-                {repo.payloads["xyz.radicle.project"].meta.issues[item]}
-              </div>
-            </div>
-          </DropdownListItem>
-        </Link>
-      </DropdownList>
-    </Popover>
-
-    <Share />
+    </Link>
+    <Link
+      route={{
+        resource: "repo.issues",
+        repo: repo.rid,
+        node: baseUrl,
+        status: "closed",
+      }}>
+      <Button variant={status === "closed" ? "gray" : "background"}>
+        <Icon name="issue-closed" />
+        <div class="title-counter">
+          Closed
+          <span class="counter" class:selected={status === "closed"}>
+            {repo.payloads["xyz.radicle.project"].meta.issues.closed}
+          </span>
+        </div>
+      </Button>
+    </Link>
   </div>
 
   <List items={allIssues}>

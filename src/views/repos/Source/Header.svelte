@@ -1,3 +1,8 @@
+<script lang="ts" context="module">
+  // Cache commit counts across component remounts (tab navigation).
+  const commitCountCache: Record<string, number> = {};
+</script>
+
 <script lang="ts">
   import type { RepoRoute } from "../router";
   import type { BaseUrl, Repo, Remote, Tree } from "@http-client";
@@ -9,7 +14,7 @@
   import CommitButton from "../components/CommitButton.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Link from "@app/components/Link.svelte";
-  import Loading from "@app/components/Loading.svelte";
+
   import PeerBranchSelector from "./PeerBranchSelector.svelte";
 
   export let commit: string;
@@ -27,6 +32,22 @@
   export let tree: Tree;
 
   const api = new HttpdClient(node);
+  let commitCount: number | undefined = commitCountCache[commit];
+
+  function fetchCommitCount(rid: string, sha: string) {
+    const cached = commitCountCache[sha];
+    if (cached !== undefined) {
+      commitCount = cached;
+    } else {
+      void api.repo.getTreeStatsBySha(rid, sha).then(stats => {
+        commitCountCache[sha] = stats.commits;
+        commitCount = stats.commits;
+      });
+    }
+  }
+
+  $: fetchCommitCount(repo.rid, commit);
+
   let selectedBranch: string | undefined;
   let commitButtonVariant: ComponentProps<CommitButton>["variant"] | undefined =
     undefined;
@@ -56,16 +77,6 @@
 </script>
 
 <style>
-  .top-header {
-    display: flex;
-    align-items: center;
-    justify-content: left;
-    row-gap: 0.5rem;
-    gap: 1px;
-    flex-wrap: wrap;
-    margin-bottom: 2rem;
-  }
-
   .header {
     font: var(--txt-body-s-regular);
     display: flex;
@@ -73,16 +84,17 @@
     align-items: center;
     justify-content: left;
     flex-wrap: wrap;
-    position: relative;
   }
-  .header::after {
-    content: "";
-    position: absolute;
-    left: -1rem;
-    bottom: 0;
-    border-bottom: 1px solid var(--color-border-subtle);
-    width: calc(100% + 1rem);
-    z-index: -1;
+  .branch-commit {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .mobile-branch {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
   }
 
   .counter {
@@ -90,6 +102,8 @@
     background-color: var(--color-surface-mid);
     color: var(--color-text-tertiary);
     padding: 0 0.25rem;
+    min-width: 1.5rem;
+    text-align: center;
   }
 
   .title-counter {
@@ -104,7 +118,7 @@
   }
 </style>
 
-<div class="top-header">
+<div class="mobile-branch global-hide-on-small-desktop-up" style:gap="1px">
   {#if selectedBranch}
     <PeerBranchSelector
       {peers}
@@ -114,25 +128,22 @@
       {repo}
       {selectedBranch} />
   {/if}
-  <div class="global-flex-item txt-overflow" style:gap="1px">
-    <CommitButton
-      variant={commitButtonVariant}
-      styleMinWidth="0"
-      styleWidth="100%"
-      hideSummaryOnMobile={false}
-      repoId={repo.rid}
-      commit={lastCommit}
-      baseUrl={node} />
-    {#if !onCanonical}
-      <Link route={baseRoute}>
-        <Button
-          variant="not-selected"
-          styleBorderRadius="0 var(--border-radius-sm) var(--border-radius-sm) 0">
-          <Icon name="close" />
-        </Button>
-      </Link>
-    {/if}
-  </div>
+  <CommitButton
+    variant={commitButtonVariant}
+    styleMinWidth="0"
+    hideSummaryOnMobile
+    repoId={repo.rid}
+    commit={lastCommit}
+    baseUrl={node} />
+  {#if !onCanonical}
+    <Link route={baseRoute}>
+      <Button
+        variant="not-selected"
+        styleBorderRadius="0 var(--border-radius-sm) var(--border-radius-sm) 0">
+        <Icon name="close" />
+      </Button>
+    </Link>
+  {/if}
 </div>
 
 <div class="header">
@@ -145,7 +156,7 @@
         peer,
         revision,
       }}>
-      <Button size="large" variant={filesLinkActive ? "tab-active" : "tab"}>
+      <Button variant={filesLinkActive ? "gray" : "background"}>
         <Icon name="document" />Files
       </Button>
     </Link>
@@ -158,19 +169,45 @@
         peer,
         revision,
       }}>
-      <Button size="large" variant={historyLinkActive ? "tab-active" : "tab"}>
+      <Button variant={historyLinkActive ? "gray" : "background"}>
         <Icon name="commit" />
         <div class="title-counter">
           Commits
-          {#await api.repo.getTreeStatsBySha(repo.rid, commit)}
-            <Loading small center noDelay grayscale />
-          {:then stats}
+          {#if commitCount !== undefined}
             <div class="counter" class:selected={historyLinkActive}>
-              {stats.commits}
+              {commitCount}
             </div>
-          {/await}
+          {/if}
         </div>
       </Button>
     </Link>
+  </div>
+
+  <div class="branch-commit global-hide-on-mobile-down" style:gap="1px">
+    {#if selectedBranch}
+      <PeerBranchSelector
+        {peers}
+        {peer}
+        {baseRoute}
+        {onCanonical}
+        {repo}
+        {selectedBranch} />
+    {/if}
+    <CommitButton
+      variant={commitButtonVariant}
+      styleMinWidth="0"
+      hideSummaryOnMobile
+      repoId={repo.rid}
+      commit={lastCommit}
+      baseUrl={node} />
+    {#if !onCanonical}
+      <Link route={baseRoute}>
+        <Button
+          variant="not-selected"
+          styleBorderRadius="0 var(--border-radius-sm) var(--border-radius-sm) 0">
+          <Icon name="close" />
+        </Button>
+      </Link>
+    {/if}
   </div>
 </div>

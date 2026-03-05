@@ -7,8 +7,7 @@ test("navigate issue listing", async ({ page }) => {
   await page.getByRole("link", { name: "Issues 1" }).click();
   await expect(page).toHaveURL(`${cobUrl}/issues`);
 
-  await page.getByRole("button", { name: "filter-dropdown" }).first().click();
-  await page.getByRole("link", { name: "Closed 2" }).click();
+  await page.getByRole("link", { name: "Closed" }).click();
   await expect(page).toHaveURL(`${cobUrl}/issues?status=closed`);
 });
 
@@ -39,12 +38,8 @@ test("issue counters", async ({ page, peer }) => {
     ],
     { cwd: repoFolder },
   );
-  await page.getByRole("button", { name: "filter-dropdown" }).first().click();
-  await page.locator(".dropdown-item").getByText("Open 1").click();
+  await page.getByRole("link", { name: "Open" }).first().click();
   await expect(page.getByRole("button", { name: "Issues 2" })).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "filter-dropdown" }).first(),
-  ).toHaveText("Open 2");
   await expect(page.locator(".issue-teaser")).toHaveCount(2);
 
   await page

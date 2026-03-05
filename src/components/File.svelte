@@ -16,22 +16,18 @@
     display: flex;
     height: 3rem;
     align-items: center;
-    padding: 0 0.5rem 0 1rem;
-    border: 1px solid var(--color-border-subtle);
-    border-top-left-radius: var(--border-radius-md);
-    border-top-right-radius: var(--border-radius-md);
+    padding: 0 1rem;
     background-color: var(--color-surface-canvas);
     z-index: 2;
+  }
+
+  .header-border {
+    border-bottom: 1px solid var(--color-border-subtle);
   }
 
   .sticky {
     position: sticky;
     top: 0;
-  }
-
-  .collapsed {
-    border-radius: var(--border-radius-md);
-    border: 1px solid var(--color-border-subtle);
   }
 
   .left {
@@ -51,27 +47,19 @@
   .container {
     position: relative;
     overflow-x: auto;
-    border: 1px solid var(--color-border-subtle);
-    border-top: 0;
-    border-bottom-left-radius: var(--border-radius-md);
-    border-bottom-right-radius: var(--border-radius-md);
   }
   @media (max-width: 719.98px) {
     .header {
-      border-radius: 0;
-      border-left: 0;
-      border-right: 0;
       padding: 0 1rem 0 1rem;
-    }
-    .container {
-      border-radius: 0;
-      border-left: 0;
-      border-right: 0;
     }
   }
 </style>
 
-<div bind:this={header} class="header" class:collapsed={!expanded} class:sticky>
+<div
+  bind:this={header}
+  class="header"
+  class:sticky
+  class:header-border={expanded}>
   <div class="left">
     {#if collapsable}
       <ExpandButton

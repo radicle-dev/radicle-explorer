@@ -1,18 +1,17 @@
 <script lang="ts">
   import type { ActiveTab } from "./Header.svelte";
-  import type { BaseUrl, Repo, SeedingPolicy } from "@http-client";
+  import type { BaseUrl, Repo } from "@http-client";
 
   import Button from "@app/components/Button.svelte";
   import Header from "@app/components/Header.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Link from "@app/components/Link.svelte";
   import MobileFooter from "@app/App/MobileFooter.svelte";
+  import RepoHeader from "./Header.svelte";
   import Separator from "./Separator.svelte";
-  import Sidebar from "@app/views/repos/Sidebar.svelte";
   import UserAvatar from "@app/components/UserAvatar.svelte";
 
   export let activeTab: ActiveTab | undefined = undefined;
-  export let seedingPolicy: SeedingPolicy;
   export let baseUrl: BaseUrl;
   export let repo: Repo;
   export let stylePaddingBottom: string = "2.5rem";
@@ -21,23 +20,18 @@
 
 <style>
   .layout {
-    display: grid;
-    grid-template: auto 1fr auto / auto 1fr auto;
+    display: flex;
+    flex-direction: column;
     height: 100%;
   }
 
-  .desktop-header {
-    grid-column: 1 / 4;
-  }
-
-  .sidebar {
-    grid-column: 1 / 2;
-    border-right: 1px solid var(--color-border-subtle);
-  }
-
   .content {
-    grid-column: 2 / 3;
     overflow: scroll;
+    flex: 1;
+  }
+
+  .tab-bar {
+    display: block;
   }
 
   .mobile-footer {
@@ -68,6 +62,9 @@
     .desktop-header {
       display: none;
     }
+    .tab-bar {
+      display: none;
+    }
     .content {
       overflow-y: scroll;
       overflow-x: hidden;
@@ -75,7 +72,6 @@
     .mobile-footer {
       margin-top: auto;
       display: grid;
-      grid-column: 1 / 4;
     }
   }
 </style>
@@ -133,12 +129,12 @@
     </Header>
   </div>
 
-  <div class="sidebar global-hide-on-medium-desktop-down">
-    <Sidebar {seedingPolicy} {activeTab} {baseUrl} {repo} />
-  </div>
-
-  <div class="sidebar global-hide-on-mobile-down global-hide-on-desktop-up">
-    <Sidebar {seedingPolicy} {activeTab} {baseUrl} {repo} collapsedOnly />
+  <div class="tab-bar">
+    <RepoHeader {activeTab} {baseUrl} {repo}>
+      <svelte:fragment slot="actions">
+        <slot name="actions" />
+      </svelte:fragment>
+    </RepoHeader>
   </div>
 
   <div class="content" style:padding-bottom={stylePaddingBottom}>

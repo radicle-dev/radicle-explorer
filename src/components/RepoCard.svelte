@@ -110,7 +110,7 @@
     color: var(--color-text-on-brand);
   }
 
-  @container (max-width: 20rem) {
+  @container (max-width: 30rem) {
     .activity {
       display: none;
     }

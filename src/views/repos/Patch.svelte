@@ -7,7 +7,6 @@
     Repo,
     Revision,
     Diff,
-    SeedingPolicy,
   } from "@http-client";
 
   interface Thread {
@@ -71,7 +70,7 @@
   import Markdown from "@app/components/Markdown.svelte";
   import NodeId from "@app/components/NodeId.svelte";
   import Placeholder from "@app/components/Placeholder.svelte";
-  import Radio from "@app/components/Radio.svelte";
+
   import Reactions from "@app/components/Reactions.svelte";
   import Reviews from "@app/views/repos/Cob/Reviews.svelte";
   import RevisionComponent from "@app/views/repos/Cob/Revision.svelte";
@@ -80,7 +79,6 @@
   import Share from "@app/views/repos/Share.svelte";
 
   export let baseUrl: BaseUrl;
-  export let seedingPolicy: SeedingPolicy;
   export let patch: Patch;
   export let stats: Diff["stats"];
   export let rawPath: (commit?: string) => string;
@@ -267,18 +265,14 @@
     height: 100%;
   }
   .tabs {
-    font: var(--txt-body-s-regular);
     display: flex;
     align-items: center;
-    justify-content: left;
+    gap: 0.25rem;
     flex-wrap: wrap;
-    position: relative;
-    margin-top: 1rem;
-    box-shadow: inset 0 -1px 0 var(--color-border-subtle);
-  }
-  .tabs-spacer {
-    width: 1rem;
-    height: 100%;
+    padding: 1rem;
+    border-top: 1px solid var(--color-border-subtle);
+    border-bottom: 1px solid var(--color-border-subtle);
+    background-color: var(--color-surface-base);
   }
   .author-metadata {
     color: var(--color-text-tertiary);
@@ -304,7 +298,6 @@
   {baseUrl}
   {repo}
   {nodeAvatarUrl}
-  {seedingPolicy}
   activeTab="patches"
   stylePaddingBottom="0">
   <svelte:fragment slot="breadcrumb">
@@ -419,42 +412,31 @@
       </CobHeader>
 
       <div class="tabs">
-        <div class="tabs-spacer"></div>
-        <Radio styleGap="0.375rem">
-          {#each Object.entries(tabs) as [name, { route, icon }]}
-            <Link {route}>
-              <Button
-                size="large"
-                variant={name === view.name ||
-                (view.name === "diff" && name === "changes")
-                  ? "tab-active"
-                  : "tab"}>
-                <Icon name={icon} />
-                {capitalize(name)}
-              </Button>
-            </Link>
-          {/each}
-        </Radio>
+        {#each Object.entries(tabs) as [name, { route, icon }]}
+          <Link {route}>
+            <Button
+              variant={name === view.name ||
+              (view.name === "diff" && name === "changes")
+                ? "gray"
+                : "background"}>
+              <Icon name={icon} />
+              {capitalize(name)}
+            </Button>
+          </Link>
+        {/each}
 
         {#if view.name === "changes"}
-          <div
-            class="global-hide-on-mobile-down"
-            style="margin-left: auto; margin-top: -0.5rem;">
+          <div class="global-hide-on-mobile-down" style="margin-left: auto;">
             <RevisionSelector {view} {baseUrl} {patch} {repo} />
           </div>
         {/if}
         {#if view.name === "diff"}
-          <div
-            class="global-hide-on-mobile-down"
-            style="margin-left: auto; margin-top: -0.5rem;">
-            <div style:margin-left="auto">
-              <CompareButton
-                fromCommit={view.fromCommit}
-                toCommit={view.toCommit} />
-            </div>
+          <div class="global-hide-on-mobile-down" style="margin-left: auto;">
+            <CompareButton
+              fromCommit={view.fromCommit}
+              toCommit={view.toCommit} />
           </div>
         {/if}
-        <div class="tabs-spacer"></div>
       </div>
       <div class="bottom">
         {#if view.name === "changes"}

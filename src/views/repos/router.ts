@@ -145,7 +145,6 @@ export type RepoLoadedRoute =
       resource: "repo.commit";
       params: {
         baseUrl: BaseUrl;
-        seedingPolicy: SeedingPolicy;
         repo: Repo;
         commit: Commit;
         nodeAvatarUrl: string | undefined;
@@ -155,7 +154,6 @@ export type RepoLoadedRoute =
       resource: "repo.issue";
       params: {
         baseUrl: BaseUrl;
-        seedingPolicy: SeedingPolicy;
         repo: Repo;
         rawPath: (commit?: string) => string;
         issue: Issue;
@@ -166,7 +164,6 @@ export type RepoLoadedRoute =
       resource: "repo.issues";
       params: {
         baseUrl: BaseUrl;
-        seedingPolicy: SeedingPolicy;
         repo: Repo;
         issues: Issue[];
         status: IssueState["status"];
@@ -177,7 +174,6 @@ export type RepoLoadedRoute =
       resource: "repo.patches";
       params: {
         baseUrl: BaseUrl;
-        seedingPolicy: SeedingPolicy;
         repo: Repo;
         patches: Patch[];
         status: PatchState["status"];
@@ -188,7 +184,6 @@ export type RepoLoadedRoute =
       resource: "repo.patch";
       params: {
         baseUrl: BaseUrl;
-        seedingPolicy: SeedingPolicy;
         repo: Repo;
         rawPath: (commit?: string) => string;
         patch: Patch;
@@ -270,10 +265,9 @@ export async function loadRepoRoute(
     } else if (route.resource === "repo.history") {
       return await loadHistoryView(route, previousLoaded);
     } else if (route.resource === "repo.commit") {
-      const [repo, commit, seedingPolicy, node] = await Promise.all([
+      const [repo, commit, node] = await Promise.all([
         api.repo.getByRid(route.repo),
         api.repo.getCommitBySha(route.repo, route.commit),
-        api.getPolicyByRid(route.repo),
         api.getNode(),
       ]);
 
@@ -281,7 +275,6 @@ export async function loadRepoRoute(
         resource: "repo.commit",
         params: {
           baseUrl: route.node,
-          seedingPolicy,
           repo,
           commit,
           nodeAvatarUrl: node.avatarUrl,
@@ -318,14 +311,13 @@ async function loadPatchesView(
   const searchParams = new URLSearchParams(route.search || "");
   const status = (searchParams.get("status") as PatchState["status"]) || "open";
 
-  const [repo, patches, seedingPolicy, node] = await Promise.all([
+  const [repo, patches, node] = await Promise.all([
     api.repo.getByRid(route.repo),
     api.repo.getAllPatches(route.repo, {
       status,
       page: 0,
       perPage: PATCHES_PER_PAGE,
     }),
-    api.getPolicyByRid(route.repo),
     api.getNode(),
   ]);
 
@@ -333,7 +325,6 @@ async function loadPatchesView(
     resource: "repo.patches",
     params: {
       baseUrl: route.node,
-      seedingPolicy,
       patches,
       status,
       repo,
@@ -348,14 +339,13 @@ async function loadIssuesView(
   const api = new HttpdClient(route.node);
   const status = route.status || "open";
 
-  const [repo, issues, seedingPolicy, node] = await Promise.all([
+  const [repo, issues, node] = await Promise.all([
     api.repo.getByRid(route.repo),
     api.repo.getAllIssues(route.repo, {
       status,
       page: 0,
       perPage: ISSUES_PER_PAGE,
     }),
-    api.getPolicyByRid(route.repo),
     api.getNode(),
   ]);
 
@@ -363,7 +353,6 @@ async function loadIssuesView(
     resource: "repo.issues",
     params: {
       baseUrl: route.node,
-      seedingPolicy,
       issues,
       status,
       repo,
@@ -623,17 +612,15 @@ async function loadIssueView(route: RepoIssueRoute): Promise<RepoLoadedRoute> {
       route.repo
     }${commit ? `/${commit}` : ""}`;
 
-  const [repo, issue, seedingPolicy, node] = await Promise.all([
+  const [repo, issue, node] = await Promise.all([
     api.repo.getByRid(route.repo),
     api.repo.getIssueById(route.repo, route.issue),
-    api.getPolicyByRid(route.repo),
     api.getNode(),
   ]);
   return {
     resource: "repo.issue",
     params: {
       baseUrl: route.node,
-      seedingPolicy,
       repo,
       rawPath,
       issue,
@@ -655,7 +642,6 @@ async function loadPatchView(
   let repoPromise: Promise<Repo>;
   let patchPromise: Promise<Patch>;
   let nodePromise: Promise<Partial<Node>>;
-  let seedingPolicyPromise: Promise<SeedingPolicy>;
 
   if (
     previousLoaded.resource === "repo.patch" &&
@@ -664,20 +650,17 @@ async function loadPatchView(
   ) {
     repoPromise = Promise.resolve(previousLoaded.params.repo);
     patchPromise = Promise.resolve(previousLoaded.params.patch);
-    seedingPolicyPromise = Promise.resolve(previousLoaded.params.seedingPolicy);
     nodePromise = Promise.resolve({
       avatarUrl: previousLoaded.params.nodeAvatarUrl,
     });
   } else {
     repoPromise = api.repo.getByRid(route.repo);
     patchPromise = api.repo.getPatchById(route.repo, route.patch);
-    seedingPolicyPromise = api.getPolicyByRid(route.repo);
     nodePromise = api.getNode();
   }
-  const [repo, patch, seedingPolicy, { avatarUrl }] = await Promise.all([
+  const [repo, patch, { avatarUrl }] = await Promise.all([
     repoPromise,
     patchPromise,
-    seedingPolicyPromise,
     nodePromise,
   ]);
 
@@ -740,7 +723,6 @@ async function loadPatchView(
     resource: "repo.patch",
     params: {
       baseUrl: route.node,
-      seedingPolicy,
       repo,
       rawPath,
       patch,

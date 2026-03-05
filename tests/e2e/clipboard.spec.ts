@@ -69,8 +69,7 @@ test("copy to clipboard", async ({ page, browserName, context }) => {
     await page.getByRole("button", { name: "59a0821", exact: true }).click();
     await expectClipboard("59a0821edc73630bce540596cffc7854da557365");
 
-    await page.getByLabel("filter-dropdown").click();
-    await page.getByRole("button", { name: "Draft" }).click();
+    await page.getByRole("link", { name: "Draft" }).click();
     await page.getByRole("button", { name: "783d33c", exact: true }).click();
     await expectClipboard("783d33c5b14e13234d4d7affa98bd0b52d1b1ea3");
   }

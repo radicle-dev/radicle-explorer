@@ -23,9 +23,9 @@ test("peer and branch switching", async ({ page }) => {
   {
     await changeBranch("alice", `main ${shortAliceHead}`, page);
 
-    await expect(page.getByTitle("Change branch")).toHaveText(
-      "alice Delegate / main",
-    );
+    await expect(
+      page.locator('[title="Change branch"]:visible').first(),
+    ).toHaveText("alice Delegate / main");
 
     await expect(page.getByText("Thursday, November 17, 2022")).toBeVisible();
     await expect(page.locator(".list .teaser")).toHaveCount(
@@ -63,7 +63,9 @@ test("peer and branch switching", async ({ page }) => {
   {
     await changeBranch("bob", `main ${shortBobHead}`, page);
 
-    await expect(page.getByTitle("Change branch")).toContainText("bob");
+    await expect(
+      page.locator('[title="Change branch"]:visible').first(),
+    ).toContainText("bob");
 
     await expect(page.getByText("Wednesday, December 21, 2022")).toBeVisible();
     await expect(page.locator(".list").first().locator(".teaser")).toHaveCount(
@@ -158,7 +160,9 @@ test("relative timestamps", async ({ page }) => {
   await expect(page.getByText("Thursday, December 15,")).toBeVisible();
 
   await changeBranch("bob", `main ${shortBobHead}`, page);
-  await expect(page.getByTitle("Change branch")).toHaveText(/bob/);
+  await expect(
+    page.locator('[title="Change branch"]:visible').first(),
+  ).toHaveText(/bob/);
   const latestCommit = page.locator(".teaser").first();
   await expect(latestCommit).toContainText(
     `Bob Belcher committed ${shortBobHead} now`,
@@ -194,7 +198,9 @@ test("pushing changes while viewing history", async ({ page, peerManager }) => {
   await expect(page).toHaveURL(`${alice.uiUrl()}/${rid}/history`);
   await expect(page.getByRole("link", { name: "Commits 2" })).toBeVisible();
 
-  await expect(page.getByTitle("Change branch")).toHaveText("main Canonical");
+  await expect(
+    page.locator('[title="Change branch"]:visible').first(),
+  ).toHaveText("main Canonical");
   const branchSelectorCommitButton = page.getByTitle("Current HEAD").first();
   await expect(branchSelectorCommitButton).toHaveText("516fa74 first change");
 
