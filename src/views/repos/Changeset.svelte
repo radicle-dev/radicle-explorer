@@ -58,6 +58,11 @@
     background-color: var(--color-surface-base);
     padding: 1rem;
   }
+  .file {
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-md);
+    overflow: clip;
+  }
   .summary {
     font: var(--txt-body-m-regular);
   }
@@ -99,7 +104,7 @@
   <Observer let:filesVisibility let:observer>
     {#each diff.files as file}
       {@const path = "path" in file ? file.path : file.newPath}
-      <div use:intersection={observer} id={"observer:" + path}>
+      <div class="file" use:intersection={observer} id={"observer:" + path}>
         {#if "diff" in file}
           <FileDiff
             {repoId}

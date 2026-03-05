@@ -15,6 +15,7 @@
   import { groupCommits } from "@app/lib/commit";
 
   import Button from "@app/components/Button.svelte";
+  import CloneButton from "@app/views/repos/Header/CloneButton.svelte";
   import CommitTeaser from "./Commit/CommitTeaser.svelte";
   import ErrorMessage from "@app/components/ErrorMessage.svelte";
   import Header from "./Source/Header.svelte";
@@ -36,7 +37,21 @@
   export let tree: Tree;
   export let nodeAvatarUrl: string | undefined;
 
+  $: currentRefname = formatQualifiedRefname(
+    revision || repo.payloads["xyz.radicle.project"].data.defaultBranch,
+    peer,
+  );
+
   const api = new HttpdClient(baseUrl);
+  let totalCommits: number | undefined = undefined;
+
+  function fetchTotalCommits(rid: string, sha: string) {
+    void api.repo.getTreeStatsBySha(rid, sha).then(stats => {
+      totalCommits = stats.commits;
+    });
+  }
+
+  $: fetchTotalCommits(repo.rid, commit);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let error: any;
@@ -80,18 +95,13 @@
     justify-content: center;
   }
   .group-header {
-    margin-left: 1rem;
-    margin-top: 3rem;
-    margin-bottom: 1rem;
+    margin: 1rem 0 0.5rem 1rem;
     font: var(--txt-body-m-regular);
     color: var(--color-text-tertiary);
   }
-  .group-header:first-child {
-    margin-top: 0;
-  }
 </style>
 
-<Layout {nodeAvatarUrl} {seedingPolicy} {baseUrl} {repo} activeTab="source">
+<Layout {nodeAvatarUrl} {baseUrl} {repo} activeTab="source">
   <svelte:fragment slot="breadcrumb">
     <Separator />
     <Link
@@ -103,16 +113,19 @@
       Commits
     </Link>
   </svelte:fragment>
-  <RepoNameHeader
-    {repo}
-    currentRefname={formatQualifiedRefname(
-      revision || repo.payloads["xyz.radicle.project"].data.defaultBranch,
-      peer,
-    )}
-    {baseUrl}
-    slot="header" />
+  <svelte:fragment slot="actions">
+    <CloneButton
+      {baseUrl}
+      {currentRefname}
+      id={repo.rid}
+      name={repo.payloads["xyz.radicle.project"].data.name} />
+  </svelte:fragment>
+  <RepoNameHeader {repo} {baseUrl} {seedingPolicy} slot="header" />
 
-  <div style:margin="1rem" slot="subheader">
+  <div
+    style:padding="1rem"
+    style:border-bottom="1px solid var(--color-border-subtle)"
+    slot="subheader">
     <Header
       {baseRoute}
       {commit}
@@ -140,41 +153,24 @@
     {/each}
   </div>
 
-  {#await api.repo.getTreeStatsBySha(repo.rid, commit)}
+  {#if totalCommits === undefined || loading || allCommitHeaders.length < totalCommits}
     <div class="more">
-      <Loading small center />
+      {#if totalCommits === undefined || loading}
+        <Loading small={page !== 0} center />
+      {:else if allCommitHeaders.length < totalCommits}
+        <Button size="large" variant="outline" on:click={loadMore}>More</Button>
+      {/if}
     </div>
-  {:then stats}
-    {#if loading || allCommitHeaders.length < stats.commits}
-      <div class="more">
-        {#if loading}
-          <Loading small={page !== 0} center />
-        {:else if allCommitHeaders.length < stats.commits}
-          <Button size="large" variant="outline" on:click={loadMore}>
-            More
-          </Button>
-        {/if}
-      </div>
-    {/if}
+  {/if}
 
-    {#if error}
-      <div class="message">
-        <ErrorMessage
-          title="Couldn't load commits"
-          description="Make sure you are able to connect to the seed <code>{baseUrlToString(
-            api.baseUrl,
-          )}</code>"
-          {error} />
-      </div>
-    {/if}
-  {:catch error}
+  {#if error}
     <div class="message">
       <ErrorMessage
-        title="Couldn't load repo stats"
+        title="Couldn't load commits"
         description="Make sure you are able to connect to the seed <code>{baseUrlToString(
           api.baseUrl,
         )}</code>"
         {error} />
     </div>
-  {/await}
+  {/if}
 </Layout>

@@ -14,7 +14,7 @@ test("navigation from commit list", async ({ page }) => {
   await page.goto(sourceBrowsingUrl);
   await changeBranch("bob", `main ${shortBobHead}`, page);
 
-  await page.getByText("Update readme").first().click();
+  await page.getByRole("link", { name: "Update readme" }).first().click();
   await expect(page).toHaveURL(commitUrl);
 });
 
@@ -103,13 +103,10 @@ test("navigation to source tree at specific revision", async ({ page }) => {
   // Go to source tree at this revision.
   await page.getByTitle("View file at this commit").click();
   const branchSelectorCommitButton = page.getByTitle("Current HEAD").first();
-  await expect(
-    branchSelectorCommitButton.getByText("Add a deeply nested directory tree"),
-  ).toBeVisible();
+  await expect(branchSelectorCommitButton).toContainText("0801ace");
   await expect(page).toHaveURL(
     `${sourceBrowsingUrl}/tree/0801aceeab500033f8d608778218657bd626ef73/deep/directory/hierarchy/is/entirely/possible/in/git/repositories/.gitkeep`,
   );
-  await expect(branchSelectorCommitButton).toContainText("0801ace");
   await expect(page.locator(".source-tree >> text=.gitkeep")).toBeVisible();
   await expect(
     page

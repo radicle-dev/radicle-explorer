@@ -10,17 +10,18 @@
 
   import { HttpdClient } from "@http-client";
 
+  import { formatQualifiedRefname } from "@app/lib/utils";
+
+  import BlobComponent from "./Source/Blob.svelte";
   import Button from "@app/components/Button.svelte";
+  import CloneButton from "@app/views/repos/Header/CloneButton.svelte";
+  import FilePath from "@app/components/FilePath.svelte";
   import Header from "./Source/Header.svelte";
   import Layout from "./Layout.svelte";
   import Placeholder from "@app/components/Placeholder.svelte";
-
-  import BlobComponent from "./Source/Blob.svelte";
-  import FilePath from "@app/components/FilePath.svelte";
   import RepoNameHeader from "./Source/RepoNameHeader.svelte";
   import Separator from "./Separator.svelte";
   import TreeComponent from "./Source/Tree.svelte";
-  import { formatQualifiedRefname } from "@app/lib/utils";
 
   export let baseUrl: BaseUrl;
   export let blobResult: BlobResult;
@@ -52,6 +53,11 @@
     });
   };
 
+  $: currentRefname = formatQualifiedRefname(
+    revision || repo.payloads["xyz.radicle.project"].data.defaultBranch,
+    peer,
+  );
+
   $: baseRoute = {
     resource: "repo.source",
     node: baseUrl,
@@ -68,13 +74,14 @@
   .container {
     display: flex;
     width: inherit;
-    padding: 0 1rem 1rem 1rem;
+    padding: 0;
   }
 
   .column-left {
     display: flex;
     flex-direction: column;
     padding-right: 0.5rem;
+    border-right: 1px solid var(--color-border-subtle);
   }
 
   .column-right {
@@ -82,8 +89,6 @@
     flex-direction: column;
     width: 100%;
     padding-bottom: 2.5rem;
-    max-width: 75rem;
-    margin: 0 auto;
     /* To allow pre elements to shrink when overflowing */
     min-width: 0;
   }
@@ -122,7 +127,6 @@
   {baseUrl}
   {nodeAvatarUrl}
   {repo}
-  {seedingPolicy}
   activeTab="source"
   stylePaddingBottom="0">
   <svelte:fragment slot="breadcrumb">
@@ -131,16 +135,19 @@
       <FilePath filenameWithPath={path} />
     {/if}
   </svelte:fragment>
-  <RepoNameHeader
-    {repo}
-    currentRefname={formatQualifiedRefname(
-      revision || repo.payloads["xyz.radicle.project"].data.defaultBranch,
-      peer,
-    )}
-    {baseUrl}
-    slot="header" />
+  <svelte:fragment slot="actions">
+    <CloneButton
+      {baseUrl}
+      {currentRefname}
+      id={repo.rid}
+      name={repo.payloads["xyz.radicle.project"].data.name} />
+  </svelte:fragment>
+  <RepoNameHeader {repo} {baseUrl} {seedingPolicy} slot="header" />
 
-  <div style:margin="1rem" slot="subheader">
+  <div
+    style:padding="1rem"
+    style:border-bottom="1px solid var(--color-border-subtle)"
+    slot="subheader">
     <Header
       filesLinkActive={true}
       historyLinkActive={false}

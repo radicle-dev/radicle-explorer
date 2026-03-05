@@ -5,20 +5,47 @@
 <script lang="ts">
   import type { BaseUrl, Repo } from "@http-client";
 
-  import Link from "@app/components/Link.svelte";
+  import config from "@app/lib/config";
+  import { routeToPath } from "@app/lib/router";
+  import { toClipboard } from "@app/lib/utils";
+
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
+  import Link from "@app/components/Link.svelte";
+  import SeedButton from "@app/views/repos/Header/SeedButton.svelte";
 
   export let baseUrl: BaseUrl;
   export let activeTab: ActiveTab = undefined;
   export let repo: Repo;
+
+  let shareIcon: "link" | "checkmark" = "link";
+  let restoreIconTimer: ReturnType<typeof setTimeout> | undefined;
+
+  async function copyLink() {
+    const origin = new URL(config.nodes.fallbackPublicExplorer).origin;
+    const path = routeToPath({
+      resource: "repo.source",
+      repo: repo.rid,
+      node: baseUrl,
+      path: "/",
+    });
+    await toClipboard(origin.concat(path));
+    shareIcon = "checkmark";
+    clearTimeout(restoreIconTimer);
+    restoreIconTimer = setTimeout(() => {
+      shareIcon = "link";
+    }, 1000);
+  }
 </script>
 
 <style>
   .container {
     display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 1rem;
+    border-bottom: 1px solid var(--color-border-subtle);
   }
 
   .counter {
@@ -41,8 +68,13 @@
   .title-counter {
     display: flex;
     gap: 0.5rem;
-    justify-content: space-between;
-    width: 100%;
+  }
+
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
   }
 </style>
 
@@ -54,11 +86,7 @@
       node: baseUrl,
       path: "/",
     }}>
-    <Button
-      size="large"
-      styleWidth="100%"
-      styleJustifyContent="flex-start"
-      variant={activeTab === "source" ? "gray" : "background"}>
+    <Button variant={activeTab === "source" ? "gray" : "background"}>
       <Icon name="chevron-left-right" />
       Source
     </Button>
@@ -69,12 +97,7 @@
       repo: repo.rid,
       node: baseUrl,
     }}>
-    <Button
-      let:hover
-      size="large"
-      styleJustifyContent="flex-start"
-      styleWidth="100%"
-      variant={activeTab === "issues" ? "gray" : "background"}>
+    <Button let:hover variant={activeTab === "issues" ? "gray" : "background"}>
       <Icon name="issue" />
       <div class="title-counter">
         Issues
@@ -94,12 +117,7 @@
       repo: repo.rid,
       node: baseUrl,
     }}>
-    <Button
-      let:hover
-      size="large"
-      styleWidth="100%"
-      styleJustifyContent="flex-start"
-      variant={activeTab === "patches" ? "gray" : "background"}>
+    <Button let:hover variant={activeTab === "patches" ? "gray" : "background"}>
       <Icon name="patch" />
       <div class="title-counter">
         Patches
@@ -112,4 +130,15 @@
       </div>
     </Button>
   </Link>
+
+  <div class="actions">
+    {#if activeTab !== "issues" && activeTab !== "patches"}
+      <Button variant="outline" size="regular" on:click={copyLink}>
+        <Icon name={shareIcon} />
+        <span class="global-hide-on-small-desktop-down">Copy link</span>
+      </Button>
+    {/if}
+    <slot name="actions" />
+    <SeedButton seedCount={repo.seeding} repoId={repo.rid} />
+  </div>
 </div>

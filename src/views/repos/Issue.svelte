@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { BaseUrl, Issue, Repo, SeedingPolicy } from "@http-client";
+  import type { BaseUrl, Issue, Repo } from "@http-client";
 
   import capitalize from "lodash/capitalize";
   import uniqBy from "lodash/uniqBy";
@@ -24,7 +24,6 @@
   import ThreadComponent from "@app/components/Thread.svelte";
 
   export let baseUrl: BaseUrl;
-  export let seedingPolicy: SeedingPolicy;
   export let issue: Issue;
   export let repo: Repo;
   export let rawPath: (commit?: string) => string;
@@ -122,7 +121,6 @@
   {baseUrl}
   {nodeAvatarUrl}
   {repo}
-  {seedingPolicy}
   activeTab="issues"
   stylePaddingBottom="0">
   <svelte:fragment slot="breadcrumb">

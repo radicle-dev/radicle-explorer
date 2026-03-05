@@ -180,7 +180,7 @@
               <DropdownListItem
                 selected={selectedPeer?.id === peer?.id &&
                   selectedBranch === revision}
-                style={`${subgridStyle} gap: inherit;`}>
+                style={subgridStyle}>
                 <div class="global-flex-item">
                   <Icon name="branch" />
                   <span class="txt-overflow">
@@ -231,7 +231,7 @@
             </Link>
           {:else}
             <div
-              style="gap: inherit; padding: 0.5rem 0.375rem;"
+              style="padding: 0.5rem 0.375rem;"
               class="subgrid-item txt-body-m-regular"
               style:color="var(--color-text-tertiary)">
               No entries found
@@ -245,9 +245,7 @@
               searchInput = "";
               toggle();
             }}>
-            <DropdownListItem
-              selected={onCanonical}
-              style={`${subgridStyle} gap: inherit;`}>
+            <DropdownListItem selected={onCanonical} style={subgridStyle}>
               <div class="global-flex-item">
                 <Icon name="branch" />
                 {repo.payloads["xyz.radicle.project"].data.defaultBranch}

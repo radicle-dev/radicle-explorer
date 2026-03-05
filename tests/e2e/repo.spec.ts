@@ -21,10 +21,10 @@ test("navigate to repo", async ({ page }) => {
   // Header.
   {
     const name = page.getByRole("link", { name: "source-browsing" }).nth(1);
-    const id = page.getByText(sourceBrowsingRid);
-    const description = page.getByText(
-      "Git repository for source browsing tests",
-    );
+    const id = page.getByLabel("repo-id");
+    const description = page
+      .getByText("Git repository for source browsing tests")
+      .first();
 
     await expect(name).toBeVisible();
     await expect(id).toBeVisible();
@@ -33,7 +33,9 @@ test("navigate to repo", async ({ page }) => {
 
   // Repo menu shows default selected branch and commit and contributor counts.
   {
-    await expect(page.getByTitle("Change branch")).toBeVisible();
+    await expect(
+      page.locator('[title="Change branch"]:visible').first(),
+    ).toBeVisible();
     await expect(
       page
         .getByRole("button", {
@@ -66,7 +68,7 @@ test("repo description", async ({ page, peer }) => {
   await page.goto(peer.ridUrl(rid));
   await page.waitForLoadState("networkidle");
   await expect(
-    page.getByText("Radicle Heartwood Protocol & Stack"),
+    page.getByText("Radicle Heartwood Protocol & Stack").first(),
   ).toBeVisible();
 });
 
@@ -83,7 +85,9 @@ test("show source tree at specific revision", async ({ page }) => {
     })
     .click();
 
-  await expect(page.getByTitle("Current HEAD")).toContainText("335dd6d");
+  await expect(page.getByTitle("Current HEAD").first()).toContainText(
+    "335dd6d",
+  );
   await expect(page.locator(".source-tree")).toHaveText("bin src");
   await expect(
     page.getByRole("link", {
@@ -317,11 +321,15 @@ test("peer and branch switching", async ({ page }) => {
   // Alice's peer.
   {
     await changeBranch("alice", `main ${shortAliceHead}`, page);
-    await expect(page.getByTitle("Change branch")).toHaveText(/alice/);
+    await expect(
+      page.locator('[title="Change branch"]:visible').first(),
+    ).toHaveText(/alice/);
 
     // Default `main` branch.
     {
-      await expect(page.getByTitle("Change branch")).toHaveText(/main/);
+      await expect(
+        page.locator('[title="Change branch"]:visible').first(),
+      ).toHaveText(/main/);
       await expect(
         page
           .getByRole("button", {
@@ -339,8 +347,11 @@ test("peer and branch switching", async ({ page }) => {
     // Feature branch with a slash in the name.
     {
       await changeBranch("alice", "feature/branch", page);
-      await page.getByTitle("Change branch").click();
-      await page.getByText("feature/branch").click();
+      await page.locator('[title="Change branch"]:visible').first().click();
+      await page
+        .getByRole("button", { name: "feature/branch" })
+        .first()
+        .click();
 
       await expect(
         page.getByRole("button", { name: "feature/branch" }),
@@ -379,10 +390,16 @@ test("peer and branch switching", async ({ page }) => {
   {
     await page.getByRole("link", { name: "source-browsing" }).nth(1).click();
 
-    await expect(page.getByTitle("Change branch")).not.toContainText("alice");
-    await expect(page.getByTitle("Change branch")).not.toContainText("bob");
+    await expect(
+      page.locator('[title="Change branch"]:visible').first(),
+    ).not.toContainText("alice");
+    await expect(
+      page.locator('[title="Change branch"]:visible').first(),
+    ).not.toContainText("bob");
 
-    await expect(page.getByTitle("Change branch")).toBeVisible();
+    await expect(
+      page.locator('[title="Change branch"]:visible').first(),
+    ).toBeVisible();
     await expect(
       page
         .getByRole("button", {
@@ -437,7 +454,7 @@ test("only one modal can be open at a time", async ({ page }) => {
   await expect(page.getByText("Use the Radicle CLI")).not.toBeVisible();
   await expect(page.getByText("bob")).not.toBeVisible();
 
-  await page.getByTitle("Change branch").click();
+  await page.locator('[title="Change branch"]:visible').first().click();
   await expect(page.getByText("Code font")).not.toBeVisible();
   await expect(page.getByText("Use the Radicle CLI")).not.toBeVisible();
   await expect(page.getByText("bob")).toBeVisible();

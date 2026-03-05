@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { BaseUrl, Commit, Repo, SeedingPolicy } from "@http-client";
+  import type { BaseUrl, Commit, Repo } from "@http-client";
 
   import dompurify from "dompurify";
   import escape from "lodash/escape";
@@ -14,10 +14,8 @@
   import Layout from "./Layout.svelte";
   import Link from "@app/components/Link.svelte";
   import Separator from "./Separator.svelte";
-  import Share from "./Share.svelte";
 
   export let baseUrl: BaseUrl;
-  export let seedingPolicy: SeedingPolicy;
   export let commit: Commit;
   export let repo: Repo;
   export let nodeAvatarUrl: string | undefined;
@@ -70,7 +68,7 @@
   }
 </style>
 
-<Layout {nodeAvatarUrl} {seedingPolicy} {baseUrl} {repo}>
+<Layout {nodeAvatarUrl} {baseUrl} {repo}>
   <svelte:fragment slot="breadcrumb">
     <Separator />
     <Link
@@ -117,7 +115,6 @@
                 </Button>
               </a>
             {/if}
-            <Share />
           </div>
         </span>
         <CommitAuthorship {header}>

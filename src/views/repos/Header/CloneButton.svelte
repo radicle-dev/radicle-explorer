@@ -11,11 +11,23 @@
   import Popover from "@app/components/Popover.svelte";
   import Radio from "@app/components/Radio.svelte";
 
+  import { baseUrlToString } from "@app/lib/utils";
+
   export let baseUrl: BaseUrl;
   export let id: string;
   export let name: string;
   export let currentRefname: string;
-  export let enabledArchiveDownload: boolean;
+
+  let enabledArchiveDownload = false;
+
+  void fetch(
+    `${baseUrlToString(baseUrl)}/raw/${id}/archive/${currentRefname}`,
+    {
+      method: "HEAD",
+    },
+  ).then(response => {
+    enabledArchiveDownload = response.ok;
+  });
 
   let activeTab: "radicle" | "git" | "archive" = "radicle";
 

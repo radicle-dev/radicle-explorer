@@ -6,8 +6,7 @@ test("navigate patch listing", async ({ page }) => {
   await page.getByRole("link", { name: "Patches 2" }).click();
   await expect(page).toHaveURL(`${cobUrl}/patches`);
 
-  await page.getByRole("button", { name: "filter-dropdown" }).first().click();
-  await page.getByRole("link", { name: "Merged 1" }).click();
+  await page.getByRole("link", { name: "Merged" }).click();
   await expect(page).toHaveURL(`${cobUrl}/patches?status=merged`);
   await expect(
     page.locator(".comments").filter({ hasText: "5" }),
@@ -40,11 +39,7 @@ test("patches counters", async ({ page, peer }) => {
   await peer.git(["push", "rad", "HEAD:refs/patches"], {
     cwd: repoFolder,
   });
-  await page.getByRole("button", { name: "filter-dropdown" }).first().click();
-  await page.locator(".dropdown-item").getByText("Open 1").click();
+  await page.getByRole("link", { name: "Open" }).first().click();
   await expect(page.getByRole("button", { name: "Patches 2" })).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "filter-dropdown" }).first(),
-  ).toHaveText("Open 2");
   await expect(page.locator(".patch-teaser")).toHaveCount(2);
 });

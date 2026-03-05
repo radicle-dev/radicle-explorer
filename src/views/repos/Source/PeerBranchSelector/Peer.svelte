@@ -68,7 +68,7 @@
             peer: peer.remote.id,
             revision: name,
           })}
-        style={`${subgridStyle} padding-left: 2.3rem; gap: inherit;`}>
+        style={`${subgridStyle} padding-left: 2.3rem;`}>
         <div class="global-flex-item">
           <Icon name="branch" />
           <span class="txt-overflow">
