@@ -8,6 +8,7 @@
   import Button from "@app/components/Button.svelte";
   import CommitButton from "../components/CommitButton.svelte";
   import Icon from "@app/components/Icon.svelte";
+  import JobCob from "@app/components/JobCob.svelte";
   import Link from "@app/components/Link.svelte";
   import Loading from "@app/components/Loading.svelte";
   import PeerBranchSelector from "./PeerBranchSelector.svelte";
@@ -133,6 +134,13 @@
       </Link>
     {/if}
   </div>
+  <JobCob
+    baseUrl={node}
+    repoClient={api.repo}
+    rid={repo.rid}
+    commit={lastCommit.id}
+    stylePopoverPositionTop="0.5rem"
+    stylePopoverPositionLeft="0" />
 </div>
 
 <div class="header">

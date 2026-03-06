@@ -41,6 +41,7 @@ pub fn router(ctx: Context) -> Router {
         .route("/repos/{rid}/remotes/{peer}", get(remote_handler))
         .route("/repos/{rid}/blob/{sha}/{*path}", get(blob_handler))
         .route("/repos/{rid}/readme/{sha}", get(readme_handler))
+        .route("/repos/{rid}/jobs/{sha}", get(job_handler))
         .route("/repos/{rid}/issues", get(issues_handler))
         .route("/repos/{rid}/issues/{id}", get(issue_handler))
         .route("/repos/{rid}/patches", get(patches_handler))
@@ -685,6 +686,116 @@ async fn patch_handler(
         &repo,
         &aliases,
     )))
+}
+
+/// Job data structures for CI/CD status
+#[derive(Clone, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+struct Job {
+    job_id: String,
+    commit: String,
+    runs: Vec<Run>,
+}
+
+impl Job {
+    fn new(
+        id: radicle_job::JobId,
+        job: &radicle_job::Job,
+        aliases: &impl AliasStore,
+    ) -> Self {
+        let runs = job
+            .runs()
+            .iter()
+            .flat_map(|(node_id, runs)| {
+                let did: radicle::identity::Did = node_id.into();
+                let alias = aliases.alias(&did).map(|a| a.to_string());
+
+                runs.iter().map(move |(run_id, run)| Run {
+                    run_id: run_id.to_string(),
+                    node: JobAuthor {
+                        id: did.to_string(),
+                        alias: alias.clone(),
+                    },
+                    status: (*run.status()).into(),
+                    log: run.log().to_string(),
+                })
+            })
+            .collect();
+
+        Self {
+            job_id: id.to_string(),
+            commit: job.oid().to_string(),
+            runs,
+        }
+    }
+}
+
+#[derive(Clone, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+struct JobAuthor {
+    id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    alias: Option<String>,
+}
+
+#[derive(Clone, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+struct Run {
+    run_id: String,
+    node: JobAuthor,
+    status: Status,
+    log: String,
+}
+
+#[derive(Clone, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+enum Status {
+    Started,
+    Failed,
+    Succeeded,
+}
+
+impl From<radicle_job::Status> for Status {
+    fn from(value: radicle_job::Status) -> Self {
+        use radicle_job::{Reason, Status};
+        match value {
+            Status::Started => Self::Started,
+            Status::Finished(Reason::Failed) => Self::Failed,
+            Status::Finished(Reason::Succeeded) => Self::Succeeded,
+        }
+    }
+}
+
+/// Get jobs for a commit.
+/// `GET /repos/:rid/jobs/:sha`
+async fn job_handler(
+    State(ctx): State<Context>,
+    Path((rid, sha)): Path<(RepoId, Oid)>,
+) -> impl IntoResponse {
+    let (repo, _) = ctx.repo(rid)?;
+    let aliases = ctx.profile.aliases();
+
+    let jobs_list: Vec<Job> = radicle_job::Jobs::open(&repo)
+        .map_err(|e| tracing::debug!("failed to open jobs store: {:?}", e))
+        .ok()
+        .and_then(|jobs| {
+            jobs.find_by_commit((*sha).into())
+                .map_err(|e| tracing::debug!("failed to find jobs: {:?}", e))
+                .ok()
+        })
+        .map(|jobs_iter| {
+            jobs_iter
+                .filter_map(|result| {
+                    result
+                        .map_err(|e| tracing::debug!("failed to load job: {:?}", e))
+                        .ok()
+                })
+                .map(|(id, job)| Job::new(id, &job, &aliases))
+                .collect()
+        })
+        .unwrap_or_default();
+
+    Ok::<_, Error>(Json(jobs_list))
 }
 
 #[cfg(test)]

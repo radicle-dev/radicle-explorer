@@ -2,9 +2,11 @@ import type { BaseUrl } from "./lib/fetcher.js";
 import type {
   Blob,
   DiffResponse,
+  Job,
   Remote,
   Repo,
   RepoListQuery,
+  Status,
   Tree,
   TreeStats,
 } from "./lib/repo.js";
@@ -71,6 +73,7 @@ export type {
   HunkLine,
   Issue,
   IssueState,
+  Job,
   LifecycleState,
   Merge,
   Patch,
@@ -82,6 +85,7 @@ export type {
   Review,
   Revision,
   SeedingPolicy,
+  Status,
   Tree,
   TreeStats,
   Verdict,

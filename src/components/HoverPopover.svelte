@@ -3,6 +3,8 @@
 
   export let stylePopoverPositionBottom: string | undefined = undefined;
   export let stylePopoverPositionLeft: string | undefined = undefined;
+  export let stylePopoverPositionTop: string | undefined = undefined;
+  export let canMouseOver: boolean = false;
 
   let visible: boolean = false;
 
@@ -37,10 +39,15 @@
 
     {#if visible}
       <div style:position="absolute">
+        <!-- svelte-ignore a11y-no-static-element-interactions -->
         <div
           class="popover"
+          on:mouseenter={() =>
+            canMouseOver ? setVisible(true) : setVisible(false)}
+          on:mouseleave={() => (canMouseOver ? setVisible(false) : undefined)}
           style:left={stylePopoverPositionLeft}
-          style:bottom={stylePopoverPositionBottom}>
+          style:bottom={stylePopoverPositionBottom}
+          style:top={stylePopoverPositionTop}>
           <slot name="popover" />
         </div>
       </div>

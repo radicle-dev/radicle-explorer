@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { BaseUrl, CommitHeader } from "@http-client";
+  import type { Snippet } from "svelte";
 
   import { twemoji } from "@app/lib/utils";
 
@@ -14,6 +15,7 @@
   export let baseUrl: BaseUrl;
   export let commit: CommitHeader;
   export let repoId: string;
+  export let children: Snippet | undefined = undefined;
 
   let commitMessageVisible = false;
 </script>
@@ -94,6 +96,9 @@
   </div>
   <div class="right">
     <div style="display: flex; gap: 0.5rem; height: 21px; align-items: center;">
+      {#if children}
+        {@render children()}
+      {/if}
       <div class="global-hide-on-mobile-down">
         <CompactCommitAuthorship {commit}>
           <Id id={commit.id} style="commit" />
