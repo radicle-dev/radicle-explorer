@@ -23,6 +23,7 @@
   import TextInput from "@app/components/TextInput.svelte";
 
   export let baseUrl: BaseUrl;
+  export let compact: boolean = false;
 
   let expanded: boolean = false;
   let loading = false;
@@ -108,14 +109,17 @@
   }
 </style>
 
-<div class="global-flex-item container" style:width="100%">
+<div
+  class="global-flex-item container"
+  style:width="100%"
+  style:justify-content={compact ? "center" : "flex-start"}>
   <Popover
     bind:expanded
     popoverPositionTop="2.5rem"
     popoverPadding="0.25rem"
     popoverBorderRadius="var(--border-radius-md)">
     <div class="target" slot="toggle" title="Switch preferred seed" let:toggle>
-      <div class="txt-body-m-semibold txt-overflow">
+      <div class:txt-body-m-semibold={!compact} class="txt-overflow">
         {baseUrl.hostname}
       </div>
       <IconButton on:click={toggle} ariaLabel="Toggle seed selector dropdown">
@@ -199,27 +203,29 @@
     </svelte:fragment>
   </Popover>
 
-  <IconButton
-    ariaLabel={some($bookmarkedSeeds, baseUrl) ||
-    some(config.preferredSeeds, baseUrl)
-      ? "Remove bookmark"
-      : "Add bookmark"}
-    stopPropagation
-    disabled={some(config.preferredSeeds, baseUrl)}
-    title={some(config.preferredSeeds, baseUrl)
-      ? "Default seeds can't be removed"
-      : undefined}
-    on:click={() => {
-      if (some($bookmarkedSeeds, baseUrl)) {
-        removeBookmark(baseUrl);
-      } else {
-        addBookmark(baseUrl);
-      }
-    }}>
-    {#if some($bookmarkedSeeds, baseUrl) || some(config.preferredSeeds, baseUrl)}
-      <Icon name="bookmark-fill" />
-    {:else}
-      <Icon name="bookmark" />
-    {/if}
-  </IconButton>
+  {#if !compact}
+    <IconButton
+      ariaLabel={some($bookmarkedSeeds, baseUrl) ||
+      some(config.preferredSeeds, baseUrl)
+        ? "Remove bookmark"
+        : "Add bookmark"}
+      stopPropagation
+      disabled={some(config.preferredSeeds, baseUrl)}
+      title={some(config.preferredSeeds, baseUrl)
+        ? "Default seeds can't be removed"
+        : undefined}
+      on:click={() => {
+        if (some($bookmarkedSeeds, baseUrl)) {
+          removeBookmark(baseUrl);
+        } else {
+          addBookmark(baseUrl);
+        }
+      }}>
+      {#if some($bookmarkedSeeds, baseUrl) || some(config.preferredSeeds, baseUrl)}
+        <Icon name="bookmark-fill" />
+      {:else}
+        <Icon name="bookmark" />
+      {/if}
+    </IconButton>
+  {/if}
 </div>

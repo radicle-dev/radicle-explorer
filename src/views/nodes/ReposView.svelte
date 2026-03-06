@@ -2,7 +2,6 @@
   import type { BaseUrl, NodeStats } from "@http-client";
 
   import * as router from "@app/lib/router";
-  import { baseUrlToString } from "@app/lib/utils";
   import { fetchRepoInfos } from "@app/components/RepoCard";
   import { handleError } from "@app/views/nodes/error";
 
@@ -196,6 +195,6 @@
       </div>
     {/if}
   {:catch error}
-    {router.push(handleError(error, baseUrlToString(baseUrl)))}
+    {router.push(handleError(error, baseUrl))}
   {/await}
 </div>

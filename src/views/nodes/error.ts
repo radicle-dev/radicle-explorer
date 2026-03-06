@@ -1,11 +1,15 @@
+import type { BaseUrl } from "@http-client";
 import type { ErrorRoute, NotFoundRoute } from "@app/lib/router/definitions";
 
 import { ResponseParseError, ResponseError } from "@http-client/lib/fetcher";
+import { baseUrlToString } from "@app/lib/utils";
 
 export function handleError(
   error: Error | ResponseParseError | ResponseError,
-  url: string,
+  baseUrl: BaseUrl,
 ): NotFoundRoute | ErrorRoute {
+  const url = baseUrlToString(baseUrl);
+
   if (error instanceof ResponseParseError) {
     return {
       resource: "error",
@@ -30,7 +34,12 @@ export function handleError(
   ) {
     return {
       resource: "notFound",
-      params: { title: "Node not found" },
+      params: {
+        title: "Could not connect to",
+        description:
+          "The node may be offline or the address may be incorrect.\nSelect a different node to continue.",
+        baseUrl,
+      },
     };
   } else {
     return {

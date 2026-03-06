@@ -77,5 +77,5 @@
     </div>
   {/if}
 {:catch error}
-  {router.push(handleError(error, utils.baseUrlToString(baseUrl)))}
+  {router.push(handleError(error, baseUrl))}
 {/await}

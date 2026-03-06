@@ -67,7 +67,7 @@ export async function loadUserRoute({
       error instanceof ResponseError ||
       error instanceof ResponseParseError
     ) {
-      return handleError(error, utils.baseUrlToString(api.baseUrl));
+      return handleError(error, api.baseUrl);
     } else {
       return unreachableError();
     }

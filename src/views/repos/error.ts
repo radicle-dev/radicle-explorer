@@ -44,6 +44,19 @@ export function handleError(
         description: error.description,
       },
     };
+  } else if (
+    error instanceof TypeError &&
+    error.message === "Failed to fetch"
+  ) {
+    return {
+      resource: "notFound",
+      params: {
+        title: "Could not connect to",
+        description:
+          "The node may be offline or the address may be incorrect.\nSelect a different node to continue.",
+        baseUrl: route.node,
+      },
+    };
   } else {
     return {
       resource: "error",

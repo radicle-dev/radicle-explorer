@@ -1,3 +1,4 @@
+import type { BaseUrl } from "@http-client";
 import type {
   ResponseError,
   ResponseParseError,
@@ -18,7 +19,7 @@ interface BootingRoute {
 
 export interface NotFoundRoute {
   resource: "notFound";
-  params: { title: string };
+  params: { title: string; description?: string; baseUrl?: BaseUrl };
 }
 
 export type ErrorParam = Error | ResponseParseError | ResponseError | undefined;

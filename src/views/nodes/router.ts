@@ -4,7 +4,6 @@ import type { ErrorRoute, NotFoundRoute } from "@app/lib/router/definitions";
 import config from "@app/lib/config";
 import { HttpdClient } from "@http-client";
 import { ResponseError, ResponseParseError } from "@http-client/lib/fetcher";
-import { baseUrlToString } from "@app/lib/utils";
 import { handleError } from "@app/views/nodes/error";
 import { unreachableError } from "@app/views/repos/error";
 import { determineSeed } from "./SeedSelector";
@@ -70,7 +69,7 @@ export async function loadNodeRoute(
       error instanceof ResponseError ||
       error instanceof ResponseParseError
     ) {
-      return handleError(error, baseUrlToString(api.baseUrl));
+      return handleError(error, baseUrl);
     } else {
       return unreachableError();
     }
