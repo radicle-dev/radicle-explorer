@@ -175,7 +175,7 @@
         <div
           style:flex-direction="column"
           style:align-items="flex-start"
-          style:overflow="hidden"
+          style:overflow="visible"
           style:width="100%">
           <div
             style:flex-direction="column"
