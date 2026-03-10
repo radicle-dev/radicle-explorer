@@ -35,10 +35,8 @@
     border-radius: var(--border-radius-sm);
   }
   .commit-link :global(a:focus-visible) {
-    outline: none !important;
-  }
-  .commit-link :global(a:focus-visible button) {
-    box-shadow: inset 0 0 0 2px var(--color-border-brand);
+    outline: 2px solid var(--color-border-brand) !important;
+    outline-offset: 2px;
   }
   .commit {
     display: flex;

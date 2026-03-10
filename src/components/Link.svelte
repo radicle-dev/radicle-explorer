@@ -33,6 +33,11 @@
 </script>
 
 <style>
+  a:focus-visible {
+    outline: 2px solid var(--color-border-brand) !important;
+    outline-offset: 2px;
+    border-radius: var(--border-radius-sm);
+  }
   .hover-style:hover {
     text-decoration: underline;
     text-decoration-thickness: 1px;

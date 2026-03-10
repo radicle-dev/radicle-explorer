@@ -430,6 +430,11 @@
   .markdown :global(a:hover) {
     text-decoration-color: var(--color-text-primary);
   }
+  .markdown :global(a:focus-visible) {
+    outline: 2px solid var(--color-border-brand) !important;
+    outline-offset: 2px;
+    border-radius: var(--border-radius-xs);
+  }
 
   .markdown :global(hr) {
     height: 0;

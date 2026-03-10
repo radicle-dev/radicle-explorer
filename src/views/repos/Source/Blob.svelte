@@ -146,6 +146,15 @@
   .markdown-wrapper {
     padding: 2rem;
   }
+
+  .raw-link {
+    display: block;
+    border-radius: var(--border-radius-sm);
+  }
+  .raw-link:focus-visible {
+    outline: 2px solid var(--color-border-brand) !important;
+    outline-offset: 2px;
+  }
   @media (max-width: 719.98px) {
     .markdown-wrapper {
       padding: 1rem;
@@ -189,7 +198,11 @@
           <div class="global-spacer"></div>
         </Radio>
       {/if}
-      <a href="{rawPath}/{blob.path}" target="_blank" rel="noreferrer">
+      <a
+        class="raw-link"
+        href="{rawPath}/{blob.path}"
+        target="_blank"
+        rel="noreferrer">
         <Button focusable={false} variant="gray-white">
           Raw <Icon name="open-external" />
         </Button>

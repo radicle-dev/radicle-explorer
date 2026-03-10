@@ -9,9 +9,6 @@
   :global(a:focus-visible) {
     outline: none !important;
   }
-  :global(a:focus-visible .file) {
-    box-shadow: inset 0 0 0 2px var(--color-border-brand);
-  }
   .file {
     border-radius: var(--border-radius-sm);
     cursor: pointer;
