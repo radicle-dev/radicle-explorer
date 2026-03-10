@@ -2,7 +2,7 @@
   import type { BaseUrl } from "@http-client";
 
   import Layout from "@app/App/Layout.svelte";
-  import IconLarge from "@app/components/IconLarge.svelte";
+  import Icon from "@app/components/Icon.svelte";
   import SeedSelector from "@app/views/nodes/SeedSelector.svelte";
 
   export let title: string;
@@ -19,6 +19,10 @@
     gap: 1.5rem;
     height: 100%;
   }
+  .container :global(svg) {
+    width: 2rem;
+    height: 2rem;
+  }
   .title-row {
     display: flex;
     align-items: center;
@@ -29,7 +33,7 @@
 
 <Layout>
   <div class="container">
-    <IconLarge name="desert" />
+    <Icon name="placeholder" />
     <div class="title-row txt-heading-m">
       <span>{title}</span>
       {#if baseUrl}

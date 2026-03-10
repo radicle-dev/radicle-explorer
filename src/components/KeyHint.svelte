@@ -5,6 +5,7 @@
 <style>
   kbd {
     align-items: center;
+    font: var(--txt-code-regular);
     border-radius: var(--border-radius-sm);
     border: 1px solid var(--color-border-mid);
     justify-content: center;

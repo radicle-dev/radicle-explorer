@@ -70,7 +70,7 @@
   import Link from "@app/components/Link.svelte";
   import Markdown from "@app/components/Markdown.svelte";
   import NodeId from "@app/components/NodeId.svelte";
-  import Placeholder from "@app/components/Placeholder.svelte";
+  import EmptyState from "@app/components/EmptyState.svelte";
   import Radio from "@app/components/Radio.svelte";
   import Reactions from "@app/components/Reactions.svelte";
   import Reviews from "@app/views/repos/Cob/Reviews.svelte";
@@ -501,9 +501,7 @@
               previousRevOid={previousRevision?.oid} />
           {:else}
             <div style:margin="4rem 0">
-              <Placeholder
-                iconName="no-patches"
-                caption="No activity on this patch yet" />
+              <EmptyState title="No activity on this patch yet" />
             </div>
           {/each}
         {:else if view.name === "changes"}

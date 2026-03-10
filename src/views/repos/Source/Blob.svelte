@@ -14,7 +14,7 @@
   import FilePath from "@app/components/FilePath.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Markdown from "@app/components/Markdown.svelte";
-  import Placeholder from "@app/components/Placeholder.svelte";
+  import EmptyState from "@app/components/EmptyState.svelte";
   import Radio from "@app/components/Radio.svelte";
 
   export let baseUrl: BaseUrl;
@@ -194,7 +194,7 @@
       </div>
     {:else}
       <div style:margin="4rem 0" style:width="100%">
-        <Placeholder iconName="binary-file" caption="Binary file" />
+        <EmptyState title="Binary file" />
       </div>
     {/if}
   {:else if preview && blob.content}
@@ -215,7 +215,7 @@
     </table>
   {:else}
     <div style:margin="4rem 0" style:width="100%">
-      <Placeholder iconName="empty-file" caption="Empty file" />
+      <EmptyState title="Empty file" />
     </div>
   {/if}
 </File>

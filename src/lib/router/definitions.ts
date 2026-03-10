@@ -6,9 +6,6 @@ import type {
 import type { RepoLoadedRoute, RepoRoute } from "@app/views/repos/router";
 import type { UserLoadedRoute, UserRoute } from "@app/views/users/router";
 import type { NodesRoute, NodesLoadedRoute } from "@app/views/nodes/router";
-import type { ComponentProps } from "svelte";
-import type IconLarge from "@app/components/IconLarge.svelte";
-
 import { loadRepoRoute } from "@app/views/repos/router";
 import { loadUserRoute } from "@app/views/users/router";
 import { loadNodeRoute } from "@app/views/nodes/router";
@@ -30,7 +27,6 @@ export interface ErrorRoute {
     title: string;
     description: string;
     error?: ErrorParam;
-    icon?: ComponentProps<IconLarge>["name"];
   };
 }
 

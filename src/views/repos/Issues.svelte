@@ -23,7 +23,7 @@
   import Link from "@app/components/Link.svelte";
   import List from "@app/components/List.svelte";
   import Loading from "@app/components/Loading.svelte";
-  import Placeholder from "@app/components/Placeholder.svelte";
+  import EmptyState from "@app/components/EmptyState.svelte";
   import Popover from "@app/components/Popover.svelte";
   import Separator from "./Separator.svelte";
   import Share from "./Share.svelte";
@@ -218,7 +218,7 @@
 
   {#if repo.payloads["xyz.radicle.project"].meta.issues[status] === 0}
     <div class="placeholder">
-      <Placeholder iconName="no-issues" caption={`No ${status} issues`} />
+      <EmptyState title={`No ${status} issues`} />
     </div>
   {/if}
 

@@ -3,7 +3,7 @@
 
   import Command from "@app/components/Command.svelte";
   import ExternalLink from "@app/components/ExternalLink.svelte";
-  import IconLarge from "@app/components/IconLarge.svelte";
+  import Icon from "@app/components/Icon.svelte";
   import Modal from "@app/components/Modal.svelte";
 
   export let title: string;
@@ -13,7 +13,7 @@
 </script>
 
 <Modal {title}>
-  <IconLarge name="alert" slot="icon" />
+  <Icon name="warning" slot="icon" />
 
   <div slot="subtitle">
     {@html subtitle.join("<br />")}

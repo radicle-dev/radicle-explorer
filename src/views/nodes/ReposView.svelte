@@ -6,7 +6,7 @@
   import { handleError } from "@app/views/nodes/error";
 
   import Loading from "@app/components/Loading.svelte";
-  import Placeholder from "@app/components/Placeholder.svelte";
+  import EmptyState from "@app/components/EmptyState.svelte";
   import RepoCard from "@app/components/RepoCard.svelte";
 
   export let baseUrl: BaseUrl;
@@ -184,13 +184,9 @@
     {:else}
       <div class="container">
         {#if listState === "pinned"}
-          <Placeholder
-            iconName="desert"
-            caption="This node doesn't have any pinned repositories." />
+          <EmptyState title="This node doesn't have any pinned repositories." />
         {:else}
-          <Placeholder
-            iconName="desert"
-            caption="This node doesn't seed any repositories." />
+          <EmptyState title="This node doesn't seed any repositories." />
         {/if}
       </div>
     {/if}

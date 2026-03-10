@@ -23,7 +23,7 @@
   import List from "@app/components/List.svelte";
   import Loading from "@app/components/Loading.svelte";
   import PatchTeaser from "./Patch/PatchTeaser.svelte";
-  import Placeholder from "@app/components/Placeholder.svelte";
+  import EmptyState from "@app/components/EmptyState.svelte";
   import Popover, { closeFocused } from "@app/components/Popover.svelte";
   import Separator from "./Separator.svelte";
   import Share from "./Share.svelte";
@@ -242,7 +242,7 @@
 
   {#if repo.payloads["xyz.radicle.project"].meta.patches[status] === 0}
     <div class="placeholder">
-      <Placeholder iconName="no-patches" caption={`No ${status} patches`} />
+      <EmptyState title={`No ${status} patches`} />
     </div>
   {/if}
 

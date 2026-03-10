@@ -1,5 +1,4 @@
 <script lang="ts">
-  import IconLarge from "@app/components/IconLarge.svelte";
   import Icon from "@app/components/Icon.svelte";
   import KeyHint from "@app/components/KeyHint.svelte";
   import Modal from "@app/components/Modal.svelte";
@@ -11,7 +10,7 @@
     gap: 1rem;
     display: flex;
     flex-direction: column;
-    font: var(--txt-body-l-regular);
+    font: var(--txt-body-m-regular);
   }
 
   .pair {
@@ -27,13 +26,11 @@
 </style>
 
 <Modal title="Keyboard shortcuts">
-  <IconLarge name="keyboard" slot="icon" />
-
   <div slot="body">
     <div class="hotkeys">
       <div class="pair">
         <span>Submit</span>
-        <KeyHint>⏎</KeyHint>
+        <KeyHint>↵</KeyHint>
       </div>
 
       <div class="pair">

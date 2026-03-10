@@ -13,7 +13,7 @@
   import Button from "@app/components/Button.svelte";
   import Header from "./Source/Header.svelte";
   import Layout from "./Layout.svelte";
-  import Placeholder from "@app/components/Placeholder.svelte";
+  import EmptyState from "@app/components/EmptyState.svelte";
 
   import BlobComponent from "./Source/Blob.svelte";
   import FilePath from "@app/components/FilePath.svelte";
@@ -210,24 +210,23 @@
             rawPath={rawPath(tree.lastCommit.id)} />
         {:else if blobResult.error.status === 413}
           <div class="placeholder">
-            <Placeholder
-              iconName="exclamation-circle"
-              caption="This file is too big to be displayed.
-              If you want to view this file, clone this repository locally." />
+            <EmptyState
+              title="This file is too big to be displayed."
+              description="If you want to view this file, clone this repository locally." />
           </div>
         {:else if path === "/"}
           <div class="placeholder">
-            <Placeholder iconName="no-file" caption="No README found." />
+            <EmptyState title="No README found." />
           </div>
         {:else}
           <div class="placeholder">
-            <Placeholder iconName="no-file" caption="File not found." />
+            <EmptyState title="File not found." />
           </div>
         {/if}
       </div>
     {:else}
       <div class="placeholder">
-        <Placeholder iconName="no-file" caption="No files at this revision." />
+        <EmptyState title="No files at this revision." />
       </div>
     {/if}
   </div>

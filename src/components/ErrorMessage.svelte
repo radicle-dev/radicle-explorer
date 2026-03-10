@@ -1,16 +1,14 @@
 <script lang="ts">
-  import type { ComponentProps } from "svelte";
   import type { ErrorParam } from "@app/lib/router/definitions";
 
   import config from "@app/lib/config";
   import Command from "./Command.svelte";
   import ExternalLink from "./ExternalLink.svelte";
-  import IconLarge from "./IconLarge.svelte";
+  import Icon from "./Icon.svelte";
 
   export let title: string;
   export let description: string;
   export let error: ErrorParam = undefined;
-  export let icon: ComponentProps<IconLarge>["name"] = "alert";
 </script>
 
 <style>
@@ -27,6 +25,10 @@
   .label {
     font: var(--txt-body-m-regular);
     max-width: 36rem;
+  }
+  .error :global(svg) {
+    width: 2rem;
+    height: 2rem;
   }
   .error :global(code) {
     font: var(--txt-code-regular);
@@ -50,7 +52,7 @@
 </style>
 
 <div class="error">
-  <IconLarge name={icon} />
+  <Icon name="warning" />
   <div class="txt-heading-m">
     {title}
   </div>

@@ -9,7 +9,7 @@
   import Badge from "@app/components/Badge.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Loading from "@app/components/Loading.svelte";
-  import Placeholder from "@app/components/Placeholder.svelte";
+  import EmptyState from "@app/components/EmptyState.svelte";
   import RepoCard from "@app/components/RepoCard.svelte";
 
   export let baseUrl: BaseUrl;
@@ -71,9 +71,8 @@
     </div>
   {:else}
     <div class="container">
-      <Placeholder
-        iconName="desert"
-        caption="This user doesn't have any repositories on this node." />
+      <EmptyState
+        title="This user doesn't have any repositories on this node." />
     </div>
   {/if}
 {:catch error}

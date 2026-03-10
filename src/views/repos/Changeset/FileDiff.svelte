@@ -19,7 +19,7 @@
   import Icon from "@app/components/Icon.svelte";
   import Link from "@app/components/Link.svelte";
   import Loading from "@app/components/Loading.svelte";
-  import Placeholder from "@app/components/Placeholder.svelte";
+  import EmptyState from "@app/components/EmptyState.svelte";
   import Radio from "@app/components/Radio.svelte";
   import Button from "@app/components/Button.svelte";
 
@@ -533,12 +533,12 @@
         </div>
       {:else}
         <div style:margin="1rem 0">
-          <Placeholder iconName="empty-file" caption="Empty file" inline />
+          <EmptyState title="Empty file" />
         </div>
       {/if}
     {:else}
       <div style:margin="1rem 0">
-        <Placeholder iconName="binary-file" caption="Binary file" inline />
+        <EmptyState title="Binary file" />
       </div>
     {/if}
   </div>

@@ -172,7 +172,7 @@
         {#if success}
           <Icon name="checkmark" />
         {:else}
-          <KeyHint>⏎</KeyHint>
+          <KeyHint>↵</KeyHint>
         {/if}
       </div>
     {/if}
