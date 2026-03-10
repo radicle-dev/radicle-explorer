@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { isKeyboardClick } from "@app/lib/utils";
+
   export let selected: boolean;
   export let disabled: boolean = false;
   export let title: string | undefined = undefined;
@@ -41,7 +43,6 @@
   }
 </style>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
 <div
   role="button"
   tabindex="0"
@@ -50,6 +51,13 @@
   class:disabled
   {style}
   {title}
+  on:keydown={event => {
+    if (disabled || !isKeyboardClick(event)) {
+      return;
+    }
+    event.preventDefault();
+    (event.currentTarget as HTMLDivElement | null)?.click();
+  }}
   on:click>
   <slot />
 </div>

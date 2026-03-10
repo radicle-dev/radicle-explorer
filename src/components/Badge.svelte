@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { isKeyboardClick } from "@app/lib/utils";
+
   export let variant:
     | "archived"
     | "background"
@@ -104,30 +106,62 @@
   }
 </style>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<span
-  role="button"
-  tabindex="0"
-  class="badge"
-  onclick={onClick}
-  {style}
-  {title}
-  class:round
-  class:tiny={size === "tiny"}
-  class:small={size === "small"}
-  class:medium={size === "medium"}
-  class:private={variant === "private"}
-  class:delegate={variant === "delegate"}
-  class:outline={variant === "outline"}
-  class:foreground-emphasized={variant === "foreground-emphasized"}
-  class:foreground={variant === "foreground"}
-  class:neutral={variant === "neutral"}
-  class:negative={variant === "negative"}
-  class:positive={variant === "positive"}
-  class:draft={variant === "draft"}
-  class:archived={variant === "archived"}
-  class:open={variant === "open"}
-  class:merged={variant === "merged"}
-  class:background={variant === "background"}>
-  <slot />
-</span>
+{#if onClick}
+  <span
+    role="button"
+    tabindex="0"
+    class="badge"
+    onclick={onClick}
+    onkeydown={event => {
+      if (!isKeyboardClick(event)) {
+        return;
+      }
+      event.preventDefault();
+      onClick();
+    }}
+    {style}
+    {title}
+    class:round
+    class:tiny={size === "tiny"}
+    class:small={size === "small"}
+    class:medium={size === "medium"}
+    class:private={variant === "private"}
+    class:delegate={variant === "delegate"}
+    class:outline={variant === "outline"}
+    class:foreground-emphasized={variant === "foreground-emphasized"}
+    class:foreground={variant === "foreground"}
+    class:neutral={variant === "neutral"}
+    class:negative={variant === "negative"}
+    class:positive={variant === "positive"}
+    class:draft={variant === "draft"}
+    class:archived={variant === "archived"}
+    class:open={variant === "open"}
+    class:merged={variant === "merged"}
+    class:background={variant === "background"}>
+    <slot />
+  </span>
+{:else}
+  <span
+    class="badge"
+    {style}
+    {title}
+    class:round
+    class:tiny={size === "tiny"}
+    class:small={size === "small"}
+    class:medium={size === "medium"}
+    class:private={variant === "private"}
+    class:delegate={variant === "delegate"}
+    class:outline={variant === "outline"}
+    class:foreground-emphasized={variant === "foreground-emphasized"}
+    class:foreground={variant === "foreground"}
+    class:neutral={variant === "neutral"}
+    class:negative={variant === "negative"}
+    class:positive={variant === "positive"}
+    class:draft={variant === "draft"}
+    class:archived={variant === "archived"}
+    class:open={variant === "open"}
+    class:merged={variant === "merged"}
+    class:background={variant === "background"}>
+    <slot />
+  </span>
+{/if}

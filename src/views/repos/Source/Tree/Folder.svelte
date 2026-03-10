@@ -5,6 +5,7 @@
 
   import Loading from "@app/components/Loading.svelte";
   import Link from "@app/components/Link.svelte";
+  import { isKeyboardClick } from "@app/lib/utils";
 
   import File from "./File.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -19,7 +20,10 @@
   export let repoId: string;
   export let revision: string | undefined;
 
-  $: expanded = currentPath.indexOf(prefix) === 0;
+  let expanded: boolean = false;
+  let expandedOverride: boolean | undefined = undefined;
+
+  $: expanded = expandedOverride ?? currentPath.indexOf(prefix) === 0;
   $: tree = expanded
     ? fetchTree(prefix).then(tree => {
         return tree;
@@ -29,6 +33,10 @@
   const dispatch = createEventDispatcher<{ select: string }>();
   const onSelectFile = ({ detail: path }: { detail: string }) =>
     dispatch("select", path);
+
+  function toggleExpanded() {
+    expandedOverride = !expanded;
+  }
 </script>
 
 <style>
@@ -72,15 +80,18 @@
   }
 </style>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
 <div
   role="button"
   tabindex="0"
   class="folder"
-  on:click={() => {
-    // eslint-disable-next-line
-    expanded = !expanded;
-  }}>
+  on:keydown={event => {
+    if (!isKeyboardClick(event)) {
+      return;
+    }
+    event.preventDefault();
+    toggleExpanded();
+  }}
+  on:click={toggleExpanded}>
   <div class="icon-container" class:expanded>
     {#if expanded}
       <Icon name="folder-open" />

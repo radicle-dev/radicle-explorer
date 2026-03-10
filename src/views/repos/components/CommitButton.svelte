@@ -30,6 +30,14 @@
 </script>
 
 <style>
+  .commit-link :global(a) {
+    display: block;
+    border-radius: var(--border-radius-sm);
+  }
+  .commit-link :global(a:focus-visible) {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-border-brand);
+  }
   .commit {
     display: flex;
     align-items: center;
@@ -42,29 +50,32 @@
   }
 </style>
 
-<Link
-  styleTextOverflow
-  route={{
-    resource: "repo.commit",
-    repo: repoId,
-    node: baseUrl,
-    commit: commit.id,
-  }}>
-  <Button
-    title="Current HEAD"
-    variant="not-selected"
-    {styleWidth}
-    {styleMinWidth}
-    {styleBorderRadius}>
-    <div class="txt-overflow commit">
-      <div class="identifier txt-id">
-        {commitShortId}
+<span class="commit-link">
+  <Link
+    style="display: block;"
+    styleTextOverflow
+    route={{
+      resource: "repo.commit",
+      repo: repoId,
+      node: baseUrl,
+      commit: commit.id,
+    }}>
+    <Button
+      title="Current HEAD"
+      variant="not-selected"
+      {styleWidth}
+      {styleMinWidth}
+      {styleBorderRadius}>
+      <div class="txt-overflow commit">
+        <div class="identifier txt-id">
+          {commitShortId}
+        </div>
+        <span
+          class="txt-overflow"
+          class:global-hide-on-small-desktop-down={hideSummaryOnMobile}>
+          {commit.summary}
+        </span>
       </div>
-      <span
-        class="txt-overflow"
-        class:global-hide-on-small-desktop-down={hideSummaryOnMobile}>
-        {commit.summary}
-      </span>
-    </div>
-  </Button>
-</Link>
+    </Button>
+  </Link>
+</span>

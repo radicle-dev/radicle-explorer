@@ -5,6 +5,7 @@
   import { createEventDispatcher } from "svelte";
 
   import { toClipboard } from "@app/lib/utils";
+  import { isKeyboardClick } from "@app/lib/utils";
 
   import Icon from "@app/components/Icon.svelte";
 
@@ -39,13 +40,19 @@
   }
 </style>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
 <span
   role="button"
   tabindex="0"
   aria-label="Copy"
   title={tooltip}
   class="copy"
+  on:keydown|stopPropagation={async event => {
+    if (!isKeyboardClick(event)) {
+      return;
+    }
+    event.preventDefault();
+    await copy();
+  }}
   on:click|stopPropagation={copy}>
   <Icon name={icon} />
 </span>

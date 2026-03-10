@@ -1,5 +1,6 @@
 <script lang="ts">
   import { modalStore, hide } from "@app/lib/modal";
+  import { isKeyboardClick } from "@app/lib/utils";
 </script>
 
 <style>
@@ -29,11 +30,16 @@
 
 {#if $modalStore}
   <div class="container">
-    <!-- svelte-ignore a11y-click-events-have-key-events -->
     <div
       role="button"
       tabindex="0"
       class="overlay"
+      on:keydown={event => {
+        if (!$modalStore?.disableHide && isKeyboardClick(event)) {
+          event.preventDefault();
+          hide();
+        }
+      }}
       on:click={hide}
       style:cursor={$modalStore.disableHide ? "not-allowed" : "default"}>
     </div>

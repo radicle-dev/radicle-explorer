@@ -1,5 +1,6 @@
 <script lang="ts">
   import Clipboard from "@app/components/Clipboard.svelte";
+  import { isKeyboardClick } from "@app/lib/utils";
 
   export let command: string;
   export let fullWidth: boolean = false;
@@ -49,12 +50,18 @@
 </style>
 
 <div class="wrapper" class:full-width={fullWidth}>
-  <!-- svelte-ignore a11y-click-events-have-key-events -->
   <div
     role="button"
     tabindex="0"
     class="cmd"
     class:full-width={fullWidth}
+    on:keydown={event => {
+      if (!isKeyboardClick(event)) {
+        return;
+      }
+      event.preventDefault();
+      clipboard.copy();
+    }}
     on:click={() => {
       clipboard.copy();
     }}>

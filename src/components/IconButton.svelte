@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
 
+  import { isKeyboardClick } from "@app/lib/utils";
   import Loading from "./Loading.svelte";
 
   export let ariaLabel: string | undefined = undefined;
@@ -11,7 +12,9 @@
   export let disabled: boolean = false;
   export let stopPropagation: boolean = false;
 
-  const dispatch = createEventDispatcher<{ click: MouseEvent }>();
+  const dispatch = createEventDispatcher<{
+    click: MouseEvent | KeyboardEvent;
+  }>();
 </script>
 
 <style>
@@ -45,7 +48,6 @@
 {#if loading}
   <Loading small noDelay />
 {:else}
-  <!-- svelte-ignore a11y-click-events-have-key-events -->
   <div
     class:disabled
     aria-label={ariaLabel}
@@ -59,6 +61,19 @@
         return;
       }
       dispatch("click", ev);
+    }}
+    on:keydown={event => {
+      if (!isKeyboardClick(event)) {
+        return;
+      }
+      if (stopPropagation) {
+        event.stopPropagation();
+      }
+      event.preventDefault();
+      if (disabled) {
+        return;
+      }
+      dispatch("click", event);
     }}
     role="button"
     style:padding={stylePadding}

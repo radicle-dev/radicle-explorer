@@ -3,6 +3,7 @@
   import type { Patch } from "@http-client";
 
   import { absoluteTimestamp, formatTimestamp } from "@app/lib/utils";
+  import { isKeyboardClick } from "@app/lib/utils";
 
   import CommentCounter from "../CommentCounter.svelte";
   import DiffStatBadgeLoader from "../DiffStatBadgeLoader.svelte";
@@ -12,6 +13,7 @@
   import InlineTitle from "@app/views/repos/components/InlineTitle.svelte";
   import Link from "@app/components/Link.svelte";
   import NodeId from "@app/components/NodeId.svelte";
+  import { push } from "@app/lib/router";
 
   export let repoId: string;
   export let baseUrl: BaseUrl;
@@ -24,6 +26,17 @@
     (acc, curr) => acc + curr.discussions.reduce(acc => acc + 1, 0),
     0,
   );
+
+  $: route = {
+    resource: "repo.patch" as const,
+    repo: repoId,
+    node: baseUrl,
+    patch: patch.id,
+  };
+
+  function openPatch() {
+    void push(route);
+  }
 </script>
 
 <style>
@@ -34,6 +47,10 @@
   }
   .patch-teaser:hover {
     background-color: var(--color-surface-mid);
+  }
+  .patch-teaser:focus-visible {
+    background-color: var(--color-surface-mid);
+    border-radius: var(--border-radius-sm);
   }
   .content {
     width: 100%;
@@ -90,7 +107,18 @@
   }
 </style>
 
-<div role="button" tabindex="0" class="patch-teaser">
+<div
+  role="button"
+  tabindex="0"
+  class="patch-teaser"
+  on:keydown={event => {
+    if (!isKeyboardClick(event)) {
+      return;
+    }
+    event.preventDefault();
+    openPatch();
+  }}
+  on:click={openPatch}>
   <div
     class="state"
     class:draft={patch.state.status === "draft"}
@@ -101,14 +129,7 @@
   </div>
   <div class="content">
     <div class="summary">
-      <Link
-        styleHoverState
-        route={{
-          resource: "repo.patch",
-          repo: repoId,
-          node: baseUrl,
-          patch: patch.id,
-        }}>
+      <Link styleHoverState {route}>
         <InlineTitle fontSize="body-m-regular" content={patch.title} />
       </Link>
       {#if patch.labels.length > 0}

@@ -1,5 +1,6 @@
 <script lang="ts">
   import debounce from "lodash/debounce";
+  import { isKeyboardClick } from "@app/lib/utils";
 
   export let stylePopoverPositionBottom: string | undefined = undefined;
   export let stylePopoverPositionLeft: string | undefined = undefined;
@@ -32,7 +33,16 @@
     role="button"
     tabindex="0"
     on:mouseenter={() => setVisible(true)}
-    on:mouseleave={() => setVisible(false)}>
+    on:mouseleave={() => setVisible(false)}
+    on:focus={() => setVisible(true)}
+    on:blur={() => setVisible(false)}
+    on:keydown={event => {
+      if (!isKeyboardClick(event)) {
+        return;
+      }
+      event.preventDefault();
+      setVisible(!visible);
+    }}>
     <slot name="toggle" />
 
     {#if visible}

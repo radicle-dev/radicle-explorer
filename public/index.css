@@ -1,6 +1,16 @@
 * {
-  outline: none !important;
   box-sizing: border-box;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[role="button"]:focus-visible,
+[tabindex="0"]:focus-visible {
+  outline: 2px solid var(--color-border-brand) !important;
+  outline-offset: 2px;
 }
 
 :root {

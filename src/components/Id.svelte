@@ -4,14 +4,14 @@
 
   import Icon from "@app/components/Icon.svelte";
 
-  import { formatObjectId } from "@app/lib/utils";
-  import { toClipboard } from "@app/lib/utils";
+  import { formatObjectId, isKeyboardClick, toClipboard } from "@app/lib/utils";
 
   export let id: string;
   export let shorten: boolean = true;
   export let ariaLabel: string | undefined = undefined;
   export let styleWidth: string | undefined = undefined;
   export let title: string | undefined = undefined;
+  export let focusable: boolean = true;
 
   let icon: ComponentProps<Icon>["name"] = "copy";
   const text = "Click to copy";
@@ -65,7 +65,6 @@
 </style>
 
 <div class="container" style:width={styleWidth} {title}>
-  <!-- svelte-ignore a11y-click-events-have-key-events -->
   <div
     style:display="inline-flex"
     style:flex-wrap="wrap"
@@ -78,12 +77,19 @@
     class="txt-id"
     style:cursor="copy"
     aria-label={ariaLabel}
+    on:keydown|preventDefault|stopPropagation={async event => {
+      if (!isKeyboardClick(event)) {
+        return;
+      }
+      await copy();
+      setVisible(true);
+    }}
     on:click|preventDefault|stopPropagation={async () => {
       await copy();
       setVisible(true);
     }}
     role="button"
-    tabindex="0">
+    tabindex={focusable ? 0 : -1}>
     <slot>
       {#if shorten}
         {formatObjectId(id)}

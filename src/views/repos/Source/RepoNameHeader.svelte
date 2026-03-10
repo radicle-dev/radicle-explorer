@@ -55,6 +55,25 @@
   .repo-name:hover {
     color: inherit;
   }
+  .repo-name-link {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .repo-name-link :global(a) {
+    display: inline-flex;
+    align-items: center;
+    border-radius: var(--border-radius-sm);
+    line-height: 1.15;
+    padding: 0.125rem 0.25rem;
+    margin: -0.125rem -0.25rem;
+  }
+  .repo-name-link :global(a:focus-visible) {
+    outline: none !important;
+    box-shadow: inset 0 0 0 2px var(--color-border-brand);
+  }
+  .repo-name {
+    display: block;
+  }
   .description :global(a) {
     border-bottom: 1px solid var(--color-text-tertiary);
   }
@@ -74,7 +93,7 @@
 
 <div class="title-container">
   <div class="title">
-    <span class="txt-overflow">
+    <span class="repo-name-link">
       <Link
         route={{
           resource: "repo.source",
@@ -115,7 +134,7 @@
     </div>
   </div>
   <div class="id">
-    <Id shorten={false} id={repo.rid} ariaLabel="repo-id" />
+    <Id shorten={false} id={repo.rid} ariaLabel="repo-id" focusable={false} />
   </div>
 </div>
 <div class="description" use:twemoji>

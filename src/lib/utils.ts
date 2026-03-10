@@ -76,6 +76,18 @@ export function truncateId(pubkey: string): string {
   return `${pubkey.substring(0, 6)}…${pubkey.slice(-6)}`;
 }
 
+export function truncateMiddle(
+  value: string,
+  prefixLength: number,
+  suffixLength: number,
+): string {
+  if (value.length <= prefixLength + suffixLength + 1) {
+    return value;
+  }
+
+  return `${value.substring(0, prefixLength)}…${value.slice(-suffixLength)}`;
+}
+
 export function formatCommit(oid: string): string {
   return oid.substring(0, 7);
 }
@@ -196,6 +208,10 @@ export function getDaysPassed(from: Date, to: Date): number {
 export function scrollIntoView(id: string, options?: ScrollIntoViewOptions) {
   const lineElement = document.getElementById(id);
   if (lineElement) lineElement.scrollIntoView(options);
+}
+
+export function isKeyboardClick(event: KeyboardEvent): boolean {
+  return event.key === "Enter" || event.key === " " || event.key === "Spacebar";
 }
 
 // Check whether the given path has a markdown file extension.

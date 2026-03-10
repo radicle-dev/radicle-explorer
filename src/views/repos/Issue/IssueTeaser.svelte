@@ -2,6 +2,8 @@
   import type { BaseUrl, Issue } from "@http-client";
 
   import { absoluteTimestamp, formatTimestamp } from "@app/lib/utils";
+  import { isKeyboardClick } from "@app/lib/utils";
+  import { push } from "@app/lib/router";
 
   import CommentCounter from "../CommentCounter.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -21,6 +23,17 @@
     }
     return acc;
   }, 0);
+
+  $: route = {
+    resource: "repo.issue" as const,
+    repo: repoId,
+    node: baseUrl,
+    issue: issue.id,
+  };
+
+  function openIssue() {
+    void push(route);
+  }
 </script>
 
 <style>
@@ -31,6 +44,10 @@
   }
   .issue-teaser:hover {
     background-color: var(--color-surface-mid);
+  }
+  .issue-teaser:focus-visible {
+    background-color: var(--color-surface-mid);
+    border-radius: var(--border-radius-sm);
   }
   .content {
     gap: 0.5rem;
@@ -75,7 +92,18 @@
   }
 </style>
 
-<div role="button" tabindex="0" class="issue-teaser">
+<div
+  role="button"
+  tabindex="0"
+  class="issue-teaser"
+  on:keydown={event => {
+    if (!isKeyboardClick(event)) {
+      return;
+    }
+    event.preventDefault();
+    openIssue();
+  }}
+  on:click={openIssue}>
   <div
     class="state"
     class:closed={issue.state.status === "closed"}
@@ -85,14 +113,7 @@
   <div class="content">
     <div class="summary">
       <span class="issue-title">
-        <Link
-          styleHoverState
-          route={{
-            resource: "repo.issue",
-            repo: repoId,
-            node: baseUrl,
-            issue: issue.id,
-          }}>
+        <Link styleHoverState {route}>
           {#if !issue.title}
             <span style:color="var(--color-text-tertiary)">No title</span>
           {:else}
