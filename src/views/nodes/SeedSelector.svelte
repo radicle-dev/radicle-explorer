@@ -166,7 +166,7 @@
                   ariaLabel="Remove bookmark"
                   stopPropagation
                   on:click={() => removeBookmark(item)}>
-                  <Icon name="bookmark-fill" />
+                  <Icon name="bookmark-filled" />
                 </IconButton>
               </div>
             </DropdownListItem>
@@ -185,7 +185,7 @@
                   <div class="txt-overflow">{item.hostname}</div>
                 </div>
                 <IconButton disabled title="Default seeds can't be removed">
-                  <Icon name="bookmark-fill" />
+                  <Icon name="bookmark-filled" />
                 </IconButton>
               </div>
             </DropdownListItem>
@@ -222,7 +222,7 @@
         }
       }}>
       {#if some($bookmarkedSeeds, baseUrl) || some(config.preferredSeeds, baseUrl)}
-        <Icon name="bookmark-fill" />
+        <Icon name="bookmark-filled" />
       {:else}
         <Icon name="bookmark" />
       {/if}

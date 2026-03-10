@@ -153,7 +153,7 @@
           style:background={stateBackground[status]}
           style:padding="0.25rem 0.25rem"
           style:border-radius="var(--border-radius-sm)">
-          <Icon name="issue" />
+          <Icon name={status === "closed" ? "issue-closed" : "issue"} />
         </div>
         {capitalize(status)}
         <div class="dropdown-button-counter">
@@ -179,7 +179,7 @@
               style:background={stateBackground[item]}
               style:padding="0.25rem 0.25rem"
               style:border-radius="var(--border-radius-sm)">
-              <Icon name="issue" />
+              <Icon name={item === "closed" ? "issue-closed" : "issue"} />
             </div>
             <div
               style="display: flex; gap: 1rem;justify-content: space-between; width: 100%;">

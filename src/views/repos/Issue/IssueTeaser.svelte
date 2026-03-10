@@ -80,7 +80,7 @@
     class="state"
     class:closed={issue.state.status === "closed"}
     class:open={issue.state.status === "open"}>
-    <Icon name="issue" />
+    <Icon name={issue.state.status === "closed" ? "issue-closed" : "issue"} />
   </div>
   <div class="content">
     <div class="summary">

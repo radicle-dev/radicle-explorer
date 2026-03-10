@@ -164,7 +164,14 @@
           style:background={stateBackground[status]}
           style:padding="0.25rem 0.25rem"
           style:border-radius="var(--border-radius-sm)">
-          <Icon name="patch" />
+          <Icon
+            name={status === "draft"
+              ? "patch-draft"
+              : status === "merged"
+                ? "patch-merged"
+                : status === "archived"
+                  ? "patch-archived"
+                  : "patch"} />
         </div>
         {capitalize(status)}
         <div class="dropdown-button-counter">
@@ -189,7 +196,14 @@
               style:background={stateBackground[item]}
               style:padding="0.25rem 0.25rem"
               style:border-radius="var(--border-radius-sm)">
-              <Icon name="patch" />
+              <Icon
+                name={item === "draft"
+                  ? "patch-draft"
+                  : item === "merged"
+                    ? "patch-merged"
+                    : item === "archived"
+                      ? "patch-archived"
+                      : "patch"} />
             </div>
             <div
               style="display: flex; gap: 1rem;justify-content: space-between; width: 100%;">

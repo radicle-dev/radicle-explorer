@@ -128,7 +128,7 @@
         <Button
           variant="not-selected"
           styleBorderRadius="0 var(--border-radius-sm) var(--border-radius-sm) 0">
-          <Icon name="cross" />
+          <Icon name="close" />
         </Button>
       </Link>
     {/if}

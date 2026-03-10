@@ -85,9 +85,9 @@
           class:review-accept={review.verdict === "accept"}
           class:review-reject={review.verdict === "reject"}>
           {#if review.verdict === "accept"}
-            <Icon name="checkmark" />
+            <Icon name="comment-checkmark" />
           {:else if review.verdict === "reject"}
-            <Icon name="cross" />
+            <Icon name="comment-cross" />
           {:else}
             <Icon name="comment" />
           {/if}

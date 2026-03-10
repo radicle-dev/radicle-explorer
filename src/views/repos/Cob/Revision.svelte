@@ -375,7 +375,14 @@
             <div
               style:color={badgeColor(patchState)}
               style:padding="0 0.375rem">
-              <Icon name="patch" />
+              <Icon
+                name={patchState.status === "draft"
+                  ? "patch-draft"
+                  : patchState.status === "merged"
+                    ? "patch-merged"
+                    : patchState.status === "archived"
+                      ? "patch-archived"
+                      : "patch"} />
             </div>
             <NodeId
               {baseUrl}
@@ -466,7 +473,7 @@
           <div class="action merge">
             <div class="authorship-header">
               <div style:color="var(--color-text-merged)">
-                <Icon name="patch" />
+                <Icon name="patch-merged" />
               </div>
 
               <NodeId
@@ -508,9 +515,9 @@
               </div>
               <div slot="icon" style:color={verdictIconColor(review.verdict)}>
                 {#if review.verdict === "accept"}
-                  <Icon name="checkmark" />
+                  <Icon name="comment-checkmark" />
                 {:else if review.verdict === "reject"}
-                  <Icon name="cross" />
+                  <Icon name="comment-cross" />
                 {:else}
                   <Icon name="comment" />
                 {/if}

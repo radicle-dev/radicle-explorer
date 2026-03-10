@@ -347,7 +347,14 @@
         </svelte:fragment>
         <svelte:fragment slot="state">
           <Badge size="tiny" variant={badgeColor(patch.state.status)}>
-            <Icon name="patch" />
+            <Icon
+              name={patch.state.status === "draft"
+                ? "patch-draft"
+                : patch.state.status === "merged"
+                  ? "patch-merged"
+                  : patch.state.status === "archived"
+                    ? "patch-archived"
+                    : "patch"} />
             {capitalize(patch.state.status)}
           </Badge>
           <Link

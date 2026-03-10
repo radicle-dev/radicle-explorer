@@ -170,7 +170,7 @@
             </Badge>
           {:else}
             <Badge size="tiny" variant="merged">
-              <Icon name="issue" />
+              <Icon name="issue-closed" />
               {capitalize(issue.state.status)} as
               {issue.state.reason}
             </Badge>

@@ -97,7 +97,14 @@
     class:open={patch.state.status === "open"}
     class:merged={patch.state.status === "merged"}
     class:archived={patch.state.status === "archived"}>
-    <Icon name="patch" />
+    <Icon
+      name={patch.state.status === "draft"
+        ? "patch-draft"
+        : patch.state.status === "merged"
+          ? "patch-merged"
+          : patch.state.status === "archived"
+            ? "patch-archived"
+            : "patch"} />
   </div>
   <div class="content">
     <div class="summary">

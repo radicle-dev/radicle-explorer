@@ -106,13 +106,19 @@
 
   const icons = [
     "activity",
+    "add-emoji",
     "archive",
+    "arrow-down",
     "arrow-left",
+    "arrow-right",
     "arrow-up",
     "attach",
+    "avatar-incognito",
     "badge",
+    "bell",
+    "binary",
     "bookmark",
-    "bookmark-fill",
+    "bookmark-filled",
     "branch",
     "checkmark",
     "checkout",
@@ -121,14 +127,21 @@
     "chevron-left-right",
     "chevron-right",
     "chevron-up",
+    "chevron-up-down",
+    "clear-all",
+    "clipboard",
     "clock",
+    "close",
     "code",
+    "collapse-in",
     "collapse-vertical",
     "comment",
+    "comment-checkmark",
+    "comment-cross",
     "commit",
     "copy",
-    "cross",
     "cursor",
+    "dashboard",
     "device",
     "diff",
     "disconnect",
@@ -138,38 +151,67 @@
     "ellipsis",
     "ellipsis-vertical",
     "emoji",
+    "expand-out",
     "expand-vertical",
+    "explore",
     "eye",
     "eye-slash",
+    "filter",
     "folder",
     "folder-open",
+    "fullscreen",
     "git",
     "guide",
     "help",
+    "home",
     "hourglass",
+    "inbox",
     "issue",
+    "issue-closed",
     "key",
+    "label",
+    "lightbulb",
     "link",
     "lock",
     "logo",
+    "mark-read",
+    "markdown",
     "menu",
+    "minus",
     "moon",
+    "none",
+    "offline",
+    "online",
     "open-external",
     "patch",
+    "patch-archived",
+    "patch-draft",
+    "patch-merged",
     "pin-filled",
     "pin-hollow",
+    "placeholder",
     "play",
     "plus",
     "question-mark",
     "reply",
     "repository",
-    "review",
+    "revision",
+    "sad-emoji",
+    "search",
     "seed",
     "seed-filled",
     "settings",
+    "share",
+    "sidebar-left",
+    "sidebar-left-filled",
+    "sidebar-right",
+    "sidebar-right-filled",
     "stop",
     "sun",
+    "thumbs-up",
     "trash",
+    "warning",
+    "webhooks",
   ] as const;
 </script>
 
@@ -214,7 +256,7 @@
           checkers = !checkers;
         }}>
         {#if checkers}
-          <Icon name="review" />
+          <Icon name="eye" />
         {:else}
           <Icon name="eye-slash" />
         {/if}
@@ -286,7 +328,21 @@
         {/each}
       </div>
       <div style="margin-top: 1rem; display: flex; flex-direction: row;">
-        {#each icons.slice(50) as icon}
+        {#each icons.slice(50, 75) as icon}
+          <div style="display: flex;" title={icon}>
+            <Icon name={icon} />
+          </div>
+        {/each}
+      </div>
+      <div style="margin-top: 1rem; display: flex; flex-direction: row;">
+        {#each icons.slice(75, 100) as icon}
+          <div style="display: flex;" title={icon}>
+            <Icon name={icon} />
+          </div>
+        {/each}
+      </div>
+      <div style="margin-top: 1rem; display: flex; flex-direction: row;">
+        {#each icons.slice(100) as icon}
           <div style="display: flex;" title={icon}>
             <Icon name={icon} />
           </div>
