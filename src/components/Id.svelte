@@ -77,10 +77,11 @@
     class="txt-id"
     style:cursor="copy"
     aria-label={ariaLabel}
-    on:keydown|preventDefault|stopPropagation={async event => {
+    on:keydown|stopPropagation={async event => {
       if (!isKeyboardClick(event)) {
         return;
       }
+      event.preventDefault();
       await copy();
       setVisible(true);
     }}

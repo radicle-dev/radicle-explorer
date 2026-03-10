@@ -102,6 +102,9 @@
     background-color: var(--color-surface-mid);
     color: var(--color-text-primary);
   }
+  .latest-commit {
+    min-width: 0;
+  }
 </style>
 
 <div class="top-header">
@@ -114,7 +117,7 @@
       {repo}
       {selectedBranch} />
   {/if}
-  <div class="global-flex-item txt-overflow" style:gap="1px">
+  <div class="global-flex-item latest-commit" style:gap="1px">
     <CommitButton
       variant={commitButtonVariant}
       styleMinWidth="0"
@@ -126,6 +129,7 @@
     {#if !onCanonical}
       <Link route={baseRoute}>
         <Button
+          focusable={false}
           variant="not-selected"
           styleBorderRadius="0 var(--border-radius-sm) var(--border-radius-sm) 0">
           <Icon name="cross" />
@@ -145,7 +149,10 @@
         peer,
         revision,
       }}>
-      <Button size="large" variant={filesLinkActive ? "tab-active" : "tab"}>
+      <Button
+        focusable={false}
+        size="large"
+        variant={filesLinkActive ? "tab-active" : "tab"}>
         <Icon name="document" />Files
       </Button>
     </Link>
@@ -158,7 +165,10 @@
         peer,
         revision,
       }}>
-      <Button size="large" variant={historyLinkActive ? "tab-active" : "tab"}>
+      <Button
+        focusable={false}
+        size="large"
+        variant={historyLinkActive ? "tab-active" : "tab"}>
         <Icon name="commit" />
         <div class="title-counter">
           Commits

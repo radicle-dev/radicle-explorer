@@ -16,7 +16,7 @@
   export let repo: Repo;
   export let collapsedOnly = false;
 
-  let expanded = collapsedOnly ? false : loadSidebarState();
+  const expanded = collapsedOnly ? false : loadSidebarState();
 
   export function storeSidebarState(expanded: boolean): void {
     if (localStorage) {
@@ -41,11 +41,6 @@
     } else {
       return storedSidebarState === "expanded" ? true : false;
     }
-  }
-
-  function toggleSidebar() {
-    expanded = !expanded;
-    storeSidebarState(expanded);
   }
 </script>
 
@@ -95,16 +90,8 @@
   .title-counter.expanded {
     opacity: 1;
   }
-  .sidebar-footer {
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
-  }
   .repo {
     z-index: 10;
-    opacity: 0;
-    height: 0;
-    overflow: hidden;
   }
   .box {
     padding: 1rem;
@@ -114,33 +101,10 @@
     font: var(--txt-body-m-regular);
     border-radius: var(--border-radius-md);
   }
-  .repo.expanded {
-    opacity: 1;
-    height: initial;
-    overflow: initial;
-    transition: opacity 150ms;
-    transition-delay: 150ms;
-  }
   .vertical-buttons {
-    opacity: 1;
-    height: fit-content;
     display: flex;
     flex-direction: column-reverse;
-    transition: opacity 150ms ease-in-out;
-    transition-delay: 60ms;
     margin-bottom: 0.5rem;
-  }
-  .vertical-buttons.expanded {
-    opacity: 0;
-    height: 0;
-    overflow: hidden;
-  }
-  .icon {
-    transform: rotate(180deg);
-    transition: transform 150ms ease-in-out;
-  }
-  .icon.expanded {
-    transform: rotate(0deg);
   }
   .bottom {
     display: flex;
@@ -160,6 +124,7 @@
         path: "/",
       }}>
       <Button
+        focusable={false}
         stylePadding="0.5rem 0.75rem"
         size="large"
         styleWidth="100%"
@@ -177,6 +142,7 @@
         node: baseUrl,
       }}>
       <Button
+        focusable={false}
         stylePadding="0.5rem 0.75rem"
         let:hover
         size="large"
@@ -204,6 +170,7 @@
         node: baseUrl,
       }}>
       <Button
+        focusable={false}
         stylePadding="0.5rem 0.75rem"
         let:hover
         size="large"
@@ -225,42 +192,35 @@
   </div>
   <!-- Context and other information section -->
   <div class="bottom">
-    <div class="repo box" class:expanded>
-      <ContextRepo
-        {baseUrl}
-        repoThreshold={repo.threshold}
-        repoDelegates={repo.delegates}
-        {seedingPolicy} />
-    </div>
-    <div class="vertical-buttons" class:expanded style:gap="0.5rem">
-      <Popover popoverPositionBottom="0" popoverPositionLeft="3rem">
-        <Button
-          stylePadding="0 0.75rem"
-          variant="background"
-          title="Info"
-          slot="toggle"
-          let:toggle
-          on:click={toggle}>
-          <Icon name="guide" />
-        </Button>
+    {#if expanded}
+      <div class="repo box">
+        <ContextRepo
+          {baseUrl}
+          repoThreshold={repo.threshold}
+          repoDelegates={repo.delegates}
+          {seedingPolicy} />
+      </div>
+    {:else}
+      <div class="vertical-buttons" style:gap="0.5rem">
+        <Popover popoverPositionBottom="0" popoverPositionLeft="3rem">
+          <Button
+            stylePadding="0 0.75rem"
+            variant="background"
+            title="Info"
+            slot="toggle"
+            let:toggle
+            on:click={toggle}>
+            <Icon name="guide" />
+          </Button>
 
-        <div slot="popover" class="txt-body-m-regular" style:width="18rem">
-          <ContextRepo
-            {baseUrl}
-            repoThreshold={repo.threshold}
-            repoDelegates={repo.delegates}
-            {seedingPolicy} />
-        </div>
-      </Popover>
-    </div>
-    <!-- Footer -->
-    {#if !collapsedOnly}
-      <div class="sidebar-footer" style:flex-direction="row">
-        <Button title="Collapse" on:click={toggleSidebar} variant="background">
-          <div class="icon" class:expanded>
-            <Icon name="chevron-left" />
+          <div slot="popover" class="txt-body-m-regular" style:width="18rem">
+            <ContextRepo
+              {baseUrl}
+              repoThreshold={repo.threshold}
+              repoDelegates={repo.delegates}
+              {seedingPolicy} />
           </div>
-        </Button>
+        </Popover>
       </div>
     {/if}
   </div>

@@ -19,6 +19,7 @@
   export let autofocus: boolean = false;
   export let disabled: boolean = false;
   export let notAllowed: boolean = true;
+  export let focusable: boolean = true;
 
   export let styleFontFamily: string | undefined = undefined;
   export let stylePadding: string | undefined = undefined;
@@ -43,6 +44,10 @@
     white-space: nowrap;
     gap: 0.5rem;
     touch-action: manipulation;
+  }
+  button:focus-visible {
+    outline: none !important;
+    box-shadow: inset 0 0 0 2px var(--color-border-brand);
   }
 
   button:disabled {
@@ -237,7 +242,7 @@
   {autofocus}
   {disabled}
   {title}
-  tabindex="0"
+  tabindex={focusable ? 0 : -1}
   style:font-family={styleFontFamily}
   style:padding={stylePadding}
   style:width={styleWidth}

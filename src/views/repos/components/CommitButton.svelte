@@ -35,8 +35,10 @@
     border-radius: var(--border-radius-sm);
   }
   .commit-link :global(a:focus-visible) {
-    outline: none;
-    box-shadow: 0 0 0 2px var(--color-border-brand);
+    outline: none !important;
+  }
+  .commit-link :global(a:focus-visible button) {
+    box-shadow: inset 0 0 0 2px var(--color-border-brand);
   }
   .commit {
     display: flex;
@@ -62,6 +64,7 @@
     }}>
     <Button
       title="Current HEAD"
+      focusable={false}
       variant="not-selected"
       {styleWidth}
       {styleMinWidth}

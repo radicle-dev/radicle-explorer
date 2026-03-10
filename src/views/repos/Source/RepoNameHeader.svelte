@@ -39,15 +39,27 @@
 
 <style>
   .title {
-    align-items: center;
+    align-items: flex-start;
     gap: 0.5rem;
     color: var(--color-text-primary);
     display: flex;
-    font: var(--txt-heading-l);
     justify-content: left;
     text-align: left;
-    text-overflow: ellipsis;
     padding: 1rem 1rem 0 1rem;
+  }
+  .title-left {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .title-row {
+    align-items: center;
+    display: flex;
+    gap: 0.5rem;
+    font: var(--txt-heading-l);
+    min-width: 0;
   }
   .description {
     padding: 0 1rem 1rem 1rem;
@@ -56,7 +68,6 @@
     color: inherit;
   }
   .repo-name-link {
-    flex: 1 1 auto;
     min-width: 0;
   }
   .repo-name-link :global(a) {
@@ -80,9 +91,6 @@
   .description :global(a:hover) {
     border-bottom: 1px solid var(--color-text-primary);
   }
-  .id {
-    padding-left: 1rem;
-  }
   .title-container {
     display: flex;
     flex-direction: column;
@@ -93,24 +101,31 @@
 
 <div class="title-container">
   <div class="title">
-    <span class="repo-name-link">
-      <Link
-        route={{
-          resource: "repo.source",
-          repo: repo.rid,
-          node: baseUrl,
-        }}>
-        <span class="repo-name">
-          {project.data.name}
+    <div class="title-left">
+      <div class="title-row">
+        <span class="repo-name-link">
+          <Link
+            route={{
+              resource: "repo.source",
+              repo: repo.rid,
+              node: baseUrl,
+            }}>
+            <span class="repo-name">
+              {project.data.name}
+            </span>
+          </Link>
         </span>
-      </Link>
-    </span>
-    {#if repo.visibility.type === "private"}
-      <Badge variant="private" size="tiny">
-        <Icon name="lock" />
-        Private
-      </Badge>
-    {/if}
+        {#if repo.visibility.type === "private"}
+          <Badge variant="private" size="tiny">
+            <Icon name="lock" />
+            Private
+          </Badge>
+        {/if}
+      </div>
+      <div class="id">
+        <Id shorten={false} id={repo.rid} ariaLabel="repo-id" />
+      </div>
+    </div>
     <div style="margin-left: auto; display: flex; gap: 0.5rem;">
       <Share />
       <div
@@ -132,9 +147,6 @@
         <SeedButton disabled seedCount={repo.seeding} repoId={repo.rid} />
       </div>
     </div>
-  </div>
-  <div class="id">
-    <Id shorten={false} id={repo.rid} ariaLabel="repo-id" focusable={false} />
   </div>
 </div>
 <div class="description" use:twemoji>

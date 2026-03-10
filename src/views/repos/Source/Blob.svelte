@@ -129,6 +129,11 @@
   .teaser-buttons {
     display: flex;
     gap: 0.5rem;
+    flex-shrink: 0;
+  }
+  .header-commit {
+    min-width: 0;
+    flex: 1 1 auto;
   }
 
   .no-scrollbar {
@@ -151,7 +156,14 @@
 <File sticky={false}>
   <FilePath slot="left-header" filenameWithPath={blob.path} />
   <svelte:fragment slot="right-header">
-    <CommitButton {repoId} {baseUrl} commit={lastCommit} />
+    <div class="header-commit">
+      <CommitButton
+        {repoId}
+        {baseUrl}
+        commit={lastCommit}
+        styleMinWidth="0"
+        styleWidth="100%" />
+    </div>
     <div class="global-hide-on-mobile-down teaser-buttons">
       {#if enablePreview}
         <Radio ariaLabel="Toggle render method">
@@ -178,7 +190,7 @@
         </Radio>
       {/if}
       <a href="{rawPath}/{blob.path}" target="_blank" rel="noreferrer">
-        <Button variant="gray-white">
+        <Button focusable={false} variant="gray-white">
           Raw <Icon name="open-external" />
         </Button>
       </a>

@@ -141,7 +141,7 @@
     <Sidebar {seedingPolicy} {activeTab} {baseUrl} {repo} collapsedOnly />
   </div>
 
-  <div class="content" style:padding-bottom={stylePaddingBottom}>
+  <div class="content" tabindex="-1" style:padding-bottom={stylePaddingBottom}>
     <slot name="header" />
     <slot name="subheader" />
     <slot />

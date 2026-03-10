@@ -188,7 +188,7 @@
   <div class="container center-content">
     {#if tree.entries.length > 0}
       <div class="column-left global-hide-on-small-desktop-down">
-        <div class="source-tree sticky">
+        <div class="source-tree sticky" tabindex="-1">
           <TreeComponent
             repoId={repo.rid}
             {revision}

@@ -6,18 +6,42 @@
 
   export let node: Node;
 
-  $: clipboard = node.config?.externalAddresses
-    ? `${node.id}@${node.config.externalAddresses[0]}`
-    : node.id;
+  $: externalAddress = node.config?.externalAddresses?.[0];
+  $: clipboard = externalAddress ? `${node.id}@${externalAddress}` : node.id;
 </script>
 
-<div style:word-break="break-word">
-  <!--prettier-ignore-->
-  <Id ariaLabel="node-id" shorten={false} id={clipboard}>
-    {#if node.config?.externalAddresses.length}
-      {truncateId(node.id)}@<wbr />{node.config?.externalAddresses[0]}
-    {:else}
-      {truncateId(node.id)}
-    {/if}
+<style>
+  .address {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .line {
+    display: block;
+    min-width: 0;
+    white-space: nowrap;
+  }
+
+  .address-line {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+</style>
+
+<div class="address">
+  <Id
+    ariaLabel="node-id"
+    shorten={false}
+    id={clipboard}
+    styleWidth="100%"
+    title={clipboard}>
+    <div class="address">
+      <span class="line">{truncateId(node.id)}</span>
+      {#if externalAddress}
+        <span class="line address-line">@{externalAddress}</span>
+      {/if}
+    </div>
   </Id>
 </div>

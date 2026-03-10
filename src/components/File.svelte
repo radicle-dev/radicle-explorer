@@ -44,7 +44,7 @@
     display: flex;
     gap: 0.5rem;
     margin-left: auto;
-    overflow: hidden;
+    min-width: 0;
   }
 
   .container {

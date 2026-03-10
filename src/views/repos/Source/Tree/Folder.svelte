@@ -48,6 +48,11 @@
     user-select: none;
     white-space: nowrap;
   }
+  .folder:focus-visible {
+    outline: none !important;
+    box-shadow: inset 0 0 0 2px var(--color-border-brand);
+    border-radius: var(--border-radius-sm);
+  }
   .folder:hover {
     background-color: var(--color-surface-mid);
     border-radius: var(--border-radius-sm);
