@@ -7,11 +7,11 @@
   import Icon from "@app/components/Icon.svelte";
   import Observer, { intersection } from "@app/components/Observer.svelte";
 
-  export let diff: Diff;
-  export let files: Record<string, CommitBlob>;
+  export let diff: Diff | undefined = undefined;
+  export let files: Record<string, CommitBlob> | undefined = undefined;
   export let baseUrl: BaseUrl;
   export let repoId: string;
-  export let revision: string;
+  export let revision: string | undefined = undefined;
 
   let expanded = true;
 
@@ -73,63 +73,67 @@
   }
 </style>
 
-<div class="header">
-  <div class="summary">
-    <span>{diffDescription(diff.files)}</span>
-    with
-    <span class:additions={diff.stats.insertions > 0}>
-      {diff.stats.insertions}
-      {pluralize("insertion", diff.stats.insertions)}
-    </span>
-    and
-    <span class:deletions={diff.stats.deletions > 0}>
-      {diff.stats.deletions}
-      {pluralize("deletion", diff.stats.deletions)}
-    </span>
-  </div>
-  {#if diff.stats.filesChanged > 1}
-    <IconButton on:click={() => (expanded = !expanded)}>
-      {#if expanded === true}
-        <Icon name="collapse-vertical" />
-        <span class="global-hide-on-mobile-down">Collapse all</span>
-      {:else}
-        <Icon name="expand-vertical" />
-        <span class="global-hide-on-mobile-down">Expand all</span>
-      {/if}
-    </IconButton>
-  {/if}
-</div>
-
-<div class="diff-list">
-  <Observer let:filesVisibility let:observer>
-    {#each diff.files as file}
-      {@const path = "path" in file ? file.path : file.newPath}
-      <div class="file" use:intersection={observer} id={"observer:" + path}>
-        {#if "diff" in file}
-          <FileDiff
-            {repoId}
-            {baseUrl}
-            {revision}
-            {expanded}
-            filePath={path}
-            oldFilePath={"oldPath" in file ? file.oldPath : undefined}
-            fileDiff={file.diff}
-            headerBadgeCaption={file.status}
-            content={"new" in file ? files[file.new.oid]?.content : undefined}
-            oldContent={"old" in file
-              ? files[file.old.oid]?.content
-              : undefined}
-            visible={filesVisibility.has(path)} />
+{#if diff}
+  <div class="header">
+    <div class="summary">
+      <span>{diffDescription(diff.files)}</span>
+      with
+      <span class:additions={diff.stats.insertions > 0}>
+        {diff.stats.insertions}
+        {pluralize("insertion", diff.stats.insertions)}
+      </span>
+      and
+      <span class:deletions={diff.stats.deletions > 0}>
+        {diff.stats.deletions}
+        {pluralize("deletion", diff.stats.deletions)}
+      </span>
+    </div>
+    {#if diff.stats.filesChanged > 1}
+      <IconButton on:click={() => (expanded = !expanded)}>
+        {#if expanded === true}
+          <Icon name="collapse-vertical" />
+          <span class="global-hide-on-mobile-down">Collapse all</span>
         {:else}
-          <FileLocationChange
-            headerBadgeCaption={file.status}
-            oldPath={file.oldPath}
-            newPath={file.newPath}
-            {repoId}
-            {baseUrl}
-            {revision} />
+          <Icon name="expand-vertical" />
+          <span class="global-hide-on-mobile-down">Expand all</span>
         {/if}
-      </div>
-    {/each}
-  </Observer>
-</div>
+      </IconButton>
+    {/if}
+  </div>
+
+  <div class="diff-list">
+    <Observer let:filesVisibility let:observer>
+      {#each diff.files as file}
+        {@const path = "path" in file ? file.path : file.newPath}
+        <div class="file" use:intersection={observer} id={"observer:" + path}>
+          {#if "diff" in file}
+            <FileDiff
+              {repoId}
+              {baseUrl}
+              {revision}
+              {expanded}
+              filePath={path}
+              oldFilePath={"oldPath" in file ? file.oldPath : undefined}
+              fileDiff={file.diff}
+              headerBadgeCaption={file.status}
+              content={"new" in file
+                ? files?.[file.new.oid]?.content
+                : undefined}
+              oldContent={"old" in file
+                ? files?.[file.old.oid]?.content
+                : undefined}
+              visible={filesVisibility.has(path)} />
+          {:else}
+            <FileLocationChange
+              headerBadgeCaption={file.status}
+              oldPath={file.oldPath}
+              newPath={file.newPath}
+              {repoId}
+              {baseUrl}
+              {revision} />
+          {/if}
+        </div>
+      {/each}
+    </Observer>
+  </div>
+{/if}
