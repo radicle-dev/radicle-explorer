@@ -6,6 +6,7 @@
   export let collapsable: boolean = false;
   export let expanded: boolean = true;
   export let sticky: boolean = true;
+  export let containerBackground: string = "var(--color-surface-subtle)";
 
   let header: HTMLDivElement;
 </script>
@@ -19,7 +20,7 @@
     border: 1px solid var(--color-border-subtle);
     border-top-left-radius: var(--border-radius-md);
     border-top-right-radius: var(--border-radius-md);
-    background-color: var(--color-surface-base);
+    background-color: var(--color-surface-canvas);
     z-index: 2;
   }
 
@@ -52,7 +53,6 @@
     overflow-x: auto;
     border: 1px solid var(--color-border-subtle);
     border-top: 0;
-    background: var(--color-surface-subtle);
     border-bottom-left-radius: var(--border-radius-md);
     border-bottom-right-radius: var(--border-radius-md);
   }
@@ -93,7 +93,7 @@
 </div>
 
 {#if expanded}
-  <div class="container">
+  <div class="container" style:background={containerBackground}>
     <slot />
   </div>
 {/if}

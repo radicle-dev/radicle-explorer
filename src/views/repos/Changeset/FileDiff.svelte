@@ -251,7 +251,7 @@
 <style>
   .container {
     font: var(--txt-body-m-regular);
-    background: var(--color-surface-subtle);
+    background: var(--color-surface-canvas);
     border-radius: 0 0 var(--border-radius-md) var(--border-radius-md);
     overflow-x: auto;
   }
@@ -286,7 +286,7 @@
   }
 
   .diff-line.selected > * {
-    background-color: var(--color-surface-mid);
+    background-color: var(--color-surface-subtle);
   }
   .diff-line.selected.type-addition > * {
     background-color: var(--color-feedback-success-bg-selected);

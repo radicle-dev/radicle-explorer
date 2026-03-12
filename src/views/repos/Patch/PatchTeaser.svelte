@@ -33,7 +33,7 @@
     background-color: var(--color-surface-canvas);
   }
   .patch-teaser:hover {
-    background-color: var(--color-surface-mid);
+    background-color: var(--color-surface-subtle);
   }
   .content {
     width: 100%;

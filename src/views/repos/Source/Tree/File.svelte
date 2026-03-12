@@ -17,7 +17,7 @@
   }
 
   .file:hover {
-    background-color: var(--color-surface-mid);
+    background-color: var(--color-surface-subtle);
   }
 
   .file.active {

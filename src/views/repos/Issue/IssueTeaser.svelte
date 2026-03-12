@@ -30,7 +30,7 @@
     background-color: var(--color-surface-canvas);
   }
   .issue-teaser:hover {
-    background-color: var(--color-surface-mid);
+    background-color: var(--color-surface-subtle);
   }
   .content {
     gap: 0.5rem;

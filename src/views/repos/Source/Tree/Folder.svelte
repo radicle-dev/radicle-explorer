@@ -41,7 +41,7 @@
     white-space: nowrap;
   }
   .folder:hover {
-    background-color: var(--color-surface-mid);
+    background-color: var(--color-surface-subtle);
     border-radius: var(--border-radius-sm);
   }
 

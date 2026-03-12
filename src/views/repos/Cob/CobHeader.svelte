@@ -6,6 +6,7 @@
     display: flex;
     padding: 1rem;
     flex-direction: column;
+    background-color: var(--color-surface-canvas);
   }
   .subtitle {
     display: flex;

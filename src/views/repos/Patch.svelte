@@ -241,7 +241,7 @@
     flex: 1;
     flex-direction: column;
     min-width: 0;
-    background-color: var(--color-surface-subtle);
+    background-color: var(--color-surface-canvas);
   }
   .metadata {
     display: flex;

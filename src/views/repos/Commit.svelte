@@ -50,6 +50,7 @@
   }
   .header {
     padding: 1rem;
+    background-color: var(--color-surface-canvas);
     border-radius: var(--border-radius-md);
     border-bottom: 1px solid var(--color-border-subtle);
   }

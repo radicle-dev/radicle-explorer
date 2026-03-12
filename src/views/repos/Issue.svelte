@@ -87,7 +87,6 @@
     gap: 1.5rem;
     width: 20rem;
   }
-
   .threads {
     display: flex;
     flex-direction: column;

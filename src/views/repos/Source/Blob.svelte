@@ -122,6 +122,7 @@
     border-spacing: 0;
     overflow-x: auto;
     font: var(--txt-body-m-regular);
+    background-color: var(--color-surface-canvas);
     padding-top: 1rem;
     margin-bottom: 1.5rem;
   }
@@ -140,6 +141,7 @@
   }
   .markdown-wrapper {
     padding: 2rem;
+    background-color: var(--color-surface-canvas);
   }
   @media (max-width: 719.98px) {
     .markdown-wrapper {
@@ -148,7 +150,7 @@
   }
 </style>
 
-<File sticky={false}>
+<File sticky={false} containerBackground="var(--color-surface-canvas)">
   <FilePath slot="left-header" filenameWithPath={blob.path} />
   <svelte:fragment slot="right-header">
     <CommitButton {repoId} {baseUrl} commit={lastCommit} />

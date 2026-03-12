@@ -109,7 +109,7 @@
   }
   .selected {
     background-color: var(--color-border-alpha-subtle);
-    color: var(--color-text-brand);
+    color: var(--color-text-primary);
     cursor: default;
   }
   .selected[disabled] {
@@ -118,18 +118,21 @@
   }
 
   .not-selected {
-    background-color: var(--color-surface-mid);
+    background-color: transparent;
     color: var(--color-text-primary);
+    border: 1px solid var(--color-border-subtle);
     font: var(--txt-body-m-regular);
     letter-spacing: 0.02rem;
   }
   .not-selected[disabled] {
-    background-color: var(--color-surface-mid);
+    background-color: transparent;
     color: var(--color-text-disabled);
+    border: 1px solid var(--color-border-subtle);
   }
   .not-selected:not([disabled]):hover {
-    background-color: var(--color-surface-strong);
+    background-color: var(--color-surface-subtle);
     color: var(--color-text-primary);
+    border: 1px solid var(--color-border-mid);
   }
 
   .outline {
@@ -142,8 +145,8 @@
     color: var(--color-text-tertiary);
   }
   .outline:not([disabled]):hover {
-    background-color: transparent;
-    border: 1px solid var(--color-border-brand);
+    background-color: var(--color-surface-subtle);
+    border: 1px solid var(--color-border-mid);
   }
 
   .secondary-toggle-off {
@@ -214,7 +217,8 @@
   }
 
   .tab:not([disabled]):hover {
-    background-color: var(--color-border-alpha-subtle);
+    background-color: var(--color-surface-subtle);
+    border-color: var(--color-border-mid);
   }
 
   .tab-active {
