@@ -11,7 +11,7 @@
   export let files: Record<string, CommitBlob>;
   export let baseUrl: BaseUrl;
   export let repoId: string;
-  export let revision: string;
+  export let revision: string | undefined = undefined;
 
   let expanded = true;
 

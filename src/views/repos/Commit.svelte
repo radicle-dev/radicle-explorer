@@ -143,11 +143,13 @@
           )}</pre>
       {/if}
     </div>
-    <Changeset
-      {baseUrl}
-      repoId={repo.rid}
-      files={commit.files}
-      diff={commit.diff}
-      revision={commit.commit.id} />
+    {#if commit}
+      <Changeset
+        {baseUrl}
+        repoId={repo.rid}
+        files={commit.files}
+        diff={commit.diff}
+        revision={commit.commit.id} />
+    {/if}
   </div>
 </Layout>
