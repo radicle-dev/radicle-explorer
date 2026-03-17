@@ -6,10 +6,19 @@
   "start_url": "/",
   "icons": [
     {
-      "src": "/images/apple-touch-icon.png",
+      "src": "/android-chrome-192x192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
-  "display": "standalone"
+  "display": "standalone",
+  "theme_color": "#1C77FF",
+  "background_color": "#FFFFFF"
 }
