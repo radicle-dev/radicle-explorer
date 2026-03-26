@@ -14,7 +14,7 @@
   import Peer from "./PeerBranchSelector/Peer.svelte";
   import Popover from "@app/components/Popover.svelte";
   import TextInput from "@app/components/TextInput.svelte";
-  import Avatar from "@app/components/Avatar.svelte";
+  import UserAvatar from "@app/components/UserAvatar.svelte";
 
   export let baseRoute: Extract<
     RepoRoute,
@@ -125,7 +125,7 @@
       {#if selectedPeer}
         <div class="global-flex-item">
           <div class="node-id">
-            <Avatar nodeId={selectedPeer.id} variant="small" />
+            <UserAvatar nodeId={selectedPeer.id} styleWidth="1rem" />
             {selectedPeer.alias || formatNodeId(selectedPeer.id)}
           </div>
 
