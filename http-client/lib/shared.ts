@@ -20,7 +20,7 @@ const defaultSeedingPolicySchema = z.union([
   }),
   z.object({
     default: z.literal("allow"),
-    scope: z.union([scopeSchema, z.null()]).optional(),
+    scope: scopeSchema.optional(),
   }),
 ]);
 
