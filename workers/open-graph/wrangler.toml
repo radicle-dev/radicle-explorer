@@ -1,0 +1,17 @@
+name = "open-graph"
+compatibility_date = "2025-04-03"
+main = "index.js"
+
+routes = [
+  { pattern = "open-graph.radicle.network/*", zone_name = "radicle.network" },
+]
+
+[[rules]]
+type = "CompiledWasm"
+globs = ["**/*.wasm"]
+fallthrough = true
+
+[[rules]]
+type = "Data"
+globs = ["**/*.ttf", "**/*.jpg"]
+fallthrough = true

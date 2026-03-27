@@ -25,3 +25,6 @@ tests/visual/snapshots/**/*
 # IDEs and Editors
 .idea
 .vscode
+
+# Wrangler local dev state
+.wrangler/

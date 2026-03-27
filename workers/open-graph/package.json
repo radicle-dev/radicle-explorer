@@ -1,0 +1,12 @@
+{
+  "name": "open-graph",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@resvg/resvg-wasm": "^2.6.0",
+    "satori": "^0.10.13"
+  },
+  "devDependencies": {
+    "wrangler": "^4"
+  }
+}

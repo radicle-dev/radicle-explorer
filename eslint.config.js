@@ -111,6 +111,7 @@ export default [
       reportUnusedDisableDirectives: "error",
     },
     files: ["**/*.js", "**/*.ts", "**/*.svelte"],
+    ignores: ["workers/**/*"],
   })),
   ...svelte.configs["flat/recommended"],
   ...svelte.configs["flat/prettier"],
@@ -133,12 +134,38 @@ export default [
       "@typescript-eslint/no-explicit-any": "error",
     },
   },
+  // Workers: basic JS linting without TypeScript type-checking.
+  {
+    files: ["workers/**/*.js"],
+    languageOptions: {
+      globals: { ...globals.browser, ...globals.node },
+    },
+    rules: {
+      ...js.configs.recommended.rules,
+      "prefer-arrow-callback": "warn",
+      "prefer-const": "warn",
+      "no-const-assign": "error",
+      "no-var": "warn",
+      eqeqeq: "warn",
+      "no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
+      "no-shadow": "warn",
+      "no-throw-literal": "error",
+      "no-implicit-coercion": "warn",
+      "no-param-reassign": "warn",
+      "no-return-assign": "error",
+      "no-sequences": "error",
+      "no-template-curly-in-string": "warn",
+      "prefer-template": "warn",
+    },
+  },
   {
     ignores: [
       "node_modules/**/*",
       "build/**/*",
       "public/**/*",
       "radicle-httpd/**/*",
+      "workers/**/node_modules/**/*",
+      "workers/**/.wrangler/**/*",
     ],
   },
 ];
