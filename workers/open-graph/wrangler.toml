@@ -6,6 +6,9 @@ routes = [
   { pattern = "open-graph.radicle.network/*", zone_name = "radicle.network" },
 ]
 
+[vars]
+APP_BASE = "https://app.radicle.xyz"
+
 [[rules]]
 type = "CompiledWasm"
 globs = ["**/*.wasm"]

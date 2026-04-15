@@ -38,8 +38,7 @@ function ensureInit() {
 }
 
 function parseRoute(pathname) {
-  const path = pathname;
-  const segments = path.replace(/^\//, "").split("/");
+  const segments = pathname.replace(/^\//, "").split("/");
   const first = segments[0];
 
   if (first === "" || first === undefined) return { type: "home" };
@@ -2112,13 +2111,134 @@ async function renderPng(template) {
   return resvg.render().asPng();
 }
 
+function titleForRoute(route) {
+  switch (route.type) {
+    case "home":
+      return "Radicle Explorer \u00b7 Decentralized Code Collaboration";
+    case "node":
+      return `Radicle Seed Node \u00b7 ${route.host}`;
+    case "user":
+      return `Radicle User \u00b7 ${shortDid(route.did)} \u00b7 ${route.host}`;
+    case "repo":
+      return `Radicle Repo \u00b7 ${route.rid} \u00b7 ${route.host}`;
+    case "issues":
+      return `Issues \u00b7 ${route.rid} \u00b7 ${route.host}`;
+    case "patches":
+      return `Patches \u00b7 ${route.rid} \u00b7 ${route.host}`;
+    case "issue":
+      return `Issue ${route.id.slice(0, 7)} \u00b7 ${route.rid} \u00b7 ${route.host}`;
+    case "patch":
+      return `Patch ${route.id.slice(0, 7)} \u00b7 ${route.rid} \u00b7 ${route.host}`;
+    case "commit":
+      return `Commit ${route.sha.slice(0, 7)} \u00b7 ${route.rid} \u00b7 ${route.host}`;
+    case "history":
+      return `Commit History \u00b7 ${route.rid} \u00b7 ${route.host}`;
+    default:
+      return "Radicle Explorer \u00b7 Decentralized Code Collaboration";
+  }
+}
+
+function descriptionForRoute(route) {
+  const h = route.host;
+  switch (route.type) {
+    case "home":
+      return "Explore open-source repositories, issues, and patches on the Radicle peer-to-peer code collaboration network. Sovereign hosting without central servers.";
+    case "node":
+      return `Browse repositories hosted on the ${h} Radicle seed node. Explore source code, issues, patches, and contributor activity.`;
+    case "user":
+      return `Radicle user profile on ${h}. Browse repositories, patches, and contributions across the peer-to-peer network.`;
+    case "repo":
+      return `Radicle repository hosted on ${h}. Browse source code, issues, patches, commit history, and contributor activity.`;
+    case "issues":
+      return `Browse issues for this repository on ${h}. View bug reports, feature requests, and ongoing discussions on the Radicle network.`;
+    case "patches":
+      return `Browse patches for this repository on ${h}. View proposed changes, code reviews, and merge status on the Radicle network.`;
+    case "issue":
+      return `View this issue and its discussion in a Radicle repository on ${h}. Track progress, comments, and resolution.`;
+    case "patch":
+      return `View this patch and its review in a Radicle repository on ${h}. Browse revisions, review comments, and merge status.`;
+    case "commit":
+      return `View this commit and its diff in a Radicle repository on ${h}. Inspect changed files, author details, and additions.`;
+    case "history":
+      return `Browse the commit history of this Radicle repository on ${h}. View commits, contributors, and development activity.`;
+    default:
+      return "Explore open-source repositories, issues, and patches on the Radicle peer-to-peer code collaboration network.";
+  }
+}
+
+function escapeHtml(str) {
+  return str
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+async function handleOgHtml(request, url, env) {
+  const cache = caches.default;
+  const cached = await cache.match(request);
+  if (cached) return cached;
+
+  const route = parseRoute(url.pathname);
+  if (!route) {
+    return new Response("Not found", { status: 404 });
+  }
+
+  const appBase = env.APP_BASE || "https://app.radicle.xyz";
+  const appHost = new URL(appBase).hostname;
+  const hostParam = route.type === "home" ? `?host=${appHost}` : "";
+  const ogImageUrl = escapeHtml(
+    `https://${url.hostname}/cards${url.pathname}${hostParam}`,
+  );
+  const canonicalUrl = escapeHtml(`${appBase}${url.pathname}`);
+  const title = escapeHtml(titleForRoute(route));
+  const description = escapeHtml(descriptionForRoute(route));
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>${title}</title>
+  <meta property="og:site_name" content="Radicle Explorer" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="${title}" />
+  <meta property="og:description" content="${description}" />
+  <meta property="og:url" content="${canonicalUrl}" />
+  <meta property="og:image" content="${ogImageUrl}" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@radicle" />
+  <meta name="theme-color" content="#1c77ff" />
+</head>
+<body></body>
+</html>`;
+
+  const response = new Response(html, {
+    headers: {
+      "content-type": "text/html;charset=UTF-8",
+      "cache-control": "public, max-age=7200",
+    },
+  });
+
+  await cache.put(request, response.clone());
+  return response;
+}
+
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+
+    if (url.pathname !== "/cards" && !url.pathname.startsWith("/cards/")) {
+      return handleOgHtml(request, url, env);
+    }
+
     if (request.method === "HEAD") {
       return new Response(null, {
         headers: {
           "content-type": "image/png",
-          "cache-control": "public, max-age=120",
+          "cache-control": "public, max-age=7200",
         },
       });
     }
@@ -2127,8 +2247,8 @@ export default {
     const cached = await cache.match(request);
     if (cached) return cached;
 
-    const url = new URL(request.url);
-    const route = parseRoute(url.pathname);
+    const pathname = url.pathname.replace(/^\/cards/, "") || "/";
+    const route = parseRoute(pathname);
 
     if (!route) {
       return new Response("Not found", { status: 404 });
@@ -2270,7 +2390,7 @@ export default {
       const response = new Response(png, {
         headers: {
           "content-type": "image/png",
-          "cache-control": "public, max-age=120",
+          "cache-control": "public, max-age=7200",
         },
       });
 
