@@ -11,6 +11,7 @@
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
   import InlineTitle from "@app/views/repos/components/InlineTitle.svelte";
+  import JobCob from "@app/components/JobCob.svelte";
   import Layout from "./Layout.svelte";
   import Link from "@app/components/Link.svelte";
   import Separator from "./Separator.svelte";
@@ -119,6 +120,13 @@
         </span>
         <CommitAuthorship {header}>
           <Id id={header.id} ariaLabel="commit-id" />
+          <JobCob
+            slot="after-timestamp"
+            {baseUrl}
+            rid={repo.rid}
+            commit={header.id}
+            stylePopoverPositionTop="0.5rem"
+            stylePopoverPositionLeft="0" />
         </CommitAuthorship>
         <span class="txt-body-m-regular">
           {header.parents.length === 1 ? "Parent" : "Parents"}:

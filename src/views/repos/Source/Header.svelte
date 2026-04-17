@@ -13,6 +13,7 @@
   import Button from "@app/components/Button.svelte";
   import CommitButton from "../components/CommitButton.svelte";
   import Icon from "@app/components/Icon.svelte";
+  import JobCob from "@app/components/JobCob.svelte";
   import Link from "@app/components/Link.svelte";
 
   import PeerBranchSelector from "./PeerBranchSelector.svelte";
@@ -128,22 +129,32 @@
       {repo}
       {selectedBranch} />
   {/if}
-  <CommitButton
-    variant={commitButtonVariant}
-    styleMinWidth="0"
-    hideSummaryOnMobile
-    repoId={repo.rid}
-    commit={lastCommit}
-    baseUrl={node} />
-  {#if !onCanonical}
-    <Link route={baseRoute}>
-      <Button
-        variant="not-selected"
-        styleBorderRadius="0 var(--border-radius-sm) var(--border-radius-sm) 0">
-        <Icon name="close" />
-      </Button>
-    </Link>
-  {/if}
+  <div class="global-flex-item" style:gap="1px">
+    <CommitButton
+      variant={commitButtonVariant}
+      styleMinWidth="0"
+      hideSummaryOnMobile
+      repoId={repo.rid}
+      commit={lastCommit}
+      baseUrl={node} />
+    {#if !onCanonical}
+      <Link route={baseRoute}>
+        <Button
+          variant="not-selected"
+          styleBorderRadius="0 var(--border-radius-sm) var(--border-radius-sm) 0">
+          <Icon name="close" />
+        </Button>
+      </Link>
+    {/if}
+    <div style:margin-left="0.5rem">
+      <JobCob
+        baseUrl={node}
+        rid={repo.rid}
+        commit={lastCommit.id}
+        stylePopoverPositionTop="0.5rem"
+        stylePopoverPositionLeft="0" />
+    </div>
+  </div>
 </div>
 
 <div class="header">
@@ -209,5 +220,13 @@
         </Button>
       </Link>
     {/if}
+    <div style:margin-left="0.5rem">
+      <JobCob
+        baseUrl={node}
+        rid={repo.rid}
+        commit={lastCommit.id}
+        stylePopoverPositionTop="0.5rem"
+        stylePopoverPositionLeft="0" />
+    </div>
   </div>
 </div>

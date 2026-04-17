@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { BaseUrl, CommitHeader } from "@http-client";
+  import type { Snippet } from "svelte";
 
   import { twemoji } from "@app/lib/utils";
 
@@ -14,6 +15,7 @@
   export let baseUrl: BaseUrl;
   export let commit: CommitHeader;
   export let repoId: string;
+  export let children: Snippet | undefined = undefined;
 
   let commitMessageVisible = false;
 </script>
@@ -43,6 +45,11 @@
     gap: 1rem;
     margin-left: auto;
     height: 21px;
+  }
+  .authorship {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
   .summary:hover {
     text-decoration: underline;
@@ -86,15 +93,21 @@
         <pre>{commit.description.trim()}</pre>
       </div>
     {/if}
-    <div class="global-hide-on-small-desktop-up">
+    <div class="authorship global-hide-on-small-desktop-up">
       <CompactCommitAuthorship {commit}>
         <Id id={commit.id} />
       </CompactCommitAuthorship>
+      {#if children}
+        {@render children()}
+      {/if}
     </div>
   </div>
   <div class="right">
     <div style="display: flex; gap: 0.5rem; height: 21px; align-items: center;">
-      <div class="global-hide-on-mobile-down">
+      <div class="authorship global-hide-on-mobile-down">
+        {#if children}
+          {@render children()}
+        {/if}
         <CompactCommitAuthorship {commit}>
           <Id id={commit.id} />
         </CompactCommitAuthorship>

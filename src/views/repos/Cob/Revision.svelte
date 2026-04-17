@@ -24,6 +24,7 @@
   import ExpandButton from "@app/components/ExpandButton.svelte";
   import IconButton from "@app/components/IconButton.svelte";
   import Icon from "@app/components/Icon.svelte";
+  import JobCob from "@app/components/JobCob.svelte";
   import Link from "@app/components/Link.svelte";
   import Loading from "@app/components/Loading.svelte";
   import Markdown from "@app/components/Markdown.svelte";
@@ -436,10 +437,21 @@
         {/if}
         {#if response?.commits}
           <div class="commits">
-            {#each response.commits.toReversed() as commit}
+            {#each response.commits.toReversed() as commit, index}
               <div class="commit" style:position="relative">
                 <div class="commit-dot"></div>
-                <CobCommitTeaser {commit} {baseUrl} {repoId} />
+                <CobCommitTeaser {commit} {baseUrl} {repoId}>
+                  {#if response.commits.length - 1 === index}
+                    <div class="global-flex-item" style:margin-right="0.25rem">
+                      <JobCob
+                        {baseUrl}
+                        rid={repoId}
+                        commit={commit.id}
+                        stylePopoverPositionBottom="2rem"
+                        stylePopoverPositionLeft="0" />
+                    </div>
+                  {/if}
+                </CobCommitTeaser>
               </div>
             {/each}
           </div>

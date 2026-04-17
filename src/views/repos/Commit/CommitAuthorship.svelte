@@ -45,6 +45,7 @@
     <span title={absoluteTimestamp(header.committer.time)}>
       {formatTimestamp(header.committer.time)}
     </span>
+    <slot name="after-timestamp" />
   {:else}
     <div class="person">
       <img class="avatar" alt="avatar" src={gravatarURL(header.author.email)} />
@@ -63,5 +64,6 @@
     <span title={absoluteTimestamp(header.committer.time)}>
       {formatTimestamp(header.committer.time)}
     </span>
+    <slot name="after-timestamp" />
   {/if}
 </span>

@@ -125,6 +125,29 @@ const diffResponseSchema = object({
   files: record(string(), diffBlobSchema),
 });
 
+const statusSchema = union([
+  literal("started"),
+  literal("failed"),
+  literal("succeeded"),
+]);
+
+const runSchema = object({
+  runId: string(),
+  node: authorSchema,
+  status: statusSchema,
+  log: string(),
+});
+
+const jobSchema = object({
+  jobId: string(),
+  commit: string(),
+  runs: array(runSchema),
+});
+
+export type Job = z.infer<typeof jobSchema>;
+
+const jobsSchema = array(jobSchema) satisfies ZodSchema<Job[]>;
+
 export type RepoListQuery = {
   page?: number;
   perPage?: number;
@@ -337,6 +360,21 @@ export class Client {
         options,
       },
       diffResponseSchema,
+    );
+  }
+
+  public async getJobsByCommit(
+    rid: string,
+    commit: string,
+    options?: RequestOptions,
+  ): Promise<Job[]> {
+    return this.#fetcher.fetchOk(
+      {
+        method: "GET",
+        path: `repos/${rid}/xyz.radworks.job/${commit}`,
+        options,
+      },
+      jobsSchema,
     );
   }
 

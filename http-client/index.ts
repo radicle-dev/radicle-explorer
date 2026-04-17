@@ -2,6 +2,7 @@ import type { BaseUrl } from "./lib/fetcher.js";
 import type {
   Blob,
   DiffResponse,
+  Job,
   Remote,
   Repo,
   RepoListQuery,
@@ -71,6 +72,7 @@ export type {
   HunkLine,
   Issue,
   IssueState,
+  Job,
   LifecycleState,
   Merge,
   Patch,
