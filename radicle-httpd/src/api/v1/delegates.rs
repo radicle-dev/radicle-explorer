@@ -141,6 +141,7 @@ mod routes {
                 },
                 "rid": RID,
                 "seeding": 1,
+                "refs": { "tags": {}, "refs": {} }
               },
               {
                 "payloads": {
@@ -177,6 +178,7 @@ mod routes {
                 },
                 "rid": "rad:z4GypKmh1gkEfmkXtarcYnkvtFUfE",
                 "seeding": 1,
+                "refs": { "tags": {}, "refs": {} }
               }
             ])
         );
@@ -235,6 +237,7 @@ mod routes {
                 },
                 "rid": RID,
                 "seeding": 1,
+                "refs": { "tags": {}, "refs": {} }
               },
               {
                 "payloads": {
@@ -271,6 +274,7 @@ mod routes {
                 },
                 "rid": "rad:z4GypKmh1gkEfmkXtarcYnkvtFUfE",
                 "seeding": 1,
+                "refs": { "tags": {}, "refs": {} }
               }
             ])
         );

@@ -84,6 +84,10 @@ pub enum Error {
     #[error(transparent)]
     IdentityDoc(#[from] radicle::identity::doc::DocError),
 
+    /// Canonical refs error.
+    #[error(transparent)]
+    CanonicalRefs(#[from] radicle::identity::doc::CanonicalRefsError),
+
     /// Tracking store error.
     #[error(transparent)]
     TrackingStore(#[from] radicle::node::policy::store::Error),

@@ -21,7 +21,9 @@ use radicle::identity::{project, Visibility};
 use radicle::node::device::Device;
 use radicle::node::{Features, Timestamp, UserAgent};
 use radicle::profile::{env, Home};
-use radicle::storage::ReadStorage;
+use radicle::storage::{
+    ReadRepository, ReadStorage, SignRepository, WriteRepository, WriteStorage,
+};
 use radicle::{node, profile};
 use radicle::{Node, Storage};
 
@@ -336,6 +338,145 @@ fn seed_with_signer<G: Signer<Signature>>(
 
     let web_config = crate::api::WebConfig::from_profile(&profile);
     Context::new(Arc::new(profile), web_config, &options)
+}
+
+/// Create a test context with multiple peers and canonical refs configured.
+///
+/// This sets up:
+/// - The hello-world repo from `seed()` as the base
+/// - A second peer that forks the repo (same `master` head)
+/// - An additional branch (`feature/branch`) on the second peer only
+/// - A tag (`v1.0`) on both peers (reaches canonical consensus)
+/// - A tag (`v2.0-rc`) on the second peer only (does not reach consensus)
+/// - The identity document is updated with:
+///   - The second peer added as a delegate
+///   - A `xyz.radicle.crefs` payload with rules for `refs/heads/*` and `refs/tags/*`
+pub fn seed_multi_peer(dir: &Path) -> Context {
+    use radicle::identity::doc::PayloadId;
+    use radicle::identity::Identity;
+
+    let ctx = seed(dir);
+
+    let signer1 = Device::mock_from_seed([0xff; 32]);
+    let signer2 = Device::mock_from_seed([0xee; 32]);
+
+    let rid = radicle::identity::RepoId::from_str(RID).unwrap();
+    let storage = &ctx.profile().storage;
+
+    {
+        let mut policies = ctx.profile().policies_mut().unwrap();
+        policies
+            .follow(signer2.public_key(), Some(&node::Alias::new("peer2")))
+            .unwrap();
+    }
+
+    {
+        let repo = storage.repository_mut(rid).unwrap();
+        let mut identity = Identity::load_mut(&repo).unwrap();
+        let current_doc = repo.identity_doc().unwrap();
+
+        let new_doc = current_doc
+            .doc
+            .clone()
+            .with_edits(|raw| {
+                let did2: radicle::identity::Did = (*signer2.public_key()).into();
+                if !raw.delegates.contains(&did2) {
+                    raw.delegates.push(did2);
+                }
+                raw.threshold = 1;
+                let crefs_payload: serde_json::Value = serde_json::json!({
+                    "rules": {
+                        "refs/heads/*": {
+                            "allow": "delegates",
+                            "threshold": 1
+                        },
+                        "refs/tags/*": {
+                            "allow": "delegates",
+                            "threshold": 2
+                        }
+                    }
+                });
+                raw.payload.insert(
+                    PayloadId::canonical_refs(),
+                    radicle::identity::doc::Payload::from(crefs_payload),
+                );
+            })
+            .unwrap();
+
+        identity
+            .update(
+                Title::new("Add second delegate and crefs").unwrap(),
+                "",
+                &new_doc,
+                &signer1,
+            )
+            .unwrap();
+
+        let new_head = repo.identity_head_of(signer1.public_key()).unwrap();
+        repo.set_identity_head_to(new_head).unwrap();
+
+        repo.sign_refs(&signer1).unwrap();
+    }
+
+    radicle::rad::fork(rid, &signer2, storage).unwrap();
+
+    {
+        let repo = storage.repository_mut(rid).unwrap();
+        let raw = repo.raw();
+
+        let head_oid = radicle::git::raw::Oid::from_str(HEAD).unwrap();
+        let parent_oid = radicle::git::raw::Oid::from_str(PARENT).unwrap();
+
+        let pk1 = signer1.public_key();
+        let pk2 = signer2.public_key();
+
+        raw.reference(
+            &format!("refs/namespaces/{pk1}/refs/tags/v1.0"),
+            head_oid,
+            true,
+            "test: add tag v1.0 for peer1",
+        )
+        .unwrap();
+        raw.reference(
+            &format!("refs/namespaces/{pk2}/refs/tags/v1.0"),
+            head_oid,
+            true,
+            "test: add tag v1.0 for peer2",
+        )
+        .unwrap();
+
+        raw.reference(
+            &format!("refs/namespaces/{pk2}/refs/tags/v2.0-rc"),
+            parent_oid,
+            true,
+            "test: add tag v2.0-rc for peer2 only",
+        )
+        .unwrap();
+
+        raw.reference(
+            &format!("refs/namespaces/{pk2}/refs/heads/feature/branch"),
+            parent_oid,
+            true,
+            "test: add feature/branch for peer2",
+        )
+        .unwrap();
+
+        repo.sign_refs(&signer1).unwrap();
+        repo.sign_refs(&signer2).unwrap();
+
+        // Materialize canonical refs at the top level, simulating what the
+        // node does via `set_canonical_refs` after a fetch.
+        for (refname, oid) in [
+            ("refs/heads/master", head_oid),
+            ("refs/tags/v1.0", head_oid),
+            ("refs/heads/feature/branch", parent_oid),
+        ] {
+            raw.reference(refname, oid, true, "test: set canonical ref")
+                .unwrap();
+        }
+    }
+
+    ctx
 }
 
 pub async fn get(app: &Router, path: impl ToString) -> Response {

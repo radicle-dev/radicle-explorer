@@ -9,13 +9,14 @@ use axum::routing::get;
 use axum::{Json, Router};
 use hyper::StatusCode;
 use radicle_surf::blob::BlobRef;
+use radicle_surf::ref_format::{Qualified, RefString};
 use radicle_surf::{diff, Glob, Oid, Repository};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use radicle::cob::{issue::cache::Issues as _, patch::cache::Patches as _};
 use radicle::identity::RepoId;
-use radicle::node::{AliasStore, NodeId};
+use radicle::node::{Alias, AliasStore, NodeId};
 use radicle::storage::{ReadRepository, ReadStorage, RemoteRepository};
 
 use crate::api;
@@ -23,6 +24,7 @@ use crate::api::error::Error;
 use crate::api::query::{CobsQuery, PaginationQuery, RepoQuery};
 use crate::api::search::{SearchQueryString, SearchResult};
 use crate::api::Context;
+use crate::api::PeelToCommit;
 use crate::axum_extra::{cached_response, immutable_response, Path, Query};
 
 const MAX_BODY_LIMIT: usize = 4_194_304;
@@ -448,35 +450,11 @@ async fn remotes_handler(State(ctx): State<Context>, Path(rid): Path<RepoId>) ->
     let (repo, doc) = ctx.repo(rid)?;
     let delegates = doc.delegates();
     let aliases = &ctx.profile.aliases();
+
     let remotes = repo
         .remotes()?
         .filter_map(|r| r.map(|r| r.1).ok())
-        .map(|remote| {
-            let refs = remote
-                .refs
-                .iter()
-                .filter_map(|(r, oid)| {
-                    r.as_str().strip_prefix("refs/heads/").map(|head| {
-                        let surf_oid = Oid::from(radicle::git::raw::Oid::from(oid));
-                        (head.to_string(), surf_oid)
-                    })
-                })
-                .collect::<BTreeMap<String, Oid>>();
-
-            match aliases.alias(&remote.id) {
-                Some(alias) => json!({
-                    "id": remote.id,
-                    "alias": alias,
-                    "heads": refs,
-                    "delegate": delegates.contains(&remote.id.into()),
-                }),
-                None => json!({
-                    "id": remote.id,
-                    "heads": refs,
-                    "delegate": delegates.contains(&remote.id.into()),
-                }),
-            }
-        })
+        .map(|remote| remote_info(&repo, &remote, delegates, aliases))
         .collect::<Vec<_>>();
 
     Ok::<_, Error>(Json(remotes))
@@ -490,24 +468,130 @@ async fn remote_handler(
 ) -> impl IntoResponse {
     let (repo, doc) = ctx.repo(rid)?;
     let delegates = doc.delegates();
+    let aliases = &ctx.profile.aliases();
     let remote = repo.remote(&node_id)?;
-    let refs = remote
-        .refs
-        .iter()
-        .filter_map(|(r, oid)| {
-            r.as_str().strip_prefix("refs/heads/").map(|head| {
-                let surf_oid = Oid::from(radicle::git::raw::Oid::from(oid));
-                (head.to_string(), surf_oid)
-            })
-        })
-        .collect::<BTreeMap<String, Oid>>();
-    let remote = json!({
-        "id": remote.id,
-        "heads": refs,
-        "delegate": delegates.contains(&remote.id.into()),
-    });
 
-    Ok::<_, Error>(Json(remote))
+    Ok::<_, Error>(Json(remote_info(&repo, &remote, delegates, aliases)))
+}
+
+/// Information tracked per remote peer in Radicle storage.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct RemoteInfo {
+    /// The [`NodeId`] associated with the remote.
+    id: NodeId,
+    /// The [`Alias`] of the remote, if it can be found.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    alias: Option<Alias>,
+    /// Any references under the remote's namespace that begin with
+    /// `refs/heads`, returning the suffix after `refs/heads`.
+    heads: BTreeMap<RefString, radicle::git::Oid>,
+    /// All references under the remote's namespace.
+    refs: BTreeMap<Qualified<'static>, radicle::git::Oid>,
+    /// Whether the remote is a delegate of the repository.
+    delegate: bool,
+}
+
+impl RemoteInfo {
+    pub fn new(id: NodeId) -> Self {
+        Self {
+            id,
+            alias: None,
+            heads: BTreeMap::new(),
+            refs: BTreeMap::new(),
+            delegate: false,
+        }
+    }
+
+    pub fn with_alias(mut self, alias: Option<Alias>) -> Self {
+        self.alias = alias;
+        self
+    }
+
+    pub fn with_heads(mut self, heads: BTreeMap<RefString, radicle::git::Oid>) -> Self {
+        self.heads = heads;
+        self
+    }
+
+    pub fn with_refs(mut self, refs: BTreeMap<Qualified<'static>, radicle::git::Oid>) -> Self {
+        self.refs = refs;
+        self
+    }
+
+    pub fn set_delegate(mut self, delegate: bool) -> Self {
+        self.delegate = delegate;
+        self
+    }
+}
+
+/// Partition [`Refs`] into their `refs/heads` and all sets of references.
+///
+/// References are skipped if they:
+/// - Are not [`Qualified`],
+/// - Cannot be peeled to a commit,
+/// - Are not under `refs/heads` or `refs/tags`.
+///
+/// [`Refs`]: radicle::storage::refs::Refs
+fn partition_refs<R>(
+    refs: &radicle::storage::refs::Refs,
+    repository: &R,
+) -> (
+    BTreeMap<RefString, radicle::git::Oid>,
+    BTreeMap<Qualified<'static>, radicle::git::Oid>,
+)
+where
+    R: PeelToCommit,
+{
+    refs.iter()
+        .filter_map(|(refname, oid)| {
+            let oid = match repository.peel_to_commit(*oid) {
+                Ok(oid) => Some(oid),
+                Err(e) => {
+                    tracing::warn!("skipping {refname}: {e}");
+                    None
+                }
+            };
+            match refname.qualified() {
+                Some(refname) => Some(refname).zip(oid),
+                None => {
+                    tracing::debug!("skipping '{refname}' since it is not qualified");
+                    None
+                }
+            }
+        })
+        .fold(
+            (BTreeMap::new(), BTreeMap::new()),
+            |(mut heads, mut refs), (qualified, oid)| {
+                let (_refs, category, first, rest) = qualified.non_empty_components();
+                match category.as_str() {
+                    "heads" => {
+                        let name = std::iter::once(first).chain(rest).collect::<RefString>();
+                        heads.insert(name, oid);
+                        refs.insert(qualified.to_owned(), oid);
+                    }
+                    "tags" => {
+                        refs.insert(qualified.to_owned(), oid);
+                    }
+                    _ => {}
+                }
+                (heads, refs)
+            },
+        )
+}
+
+#[tracing::instrument(skip_all, fields(remote.id = %remote.id))]
+fn remote_info(
+    repo: &radicle::storage::git::Repository,
+    remote: &radicle::storage::Remote,
+    delegates: &radicle::identity::doc::Delegates,
+    aliases: &radicle::profile::Aliases,
+) -> RemoteInfo {
+    let (heads, refs) = partition_refs(&remote.refs, repo);
+    RemoteInfo::new(remote.id)
+        .with_heads(heads)
+        .with_refs(refs)
+        .with_alias(aliases.alias(&remote.id))
+        .set_delegate(delegates.contains(&remote.id.into()))
 }
 
 /// Get repo source file.
@@ -749,6 +833,7 @@ mod routes {
                 },
                 "rid": RID,
                 "seeding": 1,
+                "refs": { "tags": {}, "refs": {} }
               },
               {
                 "payloads": {
@@ -785,6 +870,7 @@ mod routes {
                 },
                 "rid": "rad:z4GypKmh1gkEfmkXtarcYnkvtFUfE",
                 "seeding": 1,
+                "refs": { "tags": {}, "refs": {} }
               },
             ])
         );
@@ -834,6 +920,7 @@ mod routes {
                 },
                 "rid": RID,
                 "seeding": 1,
+                "refs": { "tags": {}, "refs": {} }
               },
               {
                 "payloads": {
@@ -870,6 +957,7 @@ mod routes {
                 },
                 "rid": "rad:z4GypKmh1gkEfmkXtarcYnkvtFUfE",
                 "seeding": 1,
+                "refs": { "tags": {}, "refs": {} }
               },
             ])
         );
@@ -919,6 +1007,7 @@ mod routes {
                },
                "rid": RID,
                "seeding": 1,
+               "refs": { "tags": {}, "refs": {} }
             })
         );
     }
@@ -1389,6 +1478,9 @@ mod routes {
                 "heads": {
                   "master": HEAD
                 },
+                "refs": {
+                  "refs/heads/master": HEAD
+                },
                 "delegate": true
               }
             ])
@@ -1410,8 +1502,12 @@ mod routes {
             response.json().await,
             json!({
                 "id": "z6MknSLrJoTcukLrE435hVNQT4JUhbvWLX4kUzqkEStBU8Vi",
+                "alias": CONTRIBUTOR_ALIAS,
                 "heads": {
                     "master": HEAD
+                },
+                "refs": {
+                    "refs/heads/master": HEAD
                 },
                 "delegate": true
             })
@@ -1429,6 +1525,25 @@ mod routes {
         .await;
 
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn test_repos_multi_peer_canonical_refs() {
+        let tmp = tempfile::tempdir().unwrap();
+        let ctx = seed_multi_peer(tmp.path());
+        let app =
+            super::router(ctx).layer(MockConnectInfo(SocketAddr::from(([127, 0, 0, 1], 8080))));
+        let response = get(&app, format!("/repos/{RID}")).await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = response.json().await;
+        let refs = &body["refs"];
+
+        assert_eq!(refs["refs"]["refs/heads/master"], json!(HEAD));
+        assert_eq!(refs["tags"]["refs/tags/v1.0"]["commit"], json!(HEAD));
+        assert!(refs["refs"]["refs/heads/feature/branch"].is_string());
+        assert!(refs["tags"].get("refs/tags/v2.0-rc").is_none());
     }
 
     #[tokio::test]

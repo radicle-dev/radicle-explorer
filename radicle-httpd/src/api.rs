@@ -6,15 +6,15 @@ use axum::routing::get;
 use axum::Router;
 use serde_json::{json, Value};
 
+use radicle::identity::crefs::GetCanonicalRefs;
 use radicle::identity::doc::PayloadId;
 use radicle::identity::{DocAt, RepoId};
 use radicle::issue::cache::Issues as _;
 use radicle::node::routing::Store;
-use radicle::node::NodeId;
 use radicle::patch::cache::Patches as _;
 use radicle::storage::git::Repository;
 use radicle::storage::{ReadRepository, ReadStorage};
-use radicle::{web, Profile};
+use radicle::{git, web, Profile};
 use tokio::sync::RwLock;
 
 mod error;
@@ -82,11 +82,7 @@ impl Context {
     }
 
     #[allow(clippy::result_large_err)]
-    pub fn repo_info<R: ReadRepository + radicle::cob::Store<Namespace = NodeId>>(
-        &self,
-        repo: &R,
-        doc: DocAt,
-    ) -> Result<repo::Info, error::Error> {
+    pub fn repo_info(&self, repo: &Repository, doc: DocAt) -> Result<repo::Info, error::Error> {
         let DocAt { doc, .. } = doc;
         let rid = repo.id();
 
@@ -127,6 +123,10 @@ impl Context {
             })
             .collect();
 
+        let refs = canonical_refs(repo, &doc)
+            .inspect_err(|e| tracing::warn!("failed to read canonical refs for {rid}: {e}"))
+            .unwrap_or_default();
+
         Ok(repo::Info {
             payloads,
             delegates,
@@ -134,6 +134,7 @@ impl Context {
             visibility: doc.visibility().clone(),
             rid,
             seeding,
+            refs,
         })
     }
 
@@ -161,6 +162,116 @@ impl Context {
     pub fn profile(&self) -> &Arc<Profile> {
         &self.profile
     }
+}
+
+pub trait ReadCanonicalRefs {
+    fn find_by_pattern(
+        &self,
+        pattern: &git::fmt::refspec::QualifiedPattern,
+    ) -> Result<Vec<(git::fmt::RefString, git::Oid)>, error::Error>;
+}
+
+pub trait PeelToCommit {
+    fn peel_to_commit(&self, oid: git::Oid) -> Result<git::Oid, git::raw::Error>;
+}
+
+pub trait ResolveTag {
+    fn resolve_tag(&self, oid: git::Oid) -> Result<repo::Tag, git::raw::Error>;
+}
+
+impl ReadCanonicalRefs for Repository {
+    fn find_by_pattern(
+        &self,
+        pattern: &git::fmt::refspec::QualifiedPattern,
+    ) -> Result<Vec<(git::fmt::RefString, git::Oid)>, error::Error> {
+        let mut refs = Vec::new();
+        for r in self.backend.references_glob(pattern.as_str())? {
+            let r = r?;
+            let Some(refname) = r.name().and_then(|n| git::fmt::RefString::try_from(n).ok()) else {
+                continue;
+            };
+            let Some(oid) = r.target().map(git::Oid::from) else {
+                continue;
+            };
+            refs.push((refname, oid));
+        }
+        Ok(refs)
+    }
+}
+
+impl PeelToCommit for Repository {
+    fn peel_to_commit(&self, oid: git::Oid) -> Result<git::Oid, git::raw::Error> {
+        let obj = self.backend.find_object(oid.into(), None)?;
+        let commit = obj.peel_to_commit()?;
+        Ok(commit.id().into())
+    }
+}
+
+impl ResolveTag for Repository {
+    fn resolve_tag(&self, oid: git::Oid) -> Result<repo::Tag, git::raw::Error> {
+        // Annotated tag: carries tagger/message.
+        if let Ok(tag) = self.backend.find_tag(oid.into()) {
+            return Ok(repo::Tag {
+                commit: tag.target_id().into(),
+                tagger: tag.tagger().map(|t| repo::Tagger {
+                    name: t.name().unwrap_or_default().to_owned(),
+                    email: t.email().unwrap_or_default().to_owned(),
+                    timestamp: t.when().seconds(),
+                }),
+                message: tag.message().map(str::to_owned),
+            });
+        }
+        // Lightweight tag: ref points directly at a commit.
+        let commit = self.backend.find_commit(oid.into())?;
+        Ok(repo::Tag {
+            commit: commit.id().into(),
+            tagger: None,
+            message: None,
+        })
+    }
+}
+
+#[allow(clippy::result_large_err)]
+fn canonical_refs<R: ReadCanonicalRefs + PeelToCommit + ResolveTag>(
+    repo: &R,
+    doc: &radicle::identity::Doc,
+) -> Result<repo::CanonicalReferences, error::Error> {
+    let Some(crefs) = doc.canonical_refs()? else {
+        return Ok(repo::CanonicalReferences::default());
+    };
+    canonical_refs_for_patterns(repo, crefs.rules().iter().map(|(p, _)| p.as_ref()))
+}
+
+#[allow(clippy::result_large_err)]
+fn canonical_refs_for_patterns<'a, R, I>(
+    repo: &R,
+    patterns: I,
+) -> Result<repo::CanonicalReferences, error::Error>
+where
+    R: ReadCanonicalRefs + PeelToCommit + ResolveTag,
+    I: IntoIterator<Item = &'a git::fmt::refspec::QualifiedPattern<'static>>,
+{
+    let mut canonical = repo::CanonicalReferences::default();
+    for pattern in patterns {
+        for (refname, oid) in repo.find_by_pattern(pattern)? {
+            if refname.as_str().starts_with("refs/tags/") {
+                match repo.resolve_tag(oid) {
+                    Ok(tag) => {
+                        canonical.tags.insert(refname, tag);
+                    }
+                    Err(e) => tracing::warn!("skipping canonical tag {refname}: {e}"),
+                }
+            } else {
+                match repo.peel_to_commit(oid) {
+                    Ok(commit) => {
+                        canonical.refs.insert(refname, commit);
+                    }
+                    Err(e) => tracing::warn!("skipping canonical ref {refname}: {e}"),
+                }
+            }
+        }
+    }
+    Ok(canonical)
 }
 
 pub fn router(ctx: Context) -> Router {
@@ -286,8 +397,35 @@ mod repo {
     use serde::Serialize;
     use serde_json::Value;
 
+    use radicle::git::fmt::RefString;
+    use radicle::git::Oid;
     use radicle::identity::doc::PayloadId;
     use radicle::identity::{RepoId, Visibility};
+
+    #[derive(Default, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct CanonicalReferences {
+        pub tags: BTreeMap<RefString, Tag>,
+        pub refs: BTreeMap<RefString, Oid>,
+    }
+
+    #[derive(Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Tag {
+        pub commit: Oid,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub tagger: Option<Tagger>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub message: Option<String>,
+    }
+
+    #[derive(Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Tagger {
+        pub name: String,
+        pub email: String,
+        pub timestamp: i64,
+    }
 
     /// Repos info.
     #[derive(Serialize)]
@@ -299,6 +437,7 @@ mod repo {
         pub visibility: Visibility,
         pub rid: RepoId,
         pub seeding: usize,
+        pub refs: CanonicalReferences,
     }
 }
 
@@ -438,5 +577,243 @@ mod tests {
                 .await;
         }
         assert_eq!(ctx.web_config.read().await.pinned.repositories.len(), 0);
+    }
+
+    mod refs {
+        use std::str::FromStr;
+
+        use radicle::git::fmt::RefStr;
+        use radicle::identity::RepoId;
+        use radicle::storage::{ReadRepository, ReadStorage};
+
+        use crate::test;
+
+        fn r(s: &str) -> &RefStr {
+            RefStr::try_from_str(s).unwrap()
+        }
+
+        #[test]
+        fn test_canonical_refs_empty_without_config() {
+            let tmp = tempfile::tempdir().unwrap();
+            let ctx = test::seed(tmp.path());
+            let rid = RepoId::from_str(test::RID).unwrap();
+
+            let repo = ctx.profile.storage.repository(rid).unwrap();
+            let doc = repo.identity_doc().unwrap();
+
+            let refs = super::super::canonical_refs(&repo, &doc.doc).unwrap();
+            assert!(refs.tags.is_empty());
+            assert!(refs.refs.is_empty());
+        }
+
+        #[test]
+        fn test_repo_info_includes_refs() {
+            let tmp = tempfile::tempdir().unwrap();
+            let ctx = test::seed(tmp.path());
+            let rid = RepoId::from_str(test::RID).unwrap();
+
+            let (repo, doc) = ctx.repo(rid).unwrap();
+            let info = ctx.repo_info(&repo, doc).unwrap();
+
+            assert!(info.refs.tags.is_empty());
+            assert!(info.refs.refs.is_empty());
+        }
+
+        #[test]
+        fn test_multi_peer_canonical_refs() {
+            let tmp = tempfile::tempdir().unwrap();
+            let ctx = test::seed_multi_peer(tmp.path());
+            let rid = RepoId::from_str(test::RID).unwrap();
+
+            let repo = ctx.profile.storage.repository(rid).unwrap();
+            let doc = repo.identity_doc().unwrap();
+
+            let refs = super::super::canonical_refs(&repo, &doc.doc).unwrap();
+
+            assert!(refs.refs.contains_key(r("refs/heads/master")));
+            assert!(refs.tags.contains_key(r("refs/tags/v1.0")));
+            assert!(refs.refs.contains_key(r("refs/heads/feature/branch")));
+            assert!(!refs.tags.contains_key(r("refs/tags/v2.0-rc")));
+            // Fixture uses a lightweight tag (ref → commit, no tag object).
+            let tag = refs.tags.get(r("refs/tags/v1.0")).unwrap();
+            assert!(tag.tagger.is_none());
+            assert!(tag.message.is_none());
+        }
+
+        mod mock {
+            use std::collections::HashMap;
+            use std::str::FromStr;
+
+            use radicle::git;
+            use radicle::git::fmt::refspec::{PatternString, QualifiedPattern};
+            use radicle::git::fmt::RefString;
+
+            use crate::api::error;
+            use crate::api::{
+                canonical_refs_for_patterns, repo, PeelToCommit, ReadCanonicalRefs, ResolveTag,
+            };
+
+            struct StubRepo {
+                refs: HashMap<String, Vec<(RefString, git::Oid)>>,
+                peel_errors: HashMap<git::Oid, String>,
+                annotated_tags: HashMap<git::Oid, (String, String, i64, String)>,
+            }
+
+            impl ReadCanonicalRefs for StubRepo {
+                fn find_by_pattern(
+                    &self,
+                    pattern: &QualifiedPattern,
+                ) -> Result<Vec<(RefString, git::Oid)>, error::Error> {
+                    Ok(self.refs.get(pattern.as_str()).cloned().unwrap_or_default())
+                }
+            }
+
+            impl PeelToCommit for StubRepo {
+                fn peel_to_commit(&self, oid: git::Oid) -> Result<git::Oid, git::raw::Error> {
+                    if let Some(msg) = self.peel_errors.get(&oid) {
+                        Err(git::raw::Error::from_str(msg))
+                    } else {
+                        Ok(oid)
+                    }
+                }
+            }
+
+            impl ResolveTag for StubRepo {
+                fn resolve_tag(&self, oid: git::Oid) -> Result<repo::Tag, git::raw::Error> {
+                    if let Some(msg) = self.peel_errors.get(&oid) {
+                        return Err(git::raw::Error::from_str(msg));
+                    }
+                    let (tagger, message) = self
+                        .annotated_tags
+                        .get(&oid)
+                        .map(|(name, email, ts, msg)| {
+                            (
+                                Some(repo::Tagger {
+                                    name: name.clone(),
+                                    email: email.clone(),
+                                    timestamp: *ts,
+                                }),
+                                Some(msg.clone()),
+                            )
+                        })
+                        .unwrap_or((None, None));
+                    Ok(repo::Tag {
+                        commit: oid,
+                        tagger,
+                        message,
+                    })
+                }
+            }
+
+            fn pat(s: &str) -> QualifiedPattern<'static> {
+                QualifiedPattern::from_patternstr(&PatternString::try_from(s).unwrap())
+                    .unwrap()
+                    .to_owned()
+            }
+
+            fn oid(hex: &str) -> git::Oid {
+                git::Oid::from_str(hex).unwrap()
+            }
+
+            fn refname(s: &str) -> RefString {
+                RefString::try_from(s).unwrap()
+            }
+
+            #[test]
+            fn classifies_tags_and_non_tags() {
+                let head = oid("1111111111111111111111111111111111111111");
+                let tag = oid("2222222222222222222222222222222222222222");
+                let heads = pat("refs/heads/*");
+                let tags = pat("refs/tags/*");
+                let stub = StubRepo {
+                    refs: HashMap::from([
+                        (
+                            heads.as_str().to_owned(),
+                            vec![(refname("refs/heads/main"), head)],
+                        ),
+                        (
+                            tags.as_str().to_owned(),
+                            vec![(refname("refs/tags/v1"), tag)],
+                        ),
+                    ]),
+                    peel_errors: HashMap::new(),
+                    annotated_tags: HashMap::new(),
+                };
+
+                let result = canonical_refs_for_patterns(&stub, [&heads, &tags]).unwrap();
+                assert_eq!(result.refs.get(&refname("refs/heads/main")), Some(&head));
+                assert_eq!(
+                    result.tags.get(&refname("refs/tags/v1")).map(|t| t.commit),
+                    Some(tag),
+                );
+                assert!(!result.tags.contains_key(&refname("refs/heads/main")));
+                assert!(!result.refs.contains_key(&refname("refs/tags/v1")));
+            }
+
+            #[test]
+            fn annotated_tag_metadata_is_included() {
+                let tag = oid("3333333333333333333333333333333333333333");
+                let pattern = pat("refs/tags/*");
+                let stub = StubRepo {
+                    refs: HashMap::from([(
+                        pattern.as_str().to_owned(),
+                        vec![(refname("refs/tags/v1"), tag)],
+                    )]),
+                    peel_errors: HashMap::new(),
+                    annotated_tags: HashMap::from([(
+                        tag,
+                        (
+                            "Alice".to_owned(),
+                            "alice@example.com".to_owned(),
+                            1700000000i64,
+                            "Release v1".to_owned(),
+                        ),
+                    )]),
+                };
+
+                let result = canonical_refs_for_patterns(&stub, [&pattern]).unwrap();
+                let resolved = result.tags.get(&refname("refs/tags/v1")).unwrap();
+                assert_eq!(resolved.message.as_deref(), Some("Release v1"));
+                let tagger = resolved.tagger.as_ref().unwrap();
+                assert_eq!(tagger.name, "Alice");
+                assert_eq!(tagger.email, "alice@example.com");
+                assert_eq!(tagger.timestamp, 1700000000);
+            }
+
+            #[test]
+            fn skips_refs_whose_peel_fails() {
+                let good = oid("1111111111111111111111111111111111111111");
+                let bad = oid("2222222222222222222222222222222222222222");
+                let heads = pat("refs/heads/*");
+                let stub = StubRepo {
+                    refs: HashMap::from([(
+                        heads.as_str().to_owned(),
+                        vec![
+                            (refname("refs/heads/ok"), good),
+                            (refname("refs/heads/broken"), bad),
+                        ],
+                    )]),
+                    peel_errors: HashMap::from([(bad, "missing".to_owned())]),
+                    annotated_tags: HashMap::new(),
+                };
+
+                let result = canonical_refs_for_patterns(&stub, [&heads]).unwrap();
+                assert_eq!(result.refs.get(&refname("refs/heads/ok")), Some(&good));
+                assert!(!result.refs.contains_key(&refname("refs/heads/broken")));
+            }
+
+            #[test]
+            fn empty_patterns_yield_empty_result() {
+                let stub = StubRepo {
+                    refs: HashMap::new(),
+                    peel_errors: HashMap::new(),
+                    annotated_tags: HashMap::new(),
+                };
+                let result: Vec<&QualifiedPattern<'static>> = vec![];
+                let result = canonical_refs_for_patterns(&stub, result).unwrap();
+                assert!(result.refs.is_empty());
+                assert!(result.tags.is_empty());
+            }
+        }
     }
 }
