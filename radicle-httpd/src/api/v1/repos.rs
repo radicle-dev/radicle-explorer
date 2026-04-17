@@ -1,3 +1,5 @@
+mod job;
+
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use axum::extract::{DefaultBodyLimit, State};
@@ -41,6 +43,7 @@ pub fn router(ctx: Context) -> Router {
         .route("/repos/{rid}/remotes/{peer}", get(remote_handler))
         .route("/repos/{rid}/blob/{sha}/{*path}", get(blob_handler))
         .route("/repos/{rid}/readme/{sha}", get(readme_handler))
+        .route("/repos/{rid}/xyz.radworks.job/{sha}", get(job::handler))
         .route("/repos/{rid}/issues", get(issues_handler))
         .route("/repos/{rid}/issues/{id}", get(issue_handler))
         .route("/repos/{rid}/patches", get(patches_handler))
