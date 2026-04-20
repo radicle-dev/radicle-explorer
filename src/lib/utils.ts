@@ -266,3 +266,27 @@ export function formatQualifiedRefname(
 ): string {
   return peer ? `refs/namespaces/${peer}/refs/heads/${refname}` : refname;
 }
+
+export function getBranchesFromRefs(
+  refs: Record<string, string>,
+): Record<string, string> {
+  const branches: Record<string, string> = {};
+  for (const [name, oid] of Object.entries(refs)) {
+    if (name.startsWith("refs/heads/")) {
+      branches[name.slice("refs/heads/".length)] = oid;
+    }
+  }
+  return branches;
+}
+
+export function getTagsFromRefs(
+  refs: Record<string, string>,
+): Record<string, string> {
+  const tags: Record<string, string> = {};
+  for (const [name, oid] of Object.entries(refs)) {
+    if (name.startsWith("refs/tags/")) {
+      tags[name.slice("refs/tags/".length)] = oid;
+    }
+  }
+  return tags;
+}

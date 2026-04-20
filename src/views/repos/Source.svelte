@@ -1,8 +1,8 @@
 <script lang="ts">
   import type {
     BaseUrl,
+    PeerRefs,
     Repo,
-    Remote,
     SeedingPolicy,
     Tree,
   } from "@http-client";
@@ -28,7 +28,7 @@
   export let commit: string;
   export let path: string;
   export let peer: string | undefined;
-  export let peers: Remote[];
+  export let peers: PeerRefs[];
   export let repo: Repo;
   export let rawPath: (commit?: string) => string;
   export let revision: string | undefined;

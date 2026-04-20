@@ -16,8 +16,9 @@ import type {
   Node,
   Patch,
   PatchState,
-  Repo,
+  PeerRefs,
   Remote,
+  Repo,
   Revision,
   SeedingPolicy,
   Tree,
@@ -29,11 +30,54 @@ import { HttpdClient } from "@http-client";
 import { ResponseError, ResponseParseError } from "@http-client/lib/fetcher";
 import { cached } from "@app/lib/cache";
 import { handleError, unreachableError } from "@app/views/repos/error";
-import { unreachable } from "@app/lib/utils";
+import {
+  getBranchesFromRefs,
+  getTagsFromRefs,
+  unreachable,
+} from "@app/lib/utils";
 import { nodePath } from "@app/views/nodes/router";
 
 export const PATCHES_PER_PAGE = 10;
 export const ISSUES_PER_PAGE = 10;
+
+function peerHasBranches(peer: PeerRefs): boolean {
+  return Object.keys(peer.refs).some(name => name.startsWith("refs/heads/"));
+}
+
+function canonicalOids(
+  refs: Repo["refs"] | undefined,
+): Array<[string, string]> {
+  return [
+    ...Object.entries(refs?.refs ?? {}),
+    ...Object.entries(refs?.tags ?? {}).map(
+      ([name, info]): [string, string] => [name, info.commit],
+    ),
+  ];
+}
+
+function remoteToPeerRefs(remote: Remote): PeerRefs {
+  if (remote.refs) {
+    return {
+      id: remote.id,
+      alias: remote.alias,
+      delegate: remote.delegate,
+      refs: remote.refs,
+    };
+  }
+
+  const refs: Record<string, string> = {};
+
+  for (const [name, oid] of Object.entries(remote.heads)) {
+    refs[`refs/heads/${name}`] = oid;
+  }
+
+  return {
+    id: remote.id,
+    alias: remote.alias,
+    delegate: remote.delegate,
+    refs,
+  };
+}
 
 export type RepoRoute =
   | RepoTreeRoute
@@ -116,7 +160,7 @@ export type RepoLoadedRoute =
         seedingPolicy: SeedingPolicy;
         commit: string;
         repo: Repo;
-        peers: Remote[];
+        peers: PeerRefs[];
         peer: string | undefined;
         revision: string | undefined;
         tree: Tree;
@@ -133,7 +177,7 @@ export type RepoLoadedRoute =
         seedingPolicy: SeedingPolicy;
         commit: string;
         repo: Repo;
-        peers: Remote[];
+        peers: PeerRefs[];
         peer: string | undefined;
         revision: string | undefined;
         tree: Tree;
@@ -373,7 +417,6 @@ async function loadTreeView(
 
   let repoPromise: Promise<Repo>;
   let seedingPolicyPromise: Promise<SeedingPolicy>;
-  let peersPromise: Promise<Remote[]>;
   let nodePromise: Promise<Partial<Node>>;
   if (
     (previousLoaded.resource === "repo.source" ||
@@ -382,24 +425,24 @@ async function loadTreeView(
     previousLoaded.params.peer === route.peer
   ) {
     repoPromise = Promise.resolve(previousLoaded.params.repo);
-    peersPromise = Promise.resolve(previousLoaded.params.peers);
     seedingPolicyPromise = Promise.resolve(previousLoaded.params.seedingPolicy);
     nodePromise = Promise.resolve({
       avatarUrl: previousLoaded.params.nodeAvatarUrl,
     });
   } else {
     repoPromise = api.repo.getByRid(route.repo);
-    peersPromise = api.repo.getAllRemotes(route.repo);
     seedingPolicyPromise = api.getPolicyByRid(route.repo);
     nodePromise = api.getNode();
   }
 
-  const [repo, peers, seedingPolicy, node] = await Promise.all([
+  const [repo, seedingPolicy, node] = await Promise.all([
     repoPromise,
-    peersPromise,
     seedingPolicyPromise,
     nodePromise,
   ]);
+
+  const remotes = await api.repo.getAllRemotes(route.repo);
+  const peers: PeerRefs[] = remotes.map(remoteToPeerRefs);
 
   if (!repo["payloads"]["xyz.radicle.project"]) {
     throw new Error(
@@ -411,6 +454,25 @@ async function loadTreeView(
   let branchMap: Record<string, string> = {
     [project.data.defaultBranch]: project.meta.head,
   };
+
+  for (const [refName, oid] of canonicalOids(repo.refs)) {
+    const shortName = refName.startsWith("refs/heads/")
+      ? refName.slice("refs/heads/".length)
+      : refName.startsWith("refs/tags/")
+        ? refName.slice("refs/tags/".length)
+        : refName;
+    branchMap[shortName] = oid;
+    branchMap[encodeURIComponent(shortName)] = oid;
+  }
+
+  for (const peer of peers) {
+    const tags = getTagsFromRefs(peer.refs);
+    for (const [tagName, oid] of Object.entries(tags)) {
+      branchMap[tagName] = oid;
+      branchMap[encodeURIComponent(tagName)] = oid;
+    }
+  }
+
   if (route.peer) {
     const peer = peers.find(peer => peer.id === route.peer);
     if (!peer) {
@@ -419,7 +481,11 @@ async function loadTreeView(
         params: { title: `Peer ${route.peer} could not be found` },
       };
     } else {
-      branchMap = peer.heads;
+      branchMap = { ...getBranchesFromRefs(peer.refs) };
+      for (const [tagName, oid] of Object.entries(getTagsFromRefs(peer.refs))) {
+        branchMap[tagName] = oid;
+        branchMap[encodeURIComponent(tagName)] = oid;
+      }
     }
   }
 
@@ -446,7 +512,7 @@ async function loadTreeView(
       seedingPolicy,
       commit,
       repo,
-      peers: peers.filter(remote => Object.keys(remote.heads).length > 0),
+      peers: peers.filter(peerHasBranches),
       peer: route.peer,
       rawPath,
       revision: route.revision,
@@ -515,7 +581,6 @@ async function loadHistoryView(
 
   let repoPromise: Promise<Repo>;
   let seedingPolicyPromise: Promise<SeedingPolicy>;
-  let peersPromise: Promise<Remote[]>;
   let nodePromise: Promise<Partial<Node>>;
   if (
     (previousLoaded.resource === "repo.source" ||
@@ -524,25 +589,32 @@ async function loadHistoryView(
     previousLoaded.params.peer === route.peer
   ) {
     repoPromise = Promise.resolve(previousLoaded.params.repo);
-    peersPromise = Promise.resolve(previousLoaded.params.peers);
     seedingPolicyPromise = Promise.resolve(previousLoaded.params.seedingPolicy);
     nodePromise = Promise.resolve({
       avatarUrl: previousLoaded.params.nodeAvatarUrl,
     });
   } else {
     repoPromise = api.repo.getByRid(route.repo);
-    peersPromise = api.repo.getAllRemotes(route.repo);
     seedingPolicyPromise = api.getPolicyByRid(route.repo);
     nodePromise = api.getNode();
   }
 
-  const [repo, peers, seedingPolicy, branchMap, node] = await Promise.all([
+  const [repo, seedingPolicy, node] = await Promise.all([
     repoPromise,
-    peersPromise,
     seedingPolicyPromise,
-    getPeerBranches(api, route.repo, route.peer),
     nodePromise,
   ]);
+
+  const remotes = await api.repo.getAllRemotes(route.repo);
+  const peers: PeerRefs[] = remotes.map(remoteToPeerRefs);
+
+  const branchMap = await getPeerBranches(
+    api,
+    route.repo,
+    route.peer,
+    repo,
+    peers,
+  );
 
   if (!repo["payloads"]["xyz.radicle.project"]) {
     throw new Error(
@@ -556,8 +628,6 @@ async function loadHistoryView(
     commitId = route.revision;
   } else if (branchMap) {
     commitId = branchMap[route.revision || project.data.defaultBranch];
-  } else if (!route.revision) {
-    commitId = project.meta.head;
   }
 
   if (!commitId) {
@@ -595,7 +665,7 @@ async function loadHistoryView(
       seedingPolicy,
       commit: commitId,
       repo,
-      peers: peers.filter(remote => Object.keys(remote.heads).length > 0),
+      peers: peers.filter(peerHasBranches),
       peer: route.peer,
       revision: route.revision,
       tree,
@@ -733,9 +803,51 @@ async function loadPatchView(
   };
 }
 
-async function getPeerBranches(api: HttpdClient, repo: string, peer?: string) {
+async function getPeerBranches(
+  api: HttpdClient,
+  repoId: string,
+  peer?: string,
+  repo?: Repo,
+  loadedPeers?: PeerRefs[],
+) {
   if (peer) {
-    return (await api.repo.getRemoteByPeer(repo, peer)).heads;
+    const remote = await api.repo.getRemoteByPeer(repoId, peer);
+    const refs = remoteToPeerRefs(remote).refs;
+    const map: Record<string, string> = { ...getBranchesFromRefs(refs) };
+    for (const [tagName, oid] of Object.entries(getTagsFromRefs(refs))) {
+      map[tagName] = oid;
+      map[encodeURIComponent(tagName)] = oid;
+    }
+    return map;
+  } else if (repo) {
+    const branchMap: Record<string, string> = {};
+    const peers = loadedPeers ?? [];
+
+    const project = repo.payloads["xyz.radicle.project"];
+    if (project) {
+      branchMap[project.data.defaultBranch] = project.meta.head;
+      branchMap[encodeURIComponent(project.data.defaultBranch)] =
+        project.meta.head;
+    }
+
+    for (const [refName, oid] of canonicalOids(repo.refs)) {
+      const shortName = refName.startsWith("refs/heads/")
+        ? refName.slice("refs/heads/".length)
+        : refName.startsWith("refs/tags/")
+          ? refName.slice("refs/tags/".length)
+          : refName;
+      branchMap[shortName] = oid;
+      branchMap[encodeURIComponent(shortName)] = oid;
+    }
+
+    for (const p of peers) {
+      const tags = getTagsFromRefs(p.refs);
+      for (const [tagName, oid] of Object.entries(tags)) {
+        branchMap[tagName] = oid;
+        branchMap[encodeURIComponent(tagName)] = oid;
+      }
+    }
+    return branchMap;
   } else {
     return undefined;
   }

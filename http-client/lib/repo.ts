@@ -1,4 +1,3 @@
-import type { ZodSchema } from "zod";
 import type { Fetcher, RequestOptions } from "./fetcher.js";
 import type { Commit, Commits } from "./repo/commit.js";
 import type { Issue } from "./repo/issue.js";
@@ -15,6 +14,7 @@ import {
   string,
   union,
   z,
+  ZodSchema,
 } from "zod";
 
 import {
@@ -27,6 +27,25 @@ import {
 import { issueSchema, issuesSchema } from "./repo/issue.js";
 import { patchSchema, patchesSchema } from "./repo/patch.js";
 import { authorSchema } from "./shared.js";
+
+export type PeerRefs = {
+  id: string;
+  alias?: string;
+  delegate: boolean;
+  refs: Record<string, string>;
+};
+
+const tagInfoSchema = object({
+  commit: string(),
+  tagger: object({
+    name: string(),
+    email: string(),
+    timestamp: number(),
+  }).optional(),
+  message: string().optional(),
+});
+
+export type TagInfo = z.infer<typeof tagInfoSchema>;
 
 const repoSchema = object({
   rid: string(),
@@ -59,6 +78,10 @@ const repoSchema = object({
     object({ type: literal("private"), allow: optional(array(string())) }),
   ]),
   seeding: number(),
+  refs: object({
+    tags: record(string(), tagInfoSchema),
+    refs: record(string(), string()),
+  }).optional(),
 });
 const reposSchema = array(repoSchema);
 
@@ -106,16 +129,17 @@ const treeSchema = object({
   path: string(),
 });
 
-export type Remote = z.infer<typeof remoteSchema>;
-
-export const remoteSchema = object({
+const remoteSchema = object({
   id: string(),
   alias: string().optional(),
-  heads: record(string(), string()),
   delegate: boolean(),
+  heads: record(string(), string()),
+  refs: record(string(), string()).optional(),
 });
 
-const remotesSchema = array(remoteSchema) satisfies ZodSchema<Remote[]>;
+export type Remote = z.infer<typeof remoteSchema>;
+
+const remotesSchema = array(remoteSchema);
 
 export type DiffResponse = z.infer<typeof diffResponseSchema>;
 

@@ -2,8 +2,8 @@
   import type {
     BaseUrl,
     CommitHeader,
+    PeerRefs,
     Repo,
-    Remote,
     SeedingPolicy,
     Tree,
   } from "@http-client";
@@ -31,7 +31,7 @@
   export let commit: string;
   export let commitHeaders: CommitHeader[];
   export let peer: string | undefined;
-  export let peers: Remote[];
+  export let peers: PeerRefs[];
   export let repo: Repo;
   export let revision: string | undefined;
   export let tree: Tree;

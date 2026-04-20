@@ -349,8 +349,7 @@ test("peer and branch switching", async ({ page }) => {
       await changeBranch("alice", "feature/branch", page);
       await page.locator('[title="Change branch"]:visible').first().click();
       await page
-        .getByRole("button", { name: "feature/branch" })
-        .first()
+        .getByRole("button", { name: "feature/branch 1aded56" })
         .click();
 
       await expect(

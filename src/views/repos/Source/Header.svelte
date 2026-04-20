@@ -5,7 +5,7 @@
 
 <script lang="ts">
   import type { RepoRoute } from "../router";
-  import type { BaseUrl, Repo, Remote, Tree } from "@http-client";
+  import type { BaseUrl, PeerRefs, Repo, Tree } from "@http-client";
   import type { ComponentProps } from "svelte";
 
   import { HttpdClient } from "@http-client";
@@ -23,7 +23,7 @@
   export let historyLinkActive: boolean;
   export let node: BaseUrl;
   export let peer: string | undefined;
-  export let peers: Remote[];
+  export let peers: PeerRefs[];
   export let repo: Repo;
   export let baseRoute: Extract<
     RepoRoute,
