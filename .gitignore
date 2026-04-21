@@ -4,6 +4,7 @@ NOTES
 config/local*
 radicle-httpd/target
 radicle-httpd/build/artifacts
+target
 
 # KaTeX files
 *.min.css
