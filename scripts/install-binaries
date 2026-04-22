@@ -38,7 +38,7 @@ install() {
     esac
 
     echo Downloading "$1" v"$2" from "$FETCH_URL into /tests/tmp/bin/$1/$2"
-    curl --fail -s "$FETCH_URL" | tar -xJ --strip-components=2 -C "$BINARY_PATH/$1/$2" "$FILENAME/bin/" || (echo "Download failed" && exit 1)
+    curl --fail --silent --location "$FETCH_URL" | tar -xJ --strip-components=2 -C "$BINARY_PATH/$1/$2" "$FILENAME/bin/" || (echo "Download failed" && exit 1)
   fi
 }
 
