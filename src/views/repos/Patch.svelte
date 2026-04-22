@@ -146,12 +146,11 @@
     return patchReviews;
   }
 
-  let revisionId: string;
-  $: if (view.name === "diff") {
-    revisionId = patch.revisions[patch.revisions.length - 1].id;
-  } else {
-    revisionId = view.revision;
-  }
+  // eslint-disable-next-line no-useless-assignment
+  $: revisionId =
+    view.name === "diff"
+      ? patch.revisions[patch.revisions.length - 1].id
+      : view.revision;
 
   $: uniqueEmbeds = uniqBy(
     patch.revisions.flatMap(({ discussions }) =>

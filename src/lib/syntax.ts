@@ -179,7 +179,6 @@ export function lineNumbersGutter(tree: Root) {
   // Prepend text from a partial matched earlier text.
   if (startTextRemainder) {
     line.unshift({ type: "text", value: startTextRemainder });
-    startTextRemainder = "";
   }
 
   if (line.length > 0) {

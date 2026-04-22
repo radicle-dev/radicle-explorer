@@ -17,6 +17,7 @@
   import { onDestroy } from "svelte";
 
   let observer: IntersectionObserver | undefined = undefined;
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity
   let filesVisibility = new Set<string>();
 
   if ("IntersectionObserver" in window) {

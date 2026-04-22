@@ -144,7 +144,7 @@ export class Fetcher {
         params.method,
         responseBody,
         info.version,
-        result.error.errors,
+        result.error.issues,
         params.path,
       );
     }

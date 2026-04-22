@@ -8,7 +8,6 @@
     "module": "es2022",
     "types": ["vite/client"],
     "sourceMap": true,
-    "baseUrl": "./",
     "moduleResolution": "bundler",
     "strict": true,
     "resolveJsonModule": true,

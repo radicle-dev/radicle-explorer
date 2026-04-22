@@ -17,7 +17,7 @@ export function parseNodeId(
 ): { prefix: string; pubkey: string } | undefined {
   const match = /^(did:key:)?(z[a-zA-Z0-9]+)$/.exec(nid);
   if (match) {
-    let hex: Uint8Array | undefined = undefined;
+    let hex: Uint8Array;
     try {
       hex = bs58.decode(match[2].substring(1));
     } catch (error) {

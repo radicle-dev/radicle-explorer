@@ -13,33 +13,29 @@
           sheet.href === null || sheet.href.startsWith(window.location.origin),
       )
       .reduce<string[]>(
-        (acc, sheet) =>
-          (acc = [
-            ...acc,
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            ...Array.from(sheet.cssRules).reduce(
-              (def, rule) =>
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore
-                (def =
-                  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                  // @ts-ignore
-                  rule.selectorText === ":root"
-                    ? [
-                        ...def,
-                        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                        // @ts-ignore
-                        ...Array.from(rule.style).filter(name =>
-                          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                          // @ts-ignore
-                          name.startsWith(variableName),
-                        ),
-                      ]
-                    : def),
-              [],
-            ),
-          ]),
+        (acc, sheet) => [
+          ...acc,
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          ...Array.from(sheet.cssRules).reduce(
+            (def, rule) =>
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-ignore
+              rule.selectorText === ":root"
+                ? [
+                    ...def,
+                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                    // @ts-ignore
+                    ...Array.from(rule.style).filter(name =>
+                      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                      // @ts-ignore
+                      name.startsWith(variableName),
+                    ),
+                  ]
+                : def,
+            [],
+          ),
+        ],
         [],
       );
   }

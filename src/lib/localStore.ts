@@ -1,4 +1,3 @@
-import type { SafeParseReturnType } from "zod";
 import type { Writable } from "svelte/store";
 
 import { writable, get } from "svelte/store";
@@ -32,9 +31,7 @@ export default function storedWritable<
 > & { clear: () => void } {
   const stored = !disableLocalStorage ? localStorage.getItem(key) : null;
 
-  const parseFromJson = (
-    content: string,
-  ): SafeParseReturnType<string, T["_output"]> => {
+  const parseFromJson = (content: string) => {
     return z
       .string()
       .transform((_, ctx) => {
@@ -57,17 +54,19 @@ export default function storedWritable<
     window?.addEventListener("storage", event => {
       if (event.key === key) {
         if (event.newValue === null) {
-          w.set(initialValue);
+          w.set(initialValue as S);
           return;
         }
 
         const { success, data } = parseFromJson(event.newValue);
-        w.set(success ? data : initialValue);
+        w.set(success ? (data as S) : (initialValue as S));
       }
     });
   }
-  const parsed = parseFromJson(stored || initialValue);
-  const w = writable<S>(parsed?.success ? parsed.data : initialValue);
+  const parsed = stored ? parseFromJson(stored) : undefined;
+  const w = writable<S>(
+    parsed?.success ? (parsed.data as S) : (initialValue as S),
+  );
 
   /**
    * Set writable value and inform subscribers. Updates the writeable's stored data in
@@ -91,7 +90,7 @@ export default function storedWritable<
    * Delete any data saved for this StoredWritable in localstorage.
    */
   function clear() {
-    w.set(initialValue);
+    w.set(initialValue as S);
     if (!disableLocalStorage) localStorage.removeItem(key);
   }
 

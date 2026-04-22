@@ -828,7 +828,7 @@ function renderUserAvatar(key: string): string {
             const sectorIdx = Math.floor(a / ((2 * Math.PI) / petals));
             if (!sectorGate(a, petals, sectorMask)) continue;
 
-            let inside = false;
+            let inside: boolean;
             if (shapeModel === "rose") inside = shapeRose(a, petals, tol);
             else if (shapeModel === "starburst")
               inside = shapeStarburst(a, petals, softness);

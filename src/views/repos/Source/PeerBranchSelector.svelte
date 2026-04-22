@@ -174,6 +174,7 @@
       } else if (!selectedBranch) {
         selectedTab = "branches";
       }
+      // eslint-disable-next-line no-useless-assignment
       lastSelectedBranch = selectedBranch;
     }
   }

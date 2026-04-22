@@ -704,7 +704,7 @@ function userAvatarSvg(key, size = 64) {
       const tol = angleTolNear * (1 - t) + angleTolFar * t;
       const sectorIdx = Math.floor(a / ((2 * Math.PI) / petals));
       if (!_sectorGate(a, petals, sectorMask)) continue;
-      let inside = false;
+      let inside;
       if (shapeModel === "rose") inside = _shapeRose(a, petals, tol);
       else if (shapeModel === "starburst")
         inside = _shapeStarburst(a, petals, softness);

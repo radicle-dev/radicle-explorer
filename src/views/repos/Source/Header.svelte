@@ -50,8 +50,7 @@
   $: fetchCommitCount(repo.rid, commit);
 
   let selectedBranch: string | undefined;
-  let commitButtonVariant: ComponentProps<CommitButton>["variant"] | undefined =
-    undefined;
+  let commitButtonVariant: ComponentProps<CommitButton>["variant"] | undefined;
 
   // Revision may be a commit ID, a branch name or `undefined` which means the
   // default branch. We assign `selectedBranch` accordingly.
@@ -65,8 +64,7 @@
   $: lastCommit = tree.lastCommit;
   $: onCanonical = Boolean(
     !peer &&
-      selectedBranch ===
-        repo.payloads["xyz.radicle.project"].data.defaultBranch,
+    selectedBranch === repo.payloads["xyz.radicle.project"].data.defaultBranch,
   );
   $: if (onCanonical) {
     commitButtonVariant = "right";

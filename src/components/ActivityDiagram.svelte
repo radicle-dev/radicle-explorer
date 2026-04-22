@@ -20,7 +20,7 @@
   type Rect = { x: number; y: number; opacity: number };
   let rects: Rect[] = $state([]);
 
-  const heightWithPadding = viewBoxHeight + 16;
+  const heightWithPadding = $derived.by(() => viewBoxHeight + 16);
 
   let cellSize: number = $state(0);
   let rows: number = 0;

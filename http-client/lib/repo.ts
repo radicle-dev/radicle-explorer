@@ -2,6 +2,7 @@ import type { Fetcher, RequestOptions } from "./fetcher.js";
 import type { Commit, Commits } from "./repo/commit.js";
 import type { Issue } from "./repo/issue.js";
 import type { Patch } from "./repo/patch.js";
+import type { ZodSchema } from "zod";
 
 import {
   array,
@@ -14,7 +15,6 @@ import {
   string,
   union,
   z,
-  ZodSchema,
 } from "zod";
 
 import {

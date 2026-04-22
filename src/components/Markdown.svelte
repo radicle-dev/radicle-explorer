@@ -114,6 +114,7 @@
 
       // If the anchor is an oid embed
       if (anchorHref && isCommit(anchorHref)) {
+        // eslint-disable-next-line svelte/prefer-svelte-reactivity
         const url = new URL(rawPath);
         // deprecated with httpd 0.18.1
         // For older httpd versions we still pass the mime type.
