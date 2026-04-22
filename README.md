@@ -14,7 +14,7 @@ collaboration and publishing stack, directly from your web browser.
 
 **Prerequisites:**
 
-* Recent versions of [Node.js][nod] (20.9.0 or higher) and [npm][npm] installed
+* Recent versions of [Node.js][nod] (24 or higher) and [npm][npm] installed
 
 Run the following commands to access the web UI locally:
 

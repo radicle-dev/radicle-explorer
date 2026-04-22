@@ -172,7 +172,7 @@
       devShells.default = pkgs.mkShell {
         packages = with pkgs; [
           cargo-watch
-          nodejs_22
+          nodejs_24
           radicle-node
           rust-analyzer
           rustToolchain

@@ -22,7 +22,7 @@
   },
   "type": "module",
   "engines": {
-    "node": ">=18.17.1"
+    "node": ">=24"
   },
   "devDependencies": {
     "@eslint/js": "^9.27.0",
@@ -33,7 +33,7 @@
     "@types/katex": "^0.16.7",
     "@types/lodash": "^4.17.17",
     "@types/md5": "^2.3.5",
-    "@types/node": "^22.15.21",
+    "@types/node": "^24",
     "@types/wait-on": "^5.3.4",
     "@typescript-eslint/parser": "^8.32.1",
     "chalk": "^5.4.1",
