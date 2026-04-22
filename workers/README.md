@@ -5,7 +5,7 @@ preview card images for social media embeds.
 
 ## How it works
 
-`app.radicle.xyz` is a plain static SPA. A Cloudflare Redirect Rule
+`radicle.network` is a plain static SPA. A Cloudflare Redirect Rule
 302s social media crawlers to `open-graph.radicle.network`, which
 returns HTML with OG tags. The `og:image` points to `/cards/...` on
 the same domain, where the worker renders PNG cards via Satori + resvg-wasm.
@@ -26,7 +26,7 @@ cards degrade: specific item -> repo -> node -> home.
 **Rules > Redirect Rules** on the `radicle.xyz` zone:
 
 ```
-(http.host eq "app.radicle.xyz") and (
+(http.host eq "radicle.network") and (
   (http.user_agent contains "Twitterbot") or
   (http.user_agent contains "facebookexternalhit") or
   (http.user_agent contains "Facebot") or

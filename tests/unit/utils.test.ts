@@ -73,8 +73,8 @@ describe("String Assertions", () => {
   });
 
   test.each([
-    { url: "https://app.radicle.xyz", expected: true },
-    { url: "http://app.radicle.xyz", expected: true },
+    { url: "https://radicle.network", expected: true },
+    { url: "http://radicle.network", expected: true },
     { url: "http://app", expected: true },
     { url: "://app", expected: false },
     { url: "//app", expected: false },
@@ -122,7 +122,7 @@ describe("Path Manipulation", () => {
     {
       imagePath: "/assets/images/tux.png",
       base: "/",
-      origin: "https://app.radicle.xyz",
+      origin: "https://radicle.network",
       expected: "assets/images/tux.png",
     },
     {
@@ -134,7 +134,7 @@ describe("Path Manipulation", () => {
     {
       imagePath: "assets/images/tux.png",
       base: "/",
-      origin: "https://app.radicle.xyz",
+      origin: "https://radicle.network",
       expected: "assets/images/tux.png",
     },
     {

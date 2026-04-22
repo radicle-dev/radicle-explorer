@@ -5,7 +5,7 @@ collaboration and publishing stack, directly from your web browser.
 
 **Deployment Options:**
 
-* **Public Server:** The Radicle team maintains a public instance at [app.radicle.xyz][app]
+* **Public Server:** The Radicle team maintains a public instance at [radicle.network][app]
 * **Local-first:** Run the UI locally
 * **Self-hosting:** Deploy the UI on your own server
 
@@ -122,15 +122,15 @@ The UI is distributed under the terms of GPLv3. See [LICENSE][lic] for details.
 
 
 
-[app]: https://app.radicle.xyz
+[app]: https://radicle.network
 [con]: ./CONTRIBUTING.md
 [def]: ./config/default.json
 [env]: ./config/custom-environment-variables.json
-[iss]: https://app.radicle.xyz/nodes/iris.radicle.xyz/rad:z4V1sjrXqjvFdnCUbxPFqd5p4DtH5/issues
+[iss]: https://radicle.network/nodes/iris.radicle.xyz/rad:z4V1sjrXqjvFdnCUbxPFqd5p4DtH5/issues
 [lic]: ./LICENSE
 [nco]: https://github.com/node-config/node-config/wiki/Configuration-Files
 [nod]: https://nodejs.org
 [npm]: https://www.npmjs.com
-[pat]: https://app.radicle.xyz/nodes/iris.radicle.xyz/rad:z4V1sjrXqjvFdnCUbxPFqd5p4DtH5/patches
+[pat]: https://radicle.network/nodes/iris.radicle.xyz/rad:z4V1sjrXqjvFdnCUbxPFqd5p4DtH5/patches
 [rad]: https://radicle.xyz
 [zul]: https://radicle.zulipchat.com/#narrow/stream/369278-web

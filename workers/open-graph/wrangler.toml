@@ -7,7 +7,7 @@ routes = [
 ]
 
 [vars]
-APP_BASE = "https://app.radicle.xyz"
+APP_BASE = "https://radicle.network"
 
 [[rules]]
 type = "CompiledWasm"

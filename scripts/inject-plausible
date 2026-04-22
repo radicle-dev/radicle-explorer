@@ -3,7 +3,7 @@
 import fs from "fs";
 
 const file = "build/index.html";
-const snippet = `<script defer="" data-domain="app.radicle.xyz" src="https://plausible.io/js/script.js"></script>`;
+const snippet = `<script defer="" data-domain="radicle.network" src="https://plausible.io/js/script.js"></script>`;
 
 const html = fs.readFileSync(file, "utf8");
 

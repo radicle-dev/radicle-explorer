@@ -2185,7 +2185,7 @@ async function handleOgHtml(request, url, env) {
     return new Response("Not found", { status: 404 });
   }
 
-  const appBase = env.APP_BASE || "https://app.radicle.xyz";
+  const appBase = env.APP_BASE || "https://radicle.network";
   const appHost = new URL(appBase).hostname;
   const hostParam = route.type === "home" ? `?host=${appHost}` : "";
   const ogImageUrl = escapeHtml(
