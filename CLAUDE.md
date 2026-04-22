@@ -37,7 +37,7 @@ npm run test:http-client:unit
 
 ```sh
 npm run test:e2e -- --project chromium
-npm run test:e2e -- --project chromium tests/e2e/<file>.spec.ts
+npm run test:e2e -- tests/e2e/<file>.spec.ts --project chromium
 ```
 
 `SKIP_SETUP=true` skips fixture creation for faster iteration.
