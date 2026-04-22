@@ -3,13 +3,16 @@ on:
   push:
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   check-build:
     timeout-minutes: 30
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version-file: ".nvmrc"
       - name: Install dependencies
@@ -21,7 +24,7 @@ jobs:
       - name: Run Playwright build smoke test
         run: npm run test:e2e -- --project chromium --config playwright.buildSmoke.config.ts
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: test-artifacts-${{ runner.os }}
