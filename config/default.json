@@ -13,7 +13,7 @@
   "deploymentId": null,
   "preferredSeeds": [
     {
-      "hostname": "rosa.radicle.dev",
+      "hostname": "rosa.radicle.network",
       "port": 443,
       "scheme": "https"
     },
@@ -23,7 +23,7 @@
       "scheme": "https"
     },
     {
-      "hostname": "iris.radicle.dev",
+      "hostname": "iris.radicle.network",
       "port": 443,
       "scheme": "https"
     }
