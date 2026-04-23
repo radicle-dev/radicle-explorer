@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.25.0
+
+- **Canonical and peer refs in repo API**: The repo endpoint now exposes canonical refs and per-peer refs, letting clients discover branches and tags resolved by delegate quorum as well as those from individual nodes
+- **Job COBs endpoint**: New `/repos/{rid}/jobs/{sha}` endpoint serves job collaborative objects, enabling clients to query CI/CD job state
+
 ## 0.24.0
 
 - **Windows support**: The HTTP daemon now runs on Windows with platform-specific adaptations
