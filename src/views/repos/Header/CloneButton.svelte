@@ -101,7 +101,7 @@
 
     {#if activeTab === "radicle"}
       <label for="rad-clone-url">
-        Use the <ExternalLink href="https://radicle.xyz">
+        Use the <ExternalLink href="https://radicle.dev">
           Radicle CLI
         </ExternalLink> to clone this repository.
       </label>

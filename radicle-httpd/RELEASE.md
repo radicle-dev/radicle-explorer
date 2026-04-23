@@ -98,8 +98,8 @@ SSH_LOGIN=<username> build/upload
    ## Installation
 
    Download binaries from:
-   - https://files.radicle.xyz/releases/radicle-httpd/<version>
-   - https://radicle.xyz/download
+   - https://files.radicle.dev/releases/radicle-httpd/<version>
+   - https://radicle.dev/download
 
    ## Changelog
 

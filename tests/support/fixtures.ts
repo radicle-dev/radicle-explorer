@@ -348,7 +348,7 @@ export async function createCobsFixture(
   const issueTwo = await issue.create(
     peer,
     "A closed issue",
-    "This issue has been closed\n\nsource: [link](https://radicle.xyz)",
+    "This issue has been closed\n\nsource: [link](https://radicle.dev)",
     [],
     { cwd: repoFolder },
   );

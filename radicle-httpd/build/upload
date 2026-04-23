@@ -2,7 +2,7 @@
 set -e
 
 SSH_LOGIN=${SSH_LOGIN:-release}
-SSH_ADDRESS=${SSH_ADDRESS:-$SSH_LOGIN@files.radicle.xyz}
+SSH_ADDRESS=${SSH_ADDRESS:-$SSH_LOGIN@files.radicle.dev}
 SSH_KEY="$(rad path)/keys/radicle"
 
 main() {
@@ -16,14 +16,14 @@ main() {
   fi
 
   # Create remote folder.
-  ssh -i $SSH_KEY $SSH_ADDRESS mkdir -p /var/www/files.radicle.xyz/releases/radicle-httpd/$version
+  ssh -i $SSH_KEY $SSH_ADDRESS mkdir -p /var/www/files.radicle.dev/releases/radicle-httpd/$version
   # Copy files over.
-  scp -i $SSH_KEY "$(dirname "$0")/artifacts/radicle-httpd-$version"* $SSH_ADDRESS:/var/www/files.radicle.xyz/releases/radicle-httpd/$version
-  scp -i $SSH_KEY "$(dirname "$0")/artifacts/radicle-httpd.json" $SSH_ADDRESS:/var/www/files.radicle.xyz/releases/radicle-httpd/$version
+  scp -i $SSH_KEY "$(dirname "$0")/artifacts/radicle-httpd-$version"* $SSH_ADDRESS:/var/www/files.radicle.dev/releases/radicle-httpd/$version
+  scp -i $SSH_KEY "$(dirname "$0")/artifacts/radicle-httpd.json" $SSH_ADDRESS:/var/www/files.radicle.dev/releases/radicle-httpd/$version
 
   for target in $(cat "$(dirname "$0")/TARGETS"); do
-    archive=/var/www/files.radicle.xyz/releases/radicle-httpd/$version/radicle-httpd-$version-$target.tar.xz
-    symlink=/var/www/files.radicle.xyz/releases/radicle-httpd/$version/radicle-httpd-$target.tar.xz
+    archive=/var/www/files.radicle.dev/releases/radicle-httpd/$version/radicle-httpd-$version-$target.tar.xz
+    symlink=/var/www/files.radicle.dev/releases/radicle-httpd/$version/radicle-httpd-$target.tar.xz
 
     echo "Creating symlinks for $target.."
 
@@ -34,7 +34,7 @@ main() {
 
   if git describe --exact-match --match='releases/*' 2>/dev/null; then
     echo "Creating 'latest' symlink.."
-    ssh -i $SSH_KEY $SSH_ADDRESS ln -snf /var/www/files.radicle.xyz/releases/radicle-httpd/$version /var/www/files.radicle.xyz/releases/radicle-httpd/latest
+    ssh -i $SSH_KEY $SSH_ADDRESS ln -snf /var/www/files.radicle.dev/releases/radicle-httpd/$version /var/www/files.radicle.dev/releases/radicle-httpd/latest
   else
     echo "Skipping 'latest' symlink creation for development build."
   fi

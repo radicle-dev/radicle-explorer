@@ -6,7 +6,7 @@ Priority: optional
 Standards-Version: 4.6.2
 Build-Depends: debhelper (>= 10~),
   asciidoctor
-Homepage: https://radicle.xyz/
+Homepage: https://radicle.dev/
 
 Package: radicle-httpd
 Architecture: any

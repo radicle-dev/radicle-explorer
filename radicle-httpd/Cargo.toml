@@ -1,7 +1,7 @@
 [package]
 name = "radicle-httpd"
 description = "Radicle HTTP daemon"
-homepage = "https://radicle.xyz"
+homepage = "https://radicle.dev"
 license = "MIT OR Apache-2.0"
 version = "0.24.0"
 authors = ["cloudhead <cloudhead@radicle.xyz>", "sebastinez <me@sebastinez.dev>"]

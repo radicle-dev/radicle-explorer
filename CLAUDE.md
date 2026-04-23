@@ -124,17 +124,17 @@ Key file: `../radicle-job/README.md`
 - `../rips/0002-identity.md` — identity system (DIDs, Ed25519)
 - `../rips/0003-storage-layout.md` — git storage layout
 
-### Radicle documentation (`../radicle.xyz`)
+### Radicle documentation (`../radicle.dev`)
 
 Read these when you need domain context for UI work:
-- `../radicle.xyz/_guides/user.md` — end-to-end user workflows
+- `../radicle.dev/_guides/user.md` — end-to-end user workflows
   (init, clone, seed, issues, patches, code review, private repos)
-- `../radicle.xyz/_guides/protocol.md` — protocol internals
+- `../radicle.dev/_guides/protocol.md` — protocol internals
   (gossip, replication, identity documents, COB data model, trust)
-- `../radicle.xyz/_guides/seeder.md` — seed node operation
+- `../radicle.dev/_guides/seeder.md` — seed node operation
   (seeding policies, httpd setup, DNS-SD)
-- `../radicle.xyz/_posts/2025-07-23-using-radicle-ci-for-development.md` — CI integration
-- `../radicle.xyz/_posts/2025-08-12-canonical-references.md` — canonical refs design
+- `../radicle.dev/_posts/2025-07-23-using-radicle-ci-for-development.md` — CI integration
+- `../radicle.dev/_posts/2025-08-12-canonical-references.md` — canonical refs design
 
 ## Domain glossary
 

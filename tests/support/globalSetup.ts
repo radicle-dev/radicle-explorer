@@ -119,7 +119,7 @@ export default async function globalSetup(): Promise<() => void> {
           },
           description: `:seedling: Radicle is an open source, peer-to-peer code collaboration stack built on Git.
 
-:construction: [radicle.xyz](https://radicle.xyz)`,
+:construction: [radicle.dev](https://radicle.dev)`,
         },
         node: {
           ...defaultConfig.node,

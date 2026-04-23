@@ -24,7 +24,7 @@ Options
                                      or Unix socket path (e.g., /tmp/radicle.sock)
                                      (default: 0.0.0.0:8080)
     --alias, -a    <alias> <rid>     Provide alias and RID pairs to shorten git clone commands for repositories,
-                                     e.g. heartwood and rad:z3gqcJUoA1n9HaHKufZs5FCSGazv5 to produce https://seed.radicle.xyz/heartwood.git
+                                     e.g. heartwood and rad:z3gqcJUoA1n9HaHKufZs5FCSGazv5 to produce https://seed.radicle.dev/heartwood.git
     --cache        <number>          Max amount of items in cache for /tree endpoints (default: 100)
     --version, -v                    Print program version
     --help, -h                       Print help

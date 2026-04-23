@@ -28,7 +28,7 @@
 <div class="help">
   <div class="item">
     About
-    <ExternalLink href="https://radicle.xyz">radicle.xyz</ExternalLink>
+    <ExternalLink href="https://radicle.dev">radicle.dev</ExternalLink>
   </div>
 
   {#if !hideShortcuts}

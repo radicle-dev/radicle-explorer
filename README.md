@@ -19,7 +19,7 @@ collaboration and publishing stack, directly from your web browser.
 Run the following commands to access the web UI locally:
 
 ``` shell
-git clone https://seed.radicle.xyz/z4V1sjrXqjvFdnCUbxPFqd5p4DtH5.git radicle-explorer
+git clone https://seed.radicle.dev/z4V1sjrXqjvFdnCUbxPFqd5p4DtH5.git radicle-explorer
 cd radicle-explorer
 npm install
 npm start
@@ -126,11 +126,11 @@ The UI is distributed under the terms of GPLv3. See [LICENSE][lic] for details.
 [con]: ./CONTRIBUTING.md
 [def]: ./config/default.json
 [env]: ./config/custom-environment-variables.json
-[iss]: https://radicle.network/nodes/iris.radicle.xyz/rad:z4V1sjrXqjvFdnCUbxPFqd5p4DtH5/issues
+[iss]: https://radicle.network/nodes/iris.radicle.dev/rad:z4V1sjrXqjvFdnCUbxPFqd5p4DtH5/issues
 [lic]: ./LICENSE
 [nco]: https://github.com/node-config/node-config/wiki/Configuration-Files
 [nod]: https://nodejs.org
 [npm]: https://www.npmjs.com
-[pat]: https://radicle.network/nodes/iris.radicle.xyz/rad:z4V1sjrXqjvFdnCUbxPFqd5p4DtH5/patches
-[rad]: https://radicle.xyz
+[pat]: https://radicle.network/nodes/iris.radicle.dev/rad:z4V1sjrXqjvFdnCUbxPFqd5p4DtH5/patches
+[rad]: https://radicle.dev
 [zul]: https://radicle.zulipchat.com/#narrow/stream/369278-web

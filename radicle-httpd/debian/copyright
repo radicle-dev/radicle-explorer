@@ -1,7 +1,7 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: radicle-httpd
-Upstream-Contact: https://radicle.xyz/
-Source: https://radicle.network/seeds/seed.radicle.xyz
+Upstream-Contact: https://radicle.dev/
+Source: https://radicle.network/seeds/seed.radicle.dev
 
 Files: *
 Copyright: 2019-2021, The Radicle Foundation

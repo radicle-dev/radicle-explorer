@@ -159,7 +159,7 @@
             </Button>
             <div slot="popover" style:width="16rem">
               <span class="follow-label">
-                Use the <ExternalLink href="https://radicle.xyz">
+                Use the <ExternalLink href="https://radicle.dev">
                   Radicle CLI
                 </ExternalLink> to start following this user.
               </span>

@@ -61,8 +61,8 @@
       style:gap="0.25rem"
       target="_blank"
       rel="noreferrer"
-      href="https://radicle.xyz">
-      radicle.xyz
+      href="https://radicle.dev">
+      radicle.dev
       <Icon name="open-external" />
     </a>
   </div>

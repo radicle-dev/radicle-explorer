@@ -23,7 +23,7 @@ cards degrade: specific item -> repo -> node -> home.
 
 ## Cloudflare Redirect Rule
 
-**Rules > Redirect Rules** on the `radicle.xyz` zone:
+**Rules > Redirect Rules** on the `radicle.dev` zone:
 
 ```
 (http.host eq "radicle.network") and (

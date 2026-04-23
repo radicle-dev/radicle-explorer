@@ -56,7 +56,7 @@
 
   <div slot="popover" style:width="auto">
     <span class="seed-label">
-      Use the <ExternalLink href="https://radicle.xyz">
+      Use the <ExternalLink href="https://radicle.dev">
         Radicle CLI
       </ExternalLink> to start seeding this repository.
     </span>
