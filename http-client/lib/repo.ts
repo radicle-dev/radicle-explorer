@@ -395,7 +395,7 @@ export class Client {
     return this.#fetcher.fetchOk(
       {
         method: "GET",
-        path: `repos/${rid}/xyz.radworks.job/${commit}`,
+        path: `repos/${rid}/jobs/${commit}`,
         options,
       },
       jobsSchema,

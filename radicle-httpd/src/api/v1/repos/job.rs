@@ -121,7 +121,7 @@ impl FindJobs for JobsSource<'_> {
 }
 
 /// Get jobs for a commit.
-/// `GET /repos/:rid/xyz.radworks.job/:sha`
+/// `GET /repos/:rid/jobs/:sha`
 pub async fn handler(
     State(ctx): State<Context>,
     Path((rid, sha)): Path<(RepoId, Oid)>,
