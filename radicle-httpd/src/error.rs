@@ -108,11 +108,16 @@ pub enum RawError {
     /// The entity was not found.
     #[error("not found")]
     NotFound,
+
+    /// Bad request.
+    #[error("bad request")]
+    BadRequest,
 }
 
 impl RawError {
     pub fn status(&self) -> http::StatusCode {
         match self {
+            RawError::BadRequest => http::StatusCode::BAD_REQUEST,
             RawError::SurfFile(_) | RawError::NotFound => http::StatusCode::NOT_FOUND,
             _ => http::StatusCode::INTERNAL_SERVER_ERROR,
         }

@@ -1,5 +1,9 @@
 # Changelog
 
+## [unreleased]
+
+- **Git archive downloads**: Additional formats ZIP and TAR are now supported. Also, a prefix is added to the archive by default, which can be disabled by using the query `?prefix=false`. This query string is immediately deprecated. It only exists as a workaround for users to adapt their download scripts etc. to accommodate for the prefix. It will be removed in a future version.
+
 ## 0.25.0
 
 - **Canonical and peer refs in repo API**: The repo endpoint now exposes canonical refs and per-peer refs, letting clients discover branches and tags resolved by delegate quorum as well as those from individual nodes

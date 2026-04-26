@@ -22,7 +22,83 @@ use crate::error::RawError as Error;
 
 const MAX_BLOB_SIZE: usize = 10_485_760;
 
-const ARCHIVE_SUFFIX: &str = ".tar.gz";
+/// Values for `git archive --format` that we support.
+#[derive(Debug, Default)]
+enum ArchiveFormat {
+    Tar,
+    // NOTE: Even though `git archive` would use `tar` as the default format,
+    // we use `tar.gz` as the default format for HTTP responses, to benefit
+    // from compression when downloading large repositories. It was also used
+    // before the `ArchiveFormat` enum was introduced, so this default will
+    // also surprise less.
+    #[default]
+    TarGz,
+    Zip,
+}
+
+impl ArchiveFormat {
+    const fn as_str(&self) -> &'static str {
+        match self {
+            ArchiveFormat::Tar => "tar",
+            ArchiveFormat::TarGz => "tar.gz",
+            ArchiveFormat::Zip => "zip",
+        }
+    }
+
+    const fn extension(&self) -> &'static str {
+        match self {
+            ArchiveFormat::Tar => ".tar",
+            ArchiveFormat::TarGz => ".tar.gz",
+            ArchiveFormat::Zip => ".zip",
+        }
+    }
+
+    /// The MIME type associated with this archive format.
+    /// See <https://developer.mozilla.org/docs/Web/HTTP/Guides/MIME_types/Common_types>.
+    const fn mime_type(&self) -> &'static str {
+        match self {
+            ArchiveFormat::Tar => "application/x-tar",
+            ArchiveFormat::TarGz => "application/gzip",
+            ArchiveFormat::Zip => "application/zip",
+        }
+    }
+
+    /// Detect the archive format from the suffix of the given string.
+    /// If a supported suffix is found, the suffix is stripped from the string
+    /// and the corresponding format is returned.
+    /// Otherwise, the original string is returned and `None` is returned for
+    /// the format.
+    fn detect(s: &str) -> (&str, Option<Self>) {
+        if let Some(stripped) = s.strip_suffix(ArchiveFormat::Tar.extension()) {
+            (stripped, Some(ArchiveFormat::Tar))
+        } else if let Some(stripped) = s.strip_suffix(ArchiveFormat::TarGz.extension()) {
+            (stripped, Some(ArchiveFormat::TarGz))
+        } else if let Some(stripped) = s.strip_suffix(ArchiveFormat::Zip.extension()) {
+            (stripped, Some(ArchiveFormat::Zip))
+        } else {
+            (s, None)
+        }
+    }
+}
+
+#[derive(serde::Deserialize)]
+#[serde(default)]
+struct PrefixQuery {
+    /// Whether to include a prefix in the archive, i.e. whether to specify
+    /// `git archive --prefix`. Defaults to `true`.
+    prefix: bool,
+}
+
+impl Default for PrefixQuery {
+    fn default() -> Self {
+        Self { prefix: true }
+    }
+}
+
+enum Committish<'a> {
+    Oid(Oid),
+    Ref(&'a str),
+}
 
 pub fn router(profile: Arc<Profile>) -> Router {
     Router::new()
@@ -36,27 +112,26 @@ pub fn router(profile: Arc<Profile>) -> Router {
 
 async fn commit_handler(
     Path((rid, sha)): Path<(RepoId, String)>,
+    Query(q): Query<PrefixQuery>,
     State(profile): State<Arc<Profile>>,
 ) -> Result<(StatusCode, HeaderMap, Vec<u8>), Error> {
     let storage = &profile.storage;
     let repo = storage.repository(rid)?;
 
-    // Don't allow accessing private repos.
+    // Do not allow accessing private repos.
     if repo.identity_doc()?.visibility().is_private() {
         return Err(Error::NotFound);
     }
 
-    if !sha.ends_with(ARCHIVE_SUFFIX) {
+    let (sha, Some(format)) = ArchiveFormat::detect(&sha) else {
         return Err(Error::NotFound);
-    }
+    };
 
-    let sha = sha.trim_end_matches(ARCHIVE_SUFFIX);
+    let Ok(oid) = Oid::from_str(sha) else {
+        return Err(Error::BadRequest);
+    };
 
-    if Oid::from_str(sha).is_err() {
-        return Err(Error::NotFound);
-    }
-
-    archive_by_refname(rid, sha.to_string(), profile).await
+    archive_by_committish(rid, Committish::Oid(oid), q.prefix, format, profile).await
 }
 
 async fn file_by_commit_handler(
@@ -82,20 +157,31 @@ async fn file_by_commit_handler(
 
 async fn archive_by_refname_handler(
     Path((rid, refname)): Path<(RepoId, String)>,
+    Query(q): Query<PrefixQuery>,
     State(profile): State<Arc<Profile>>,
 ) -> Result<(StatusCode, HeaderMap, Vec<u8>), Error> {
-    archive_by_refname(rid, refname, profile).await
+    let (refname, format) = ArchiveFormat::detect(&refname);
+    archive_by_committish(
+        rid,
+        Committish::Ref(refname),
+        q.prefix,
+        format.unwrap_or_default(),
+        profile,
+    )
+    .await
 }
 
-async fn archive_by_refname(
+async fn archive_by_committish(
     rid: RepoId,
-    refname: String,
+    committish: Committish<'_>,
+    use_prefix: bool,
+    format: ArchiveFormat,
     profile: Arc<Profile>,
 ) -> Result<(StatusCode, HeaderMap, Vec<u8>), Error> {
     let storage = &profile.storage;
     let repo = storage.repository(rid)?;
 
-    // Don't allow downloading tarballs for private repos.
+    // Do not allow downloading tarballs for private repos.
     if repo.identity_doc()?.visibility().is_private() {
         return Err(Error::NotFound);
     }
@@ -104,22 +190,50 @@ async fn archive_by_refname(
     let project = doc.project()?;
     let repo_name = project.name();
 
-    let (oid, via_refname) = match Oid::from_str(&refname) {
-        Ok(oid) => (oid, false),
-        Err(_) => (
-            repo.backend
-                .resolve_reference_from_short_name(&refname)
-                .map(|reference| reference.target())?
-                .ok_or(Error::NotFound)?
-                .into(),
-            true,
-        ),
+    let oid = match committish {
+        Committish::Oid(oid) => oid,
+        Committish::Ref(refname) => repo
+            .backend
+            .resolve_reference_from_short_name(refname)
+            .map(|reference| reference.target())?
+            .ok_or(Error::NotFound)?
+            .into(),
     };
 
-    let output = Command::new("git")
+    // Build a prefix for the archive, which includes the
+    // refname (if one was given):
+    //
+    // Without refname:   <repo-name>-<oid>
+    // With    refname:   <repo-name>-<refname>
+    let prefix = {
+        let mut build = String::from(repo_name);
+        build.push('-');
+
+        build.push_str(&match committish {
+            Committish::Oid(oid) => oid.to_string(),
+            Committish::Ref(refname) => {
+                // NOTE: Sanitize refnames according to
+                // <https://git-scm.com/docs/git-check-ref-format>
+                refname.replace("/", "-")
+            }
+        });
+
+        build
+    };
+
+    let mut command = Command::new("git");
+
+    command
         .arg("archive")
-        .arg("--format=tar.gz")
+        .arg(format!("--format={}", format.as_str()));
+
+    if use_prefix {
+        command.arg(format!("--prefix={prefix}/"));
+    }
+
+    let output = command
         .arg(oid.to_string())
+        .arg("--")
         .current_dir(repo.path())
         .output()?;
 
@@ -130,32 +244,14 @@ async fn archive_by_refname(
         ));
     }
 
-    // Build a filename for the archive, which includes the
-    // refname (if one was given):
-    //
-    // Without refname:   <repo-name>-<oid>.tar.gz
-    // With    refname:   <repo-name>-<refname>--<oid>.tar.gz
-    let filename = {
-        let mut build = String::from(repo_name);
-        build.push('-');
-
-        if via_refname {
-            // NOTE: Sanitize refnames according to
-            // <https://git-scm.com/docs/git-check-ref-format>
-            build.push_str(&refname.replace("/", "__"));
-            build.push('-');
-        }
-
-        build.push_str(oid.to_string().as_str());
-        build.push_str(ARCHIVE_SUFFIX);
-        build
-    };
-
     let mut response_headers = HeaderMap::new();
-    response_headers.insert("Content-Type", HeaderValue::from_str("application/gzip")?);
+    response_headers.insert("Content-Type", HeaderValue::from_str(format.mime_type())?);
     response_headers.insert(
         "Content-Disposition",
-        HeaderValue::from_str(&format!("attachment; filename=\"{filename}\""))?,
+        HeaderValue::from_str(&format!(
+            "attachment; filename=\"{prefix}{}\"",
+            format.extension()
+        ))?,
     );
     Ok::<_, Error>((StatusCode::OK, response_headers, output.stdout))
 }
