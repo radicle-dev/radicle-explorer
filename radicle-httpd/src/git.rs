@@ -1,12 +1,11 @@
 use std::collections::HashMap;
-use std::io::prelude::*;
 use std::path::Path;
-use std::process::{Command, Stdio};
+use std::process::Stdio;
+use std::str;
 use std::sync::Arc;
-use std::{io, str};
 
-use axum::body::Bytes;
-use axum::extract::{ConnectInfo, Path as AxumPath, RawQuery, State};
+use axum::body::Body;
+use axum::extract::{ConnectInfo, Path as AxumPath, RawQuery, Request, State};
 use axum::http::header::HeaderName;
 use axum::http::{HeaderMap, Method, StatusCode};
 use axum::response::IntoResponse;
@@ -14,10 +13,14 @@ use axum::routing::any;
 use axum::Router;
 use axum_listener::DualAddr;
 
+use futures_util::TryStreamExt;
 use radicle::identity::RepoId;
 use radicle::node::NodeId;
 use radicle::profile::Profile;
 use radicle::storage::{ReadRepository, ReadStorage};
+use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::process::Command;
+use tokio_util::io::{ReaderStream, StreamReader};
 use tower_http::decompression::RequestDecompressionLayer;
 
 use crate::error::GitError as Error;
@@ -25,7 +28,7 @@ use crate::error::GitError as Error;
 pub fn router(profile: Arc<Profile>, aliases: HashMap<String, RepoId>) -> Router {
     Router::new()
         .route(
-            "/{rid}/{*request}",
+            "/{rid}/{*path}",
             any(git_handler).layer(RequestDecompressionLayer::new()),
         )
         .with_state((profile, aliases))
@@ -33,12 +36,12 @@ pub fn router(profile: Arc<Profile>, aliases: HashMap<String, RepoId>) -> Router
 
 async fn git_handler(
     State((profile, aliases)): State<(Arc<Profile>, HashMap<String, RepoId>)>,
-    AxumPath((repository, request)): AxumPath<(String, String)>,
+    AxumPath((repository, path)): AxumPath<(String, String)>,
     method: Method,
     headers: HeaderMap,
     ConnectInfo(remote): ConnectInfo<DualAddr>,
     query: RawQuery,
-    body: Bytes,
+    request: Request,
 ) -> impl IntoResponse {
     let query = query.0.unwrap_or_default();
     let name = repository.strip_suffix(".git").unwrap_or(&repository);
@@ -52,16 +55,16 @@ async fn git_handler(
         }
     };
 
-    let (nid, request): (Option<NodeId>, &str) = {
-        let (first, rest) = request.split_once('/').unwrap_or((&request, ""));
+    let (nid, path): (Option<NodeId>, &str) = {
+        let (first, rest) = path.split_once('/').unwrap_or((&path, ""));
         match first.parse::<NodeId>() {
             Ok(nid) => (Some(nid), rest),
-            Err(_) => (None, &request),
+            Err(_) => (None, &path),
         }
     };
 
     let (status, headers, body) = git_http_backend(
-        &profile, method, headers, body, remote, rid, nid, request, query,
+        &profile, method, headers, request, remote, rid, nid, path, query,
     )
     .await?;
 
@@ -80,20 +83,18 @@ async fn git_http_backend(
     profile: &Profile,
     method: Method,
     headers: HeaderMap,
-    body: Bytes,
+    request: Request,
     remote: DualAddr,
     id: RepoId,
     nid: Option<NodeId>,
     path: &str,
     query: String,
-) -> Result<(StatusCode, HashMap<String, Vec<String>>, Vec<u8>), Error> {
+) -> Result<(StatusCode, HashMap<String, Vec<String>>, Body), Error> {
     let git_dir = radicle::storage::git::paths::repository(&profile.storage, &id);
-    let content_type =
-        if let Some(Ok(content_type)) = headers.get("Content-Type").map(|h| h.to_str()) {
-            content_type
-        } else {
-            ""
-        };
+    let content_type = headers
+        .get("Content-Type")
+        .and_then(|x| x.to_str().ok())
+        .unwrap_or_default();
 
     // Don't allow cloning of private repositories.
     let doc = profile.storage.repository(id)?.identity_doc()?;
@@ -139,71 +140,55 @@ async fn git_http_backend(
         .stdin(Stdio::piped())
         .spawn()?;
 
-    {
-        // This is safe because we captured the child's stdin.
-        let mut stdin = child.stdin.take().unwrap();
-        stdin.write_all(&body)?;
+    let mut stdin = child.stdin.take().expect("stdin was captured");
+    let body = request
+        .into_body()
+        .into_data_stream()
+        .map_err(std::io::Error::other);
+    let mut body = StreamReader::new(body);
+    tokio::spawn(async move {
+        let _ = tokio::io::copy(&mut body, &mut stdin).await;
+    });
+
+    let stderr = BufReader::new(child.stderr.take().expect("stderr was captured"));
+    tokio::spawn(async move {
+        let mut lines = stderr.lines();
+        while let Ok(Some(line)) = lines.next_line().await {
+            tracing::error!("git-http-backend: stderr: {}", line.trim_end());
+        }
+    });
+
+    let mut stdout = BufReader::new(child.stdout.take().expect("stdout was captured"));
+
+    let mut headers = HashMap::<String, Vec<String>>::new();
+
+    let mut line = String::new();
+    while stdout.read_line(&mut line).await? != 0 {
+        if line.ends_with("\r\n") {
+            line.truncate(line.len() - 2);
+        }
+        if line.is_empty() {
+            break;
+        }
+
+        let Some((key, value)) = line.split_once(": ") else {
+            return Err(Error::BackendHeader(line));
+        };
+        headers.entry(key.into()).or_default().push(value.into());
+        line.clear();
     }
 
-    match child.wait_with_output() {
-        Ok(output) if output.status.success() => {
-            tracing::info!("git-http-backend: exited successfully for {}", id);
+    tracing::debug!("git-http-backend: {:?}", &headers);
 
-            let mut reader = std::io::Cursor::new(output.stdout);
-            let mut headers = HashMap::new();
+    let status = headers
+        .remove("Status")
+        .as_ref()
+        .and_then(|values| values.first()?.split_whitespace().next()?.parse().ok())
+        .unwrap_or(StatusCode::OK);
 
-            // Parse headers returned by git so that we can use them in the client response.
-            for line in io::Read::by_ref(&mut reader).lines() {
-                let line = line?;
+    let body = Body::from_stream(ReaderStream::new(stdout));
 
-                if line.is_empty() || line == "\r" {
-                    break;
-                }
-
-                let mut parts = line.splitn(2, ':');
-                let key = parts.next();
-                let value = parts.next();
-
-                if let (Some(key), Some(value)) = (key, value) {
-                    let value = &value[1..];
-
-                    headers
-                        .entry(key.to_string())
-                        .or_insert_with(Vec::new)
-                        .push(value.to_string());
-                } else {
-                    return Err(Error::BackendHeader(line));
-                }
-            }
-
-            let status = {
-                tracing::debug!("git-http-backend: {:?}", &headers);
-
-                let line = headers.remove("Status").unwrap_or_default();
-                let line = line.into_iter().next().unwrap_or_default();
-                let mut parts = line.split(' ');
-
-                parts
-                    .next()
-                    .and_then(|p| p.parse().ok())
-                    .unwrap_or(StatusCode::OK)
-            };
-
-            let position = reader.position() as usize;
-            let body = reader.into_inner().split_off(position);
-
-            Ok((status, headers, body))
-        }
-        Ok(output) => {
-            if let Ok(output) = std::str::from_utf8(&output.stderr) {
-                tracing::error!("git-http-backend: stderr: {}", output.trim_end());
-            }
-            Err(Error::BackendExited(output.status))
-        }
-        Err(err) => {
-            panic!("failed to wait for git-http-backend: {err}");
-        }
-    }
+    Ok((status, headers, body))
 }
 
 #[cfg(test)]
