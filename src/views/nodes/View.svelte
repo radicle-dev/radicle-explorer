@@ -30,14 +30,43 @@
 </script>
 
 <style>
+  .sidebar-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+  }
+
   .sidebar {
     padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    flex: 1;
   }
 
   .sidebar-content {
     gap: 1rem;
     display: flex;
     flex-direction: column;
+  }
+
+  .footer {
+    margin-top: auto;
+    padding-top: 1rem;
+    font: var(--txt-body-m-regular);
+    color: var(--color-text-tertiary);
+  }
+
+  .footer a {
+    color: var(--color-text-tertiary);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .footer a:hover {
+    text-decoration: underline;
   }
 
   .description {
@@ -65,7 +94,7 @@
 </style>
 
 <Layout>
-  <div slot="sidebar">
+  <div slot="sidebar" class="sidebar-wrapper">
     {#if node.bannerUrl}
       <img style:width="100%" alt="Node banner" src={node.bannerUrl} />
     {/if}
@@ -140,6 +169,13 @@
             <UserAgent agent={node.agent} />
           </div>
         </div>
+      </div>
+
+      <div class="footer">
+        <a href="https://radicle.dev" target="_blank" rel="noreferrer">
+          Learn more about Radicle
+          <Icon name="open-external" />
+        </a>
       </div>
     </div>
   </div>
