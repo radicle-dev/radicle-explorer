@@ -1,8 +1,12 @@
 <script lang="ts">
   import type { BaseUrl, NodeStats } from "@http-client";
+  import type { RepoInfo } from "@app/components/RepoCard";
 
   import * as router from "@app/lib/router";
-  import { fetchRepoInfos } from "@app/components/RepoCard";
+  import {
+    fetchRepoInfos,
+    sortRepoInfosByActivity,
+  } from "@app/components/RepoCard";
   import { handleError } from "@app/views/nodes/error";
 
   import Loading from "@app/components/Loading.svelte";
@@ -15,12 +19,16 @@
   let listState: "pinned" | "all" = "pinned";
   let page = 0;
   let hasPinnedRepos = true;
+  let sortByActivity = false;
+  let sorting = false;
+  let displayedRepos: RepoInfo[] = [];
 
   // Reset state when baseUrl changes
   $: if (baseUrl) {
     listState = "pinned";
     page = 0;
     hasPinnedRepos = true;
+    sortByActivity = false;
   }
 
   $: perPage = listState === "pinned" ? stats.repos.total : 24;
@@ -29,11 +37,13 @@
   function showPinned() {
     listState = "pinned";
     page = 0;
+    sortByActivity = false;
   }
 
   function showAll() {
     listState = "all";
     page = 0;
+    sortByActivity = false;
   }
 
   async function fetchRepos(
@@ -54,7 +64,24 @@
       return [];
     }
 
+    sortByActivity = false;
+    displayedRepos = repos;
     return repos;
+  }
+
+  async function toggleSortByActivity(repos: RepoInfo[]) {
+    if (sortByActivity) {
+      sortByActivity = false;
+      displayedRepos = repos;
+      return;
+    }
+    sorting = true;
+    try {
+      displayedRepos = await sortRepoInfosByActivity(repos);
+      sortByActivity = true;
+    } finally {
+      sorting = false;
+    }
   }
 </script>
 
@@ -127,7 +154,7 @@
   {:then repoInfos}
     {#if repoInfos.length > 0}
       <div class="repo-grid">
-        {#each repoInfos as repoInfo}
+        {#each displayedRepos as repoInfo (repoInfo.repo.rid)}
           <RepoCard {baseUrl} {repoInfo} />
         {/each}
       </div>
@@ -136,6 +163,13 @@
           <div class="subtitle">
             {repoInfos.length}
             pinned {repoInfos.length === 1 ? "repository" : "repositories"} ·
+            <button
+              class="text-button"
+              disabled={sorting}
+              on:click={() => toggleSortByActivity(repoInfos)}>
+              {sortByActivity ? "Default order" : "Sort by activity"}
+            </button>
+            ·
             <button class="text-button" on:click={showAll}>Browse all</button>
           </div>
         {:else}
