@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { BaseUrl, NodeIdentity, NodeStats } from "@http-client";
 
+  import { onDestroy } from "svelte";
+
   import * as router from "@app/lib/router";
   import * as utils from "@app/lib/utils";
   import { fetchRepoInfos } from "@app/components/RepoCard";
@@ -16,6 +18,16 @@
   export let stats: NodeStats;
   export let user: NodeIdentity;
   export let did: { prefix: string; pubkey: string };
+
+  let activityAbort: AbortController | undefined;
+
+  function newActivitySession(): AbortSignal {
+    activityAbort?.abort();
+    activityAbort = new AbortController();
+    return activityAbort.signal;
+  }
+
+  onDestroy(() => activityAbort?.abort());
 </script>
 
 <style>
@@ -43,7 +55,7 @@
   }
 </style>
 
-{#await fetchRepoInfos(baseUrl, { show: "all", perPage: stats.repos.total }, utils.formatDid(did))}
+{#await fetchRepoInfos(baseUrl, { show: "all", perPage: stats.repos.total }, utils.formatDid(did), newActivitySession())}
   <div class="container">
     <Loading small center />
   </div>

@@ -2,6 +2,8 @@
   import type { BaseUrl, NodeStats } from "@http-client";
   import type { RepoInfo } from "@app/components/RepoCard";
 
+  import { onDestroy } from "svelte";
+
   import * as router from "@app/lib/router";
   import {
     fetchRepoInfos,
@@ -22,6 +24,16 @@
   let sortByActivity = false;
   let sorting = false;
   let displayedRepos: RepoInfo[] = [];
+
+  let activityAbort: AbortController | undefined;
+
+  function newActivitySession(): AbortSignal {
+    activityAbort?.abort();
+    activityAbort = new AbortController();
+    return activityAbort.signal;
+  }
+
+  onDestroy(() => activityAbort?.abort());
 
   // Reset state when baseUrl changes
   $: if (baseUrl) {
@@ -51,7 +63,12 @@
     perPage: number,
     page: number,
   ) {
-    const repos = await fetchRepoInfos(baseUrl, { show, perPage, page });
+    const repos = await fetchRepoInfos(
+      baseUrl,
+      { show, perPage, page },
+      undefined,
+      newActivitySession(),
+    );
 
     if (
       hasPinnedRepos &&
