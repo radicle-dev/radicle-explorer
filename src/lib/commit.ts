@@ -110,9 +110,15 @@ function groupCommitsByWeek(commits: number[]): WeeklyActivity[] {
   return groupedCommits;
 }
 
-export async function loadRepoActivity(id: string, baseUrl: BaseUrl) {
+export async function loadRepoActivity(
+  id: string,
+  baseUrl: BaseUrl,
+  signal?: AbortSignal,
+) {
   const api = new HttpdClient(baseUrl);
-  const commits = await api.repo.getActivity(id);
+  const timeout = AbortSignal.timeout(8000);
+  const abort = signal ? AbortSignal.any([signal, timeout]) : timeout;
+  const commits = await api.repo.getActivity(id, { abort });
 
   return groupCommitsByWeek(commits.activity);
 }

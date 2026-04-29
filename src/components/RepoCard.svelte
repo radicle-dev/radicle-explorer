@@ -156,11 +156,13 @@
         </span>
       </div>
       <div class="activity">
-        <ActivityDiagram
-          id={repo.rid}
-          viewBoxHeight={100}
-          styleColor="var(--color-text-brand)"
-          activity={repoInfo.activity} />
+        {#await repoInfo.activity then activity}
+          <ActivityDiagram
+            id={repo.rid}
+            viewBoxHeight={100}
+            styleColor="var(--color-text-brand)"
+            {activity} />
+        {/await}
       </div>
     </div>
     <div>
