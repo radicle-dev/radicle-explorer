@@ -69,6 +69,40 @@
     align-self: flex-end;
   }
 
+  .activity-shimmer {
+    width: 100%;
+    min-width: 185px;
+    aspect-ratio: 493 / 116;
+    background: linear-gradient(
+      90deg,
+      var(--color-surface-base) 0%,
+      var(--color-surface-subtle) 50%,
+      var(--color-surface-base) 100%
+    );
+    background-size: 200% 100%;
+    animation:
+      shimmer 1.8s ease-in-out infinite,
+      shimmer-fade-in 200ms ease-out 500ms both;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: 100% 0;
+    }
+    100% {
+      background-position: -100% 0;
+    }
+  }
+
+  @keyframes shimmer-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
   .headline-and-badges {
     display: flex;
     gap: 0.5rem;
@@ -156,7 +190,9 @@
         </span>
       </div>
       <div class="activity">
-        {#await repoInfo.activity then activity}
+        {#await repoInfo.activity}
+          <div class="activity-shimmer"></div>
+        {:then activity}
           <ActivityDiagram
             id={repo.rid}
             viewBoxHeight={100}
