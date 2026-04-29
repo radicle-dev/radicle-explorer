@@ -13,19 +13,21 @@ use axum::response::IntoResponse;
 use axum::routing::any;
 use axum::Router;
 use axum_listener::DualAddr;
-use flate2::write::GzDecoder;
-use hyper::body::Buf as _;
 
 use radicle::identity::RepoId;
 use radicle::node::NodeId;
 use radicle::profile::Profile;
 use radicle::storage::{ReadRepository, ReadStorage};
+use tower_http::decompression::RequestDecompressionLayer;
 
 use crate::error::GitError as Error;
 
 pub fn router(profile: Arc<Profile>, aliases: HashMap<String, RepoId>) -> Router {
     Router::new()
-        .route("/{rid}/{*request}", any(git_handler))
+        .route(
+            "/{rid}/{*request}",
+            any(git_handler).layer(RequestDecompressionLayer::new()),
+        )
         .with_state((profile, aliases))
 }
 
@@ -78,7 +80,7 @@ async fn git_http_backend(
     profile: &Profile,
     method: Method,
     headers: HeaderMap,
-    mut body: Bytes,
+    body: Bytes,
     remote: DualAddr,
     id: RepoId,
     nid: Option<NodeId>,
@@ -137,32 +139,10 @@ async fn git_http_backend(
         .stdin(Stdio::piped())
         .spawn()?;
 
-    // Whether the request body is compressed.
-    let gzip = matches!(
-        headers.get("Content-Encoding").map(|h| h.to_str()),
-        Some(Ok("gzip"))
-    );
-
     {
         // This is safe because we captured the child's stdin.
         let mut stdin = child.stdin.take().unwrap();
-
-        // Copy the request body to git-http-backend's stdin.
-        if gzip {
-            let mut decoder = GzDecoder::new(&mut stdin);
-            let mut reader = body.reader();
-
-            io::copy(&mut reader, &mut decoder)?;
-            decoder.finish()?;
-        } else {
-            while body.has_remaining() {
-                let mut chunk = body.chunk();
-                let count = chunk.len();
-
-                io::copy(&mut chunk, &mut stdin)?;
-                body.advance(count);
-            }
-        }
+        stdin.write_all(&body)?;
     }
 
     match child.wait_with_output() {
