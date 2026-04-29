@@ -3,6 +3,7 @@
   import Help from "@app/App/Help.svelte";
   import Icon from "@app/components/Icon.svelte";
   import IconButton from "@app/components/IconButton.svelte";
+  import Link from "@app/components/Link.svelte";
   import Logo from "@app/components/Logo.svelte";
   import Popover from "@app/components/Popover.svelte";
 </script>
@@ -38,15 +39,12 @@
 <div class="header-container">
   <div class="left-section">
     {#if !$$slots.breadcrumbs}
-      <a
-        style:display="flex"
-        style:align-items="center"
-        style:gap="0.25rem"
-        target="_blank"
-        rel="noreferrer"
-        href="https://radicle.dev">
+      <Link
+        ariaLabel="Home"
+        route={{ resource: "nodes", params: undefined }}
+        style="height: 1rem; display: flex; align-items: center;">
         <Logo />
-      </a>
+      </Link>
     {/if}
     <slot name="breadcrumbs" />
   </div>
