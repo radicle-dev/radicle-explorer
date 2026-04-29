@@ -1,11 +1,15 @@
 <script lang="ts">
   import type { BaseUrl, NodeIdentity, NodeStats } from "@http-client";
+  import type { RepoInfo } from "@app/components/RepoCard";
 
   import { onDestroy } from "svelte";
 
   import * as router from "@app/lib/router";
   import * as utils from "@app/lib/utils";
-  import { fetchRepoInfos } from "@app/components/RepoCard";
+  import {
+    fetchRepoInfos,
+    sortRepoInfosByActivity,
+  } from "@app/components/RepoCard";
   import { handleError } from "@app/views/nodes/error";
 
   import Badge from "@app/components/Badge.svelte";
@@ -19,6 +23,10 @@
   export let user: NodeIdentity;
   export let did: { prefix: string; pubkey: string };
 
+  let sortByActivity = false;
+  let sorting = false;
+  let displayedRepos: RepoInfo[] = [];
+
   let activityAbort: AbortController | undefined;
 
   function newActivitySession(): AbortSignal {
@@ -28,6 +36,37 @@
   }
 
   onDestroy(() => activityAbort?.abort());
+
+  $: if (baseUrl || did) {
+    sortByActivity = false;
+  }
+
+  async function fetchRepos() {
+    const repos = await fetchRepoInfos(
+      baseUrl,
+      { show: "all", perPage: stats.repos.total },
+      utils.formatDid(did),
+      newActivitySession(),
+    );
+    sortByActivity = false;
+    displayedRepos = repos;
+    return repos;
+  }
+
+  async function toggleSortByActivity(repos: RepoInfo[]) {
+    if (sortByActivity) {
+      sortByActivity = false;
+      displayedRepos = repos;
+      return;
+    }
+    sorting = true;
+    try {
+      displayedRepos = await sortRepoInfosByActivity(repos);
+      sortByActivity = true;
+    } finally {
+      sorting = false;
+    }
+  }
 </script>
 
 <style>
@@ -47,6 +86,20 @@
     color: var(--color-text-tertiary);
     margin: 1rem;
   }
+  .text-button {
+    background: none;
+    border: none;
+    font: inherit;
+    color: inherit;
+    margin: 0;
+    padding: 0;
+  }
+  .text-button:not(:disabled) {
+    cursor: pointer;
+  }
+  .text-button:hover:not(:disabled) {
+    text-decoration: underline;
+  }
 
   @media (max-width: 1010.98px) {
     .repo-grid {
@@ -55,14 +108,14 @@
   }
 </style>
 
-{#await fetchRepoInfos(baseUrl, { show: "all", perPage: stats.repos.total }, utils.formatDid(did), newActivitySession())}
+{#await fetchRepos()}
   <div class="container">
     <Loading small center />
   </div>
 {:then repos}
   {#if repos.length > 0}
     <div class="repo-grid">
-      {#each repos as repoInfo}
+      {#each displayedRepos as repoInfo (repoInfo.repo.rid)}
         <RepoCard {repoInfo} {baseUrl}>
           <svelte:fragment slot="delegate">
             <Badge
@@ -79,7 +132,13 @@
     </div>
     <div class="subtitle">
       {repos.length}
-      {repos.length === 1 ? "repository" : "repositories"}
+      {repos.length === 1 ? "repository" : "repositories"} ·
+      <button
+        class="text-button"
+        disabled={sorting}
+        on:click={() => toggleSortByActivity(repos)}>
+        {sortByActivity ? "Default order" : "Sort by activity"}
+      </button>
     </div>
   {:else}
     <div class="container">
