@@ -553,7 +553,7 @@ async function loadBlob(
       ok: true,
       blob,
       highlighted: blob.content
-        ? await Syntax.highlight(blob.content, blob.path.split(".").pop() ?? "")
+        ? await Syntax.highlight(blob.content, blob.path.split("/").pop() ?? "")
         : undefined,
     };
   } catch (e: unknown) {

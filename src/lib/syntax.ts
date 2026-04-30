@@ -1,73 +1,31 @@
 import type { ElementContent, Root } from "hast";
 
 import onigurumaWASMUrl from "vscode-oniguruma/release/onig.wasm?url";
-import sourceAsciiDoc from "@wooorm/starry-night/text.html.asciidoc";
-import sourceDockerfile from "@wooorm/starry-night/source.dockerfile";
-import sourceErlang from "@wooorm/starry-night/source.erlang";
-import sourceSolidity from "@wooorm/starry-night/source.solidity";
-import sourceSvelte from "@wooorm/starry-night/source.svelte";
-import sourceSass from "@wooorm/starry-night/source.sass";
-import sourceToml from "@wooorm/starry-night/source.toml";
-import sourceTsx from "@wooorm/starry-night/source.tsx";
-import sourceNix from "@wooorm/starry-night/source.nix";
-import sourceGitconfig from "@wooorm/starry-night/source.gitconfig";
 import sourceGitignore from "@wooorm/starry-night/source.gitignore";
-import sourceGitrevlist from "@wooorm/starry-night/source.git-revlist";
-import sourceGitattributes from "@wooorm/starry-night/source.gitattributes";
 import sourceJson from "@wooorm/starry-night/source.json";
-import sourceNpmrc from "@wooorm/starry-night/source.ini.npmrc";
-import sourceGradle from "@wooorm/starry-night/source.groovy.gradle";
-import sourceBatchfile from "@wooorm/starry-night/source.batchfile";
-import sourceEditorconfig from "@wooorm/starry-night/source.editorconfig";
-import sourceHaproxyConfig from "@wooorm/starry-night/source.haproxy-config";
 import sourceDotenv from "@wooorm/starry-night/source.dotenv";
-import sourceZig from "@wooorm/starry-night/source.zig";
-import textHtmlVue from "@wooorm/starry-night/text.html.vue";
-import textHtmlDjango from "@wooorm/starry-night/text.html.django";
-import textRobotsTxt from "@wooorm/starry-night/text.robots-txt";
-import textZoneFile from "@wooorm/starry-night/text.zone_file";
-import etc from "@wooorm/starry-night/etc";
+import sourceNushell from "@wooorm/starry-night/source.nushell";
+import sourceToml from "@wooorm/starry-night/source.toml";
 import goMod from "@wooorm/starry-night/go.mod";
 import goSum from "@wooorm/starry-night/go.sum";
 
-import { createStarryNight, common, type Grammar } from "@wooorm/starry-night";
+import { createStarryNight, all, type Grammar } from "@wooorm/starry-night";
 
 export { type Root };
 
 export const grammars = [
-  ...common,
-  sourceAsciiDoc,
-  sourceToml,
-  sourceErlang,
-  sourceSolidity,
-  sourceSvelte,
-  sourceSass,
-  sourceTsx,
-  sourceDockerfile,
-  sourceNix,
-  sourceGitconfig,
-  sourceGitignore,
-  sourceGitrevlist,
-  sourceGitattributes,
-  sourceNpmrc,
-  sourceGradle,
-  sourceBatchfile,
-  sourceEditorconfig,
-  sourceHaproxyConfig,
-  sourceDotenv,
-  sourceZig,
-  textHtmlVue,
-  textHtmlDjango,
-  textRobotsTxt,
-  textZoneFile,
-  etc,
-  goMod,
-  goSum,
+  ...all,
   {
     extensions: [".hintrc"],
-    names: ["json"],
+    names: ["json", "flake.lock"],
     patterns: [sourceJson],
     scopeName: "source.json",
+  },
+  {
+    extensions: [],
+    names: ["cargo.lock"],
+    patterns: [sourceToml],
+    scopeName: "source.toml",
   },
   {
     extensions: [
@@ -86,6 +44,12 @@ export const grammars = [
     names: [".env.sample", ".env.example", ".env.template"],
     patterns: [sourceDotenv],
     scopeName: "source.dotenv",
+  },
+  {
+    extensions: [".nu"],
+    names: [],
+    patterns: [sourceNushell],
+    scopeName: "source.nushell",
   },
   {
     extensions: [".mod"],
