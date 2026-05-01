@@ -1,4 +1,3 @@
-use std::process::Command;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -11,11 +10,15 @@ use axum::Router;
 use hyper::HeaderMap;
 use radicle_surf::blob::{Blob, BlobRef};
 
+use radicle::git::raw::ErrorCode;
 use radicle::git::Oid;
 use radicle::prelude::RepoId;
 use radicle::profile::Profile;
 use radicle::storage::{ReadRepository, ReadStorage};
 use radicle_surf::Repository;
+use tokio::io::BufReader;
+use tokio::process::Command;
+use tokio_util::io::ReaderStream;
 
 use crate::api::query::RawQuery;
 use crate::axum_extra::Path;
@@ -205,6 +208,14 @@ async fn archive_by_committish(
             .into(),
     };
 
+    if let Err(e) = repo.backend.find_object(oid.into(), None) {
+        return Err(if e.code() == ErrorCode::NotFound {
+            Error::NotFound
+        } else {
+            Error::Git(e)
+        });
+    }
+
     // Build a prefix for the archive, which includes the
     // refname (if one was given):
     //
@@ -252,22 +263,17 @@ async fn archive_by_committish(
         command.arg(format!("--prefix={prefix}/"));
     }
 
-    let output = command
+    let mut child = command
         .arg(oid.to_string())
         .arg("--")
         .current_dir(repo.path())
-        .output()?;
-
-    if !output.status.success() {
-        return Err(Error::Archive(
-            output.status,
-            String::from_utf8_lossy(&output.stderr).to_string(),
-        ));
-    }
+        .stdout(std::process::Stdio::piped())
+        .spawn()?;
 
     let mut response = response;
-    let body = response.body_mut();
-    *body = Body::from(output.stdout);
+    *response.body_mut() = Body::from_stream(ReaderStream::new(BufReader::new(
+        child.stdout.take().expect("stdout was captured"),
+    )));
 
     Ok(response)
 }

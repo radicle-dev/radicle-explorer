@@ -81,10 +81,6 @@ pub enum RawError {
     #[error(transparent)]
     Io(#[from] std::io::Error),
 
-    /// Archive error.
-    #[error("`git archive` exited with status {0}:\n{1}")]
-    Archive(ExitStatus, String),
-
     /// Git error.
     #[error(transparent)]
     Git(#[from] radicle::git::raw::Error),
