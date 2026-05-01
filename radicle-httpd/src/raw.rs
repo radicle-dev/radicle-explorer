@@ -2,8 +2,9 @@ use std::process::Command;
 use std::str::FromStr;
 use std::sync::Arc;
 
+use axum::body::Body;
 use axum::extract::{Query, State};
-use axum::http::{header, HeaderValue, StatusCode};
+use axum::http::{header, HeaderValue, Method, Response, StatusCode};
 use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::Router;
@@ -111,10 +112,11 @@ pub fn router(profile: Arc<Profile>) -> Router {
 }
 
 async fn commit_handler(
+    method: Method,
     Path((rid, sha)): Path<(RepoId, String)>,
     Query(q): Query<PrefixQuery>,
     State(profile): State<Arc<Profile>>,
-) -> Result<(StatusCode, HeaderMap, Vec<u8>), Error> {
+) -> Result<Response<Body>, Error> {
     let storage = &profile.storage;
     let repo = storage.repository(rid)?;
 
@@ -131,7 +133,7 @@ async fn commit_handler(
         return Err(Error::BadRequest);
     };
 
-    archive_by_committish(rid, Committish::Oid(oid), q.prefix, format, profile).await
+    archive_by_committish(method, rid, Committish::Oid(oid), q.prefix, format, profile).await
 }
 
 async fn file_by_commit_handler(
@@ -156,12 +158,14 @@ async fn file_by_commit_handler(
 }
 
 async fn archive_by_refname_handler(
+    method: Method,
     Path((rid, refname)): Path<(RepoId, String)>,
     Query(q): Query<PrefixQuery>,
     State(profile): State<Arc<Profile>>,
-) -> Result<(StatusCode, HeaderMap, Vec<u8>), Error> {
+) -> Result<Response<Body>, Error> {
     let (refname, format) = ArchiveFormat::detect(&refname);
     archive_by_committish(
+        method,
         rid,
         Committish::Ref(refname),
         q.prefix,
@@ -172,12 +176,13 @@ async fn archive_by_refname_handler(
 }
 
 async fn archive_by_committish(
+    method: Method,
     rid: RepoId,
     committish: Committish<'_>,
     use_prefix: bool,
     format: ArchiveFormat,
     profile: Arc<Profile>,
-) -> Result<(StatusCode, HeaderMap, Vec<u8>), Error> {
+) -> Result<Response<Body>, Error> {
     let storage = &profile.storage;
     let repo = storage.repository(rid)?;
 
@@ -221,6 +226,22 @@ async fn archive_by_committish(
         build
     };
 
+    let mut response_headers = HeaderMap::new();
+    response_headers.insert("Content-Type", HeaderValue::from_str(format.mime_type())?);
+    response_headers.insert(
+        "Content-Disposition",
+        HeaderValue::from_str(&format!(
+            "attachment; filename=\"{prefix}{}\"",
+            format.extension()
+        ))?,
+    );
+
+    let response = response_headers.into_response();
+
+    if method == Method::HEAD {
+        return Ok(response);
+    }
+
     let mut command = Command::new("git");
 
     command
@@ -244,16 +265,11 @@ async fn archive_by_committish(
         ));
     }
 
-    let mut response_headers = HeaderMap::new();
-    response_headers.insert("Content-Type", HeaderValue::from_str(format.mime_type())?);
-    response_headers.insert(
-        "Content-Disposition",
-        HeaderValue::from_str(&format!(
-            "attachment; filename=\"{prefix}{}\"",
-            format.extension()
-        ))?,
-    );
-    Ok::<_, Error>((StatusCode::OK, response_headers, output.stdout))
+    let mut response = response;
+    let body = response.body_mut();
+    *body = Body::from(output.stdout);
+
+    Ok(response)
 }
 
 async fn file_by_canonical_head_handler(
