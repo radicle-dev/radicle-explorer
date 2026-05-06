@@ -105,7 +105,7 @@
     // Initialize mermaid with error handling configuration
     mermaid.initialize({
       startOnLoad: false,
-      securityLevel: 'loose',
+      securityLevel: "strict",
     });
 
     for (const e of container.querySelectorAll("a")) {
