@@ -104,20 +104,5 @@ export default defineConfig({
   },
   build: {
     outDir: "build",
-    rollupOptions: {
-      output: {
-        manualChunks: id => {
-          if (id.includes("lodash")) {
-            return "lodash";
-          } else if (id.includes("katex")) {
-            return "katex";
-          } else if (id.includes("node_modules")) {
-            return "vendor";
-          } else if (id.includes("components")) {
-            return "components";
-          }
-        },
-      },
-    },
   },
 });

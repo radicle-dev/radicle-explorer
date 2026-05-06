@@ -3,7 +3,6 @@
   import matter from "@radicle/gray-matter";
   import { afterUpdate } from "svelte";
   import { toDom } from "hast-util-to-dom";
-  import mermaid from "mermaid";
 
   import * as router from "@app/lib/router";
   import * as modal from "@app/lib/modal";
@@ -102,12 +101,6 @@
   }
 
   afterUpdate(async () => {
-    // Initialize mermaid with error handling configuration
-    mermaid.initialize({
-      startOnLoad: false,
-      securityLevel: "strict",
-    });
-
     for (const e of container.querySelectorAll("a")) {
       try {
         const url = new URL(e.href);
@@ -221,6 +214,9 @@
     const nodes = Array.from(container.querySelectorAll("pre code"));
 
     const treeChanges: Promise<void>[] = [];
+    // Lazily loaded the first time a mermaid block is encountered, so the
+    // ~1MB mermaid bundle stays out of the main chunk.
+    let mermaid: typeof import("mermaid").default | undefined;
 
     for (const node of nodes) {
       const preElement = node.parentElement as HTMLElement;
@@ -240,25 +236,34 @@
       if (!className) continue;
 
       const language = className.slice(prefix.length);
-      
+
       // Handle mermaid diagrams
-      if (language === 'mermaid') {
-        const mermaidCode = node.textContent || '';
+      if (language === "mermaid") {
+        if (!mermaid) {
+          mermaid = (await import("mermaid")).default;
+          mermaid.initialize({
+            startOnLoad: false,
+            securityLevel: "strict",
+          });
+        }
+        const mermaidCode = node.textContent || "";
         try {
           // First, validate the syntax without rendering
-          const isValid = await mermaid.parse(mermaidCode, { suppressErrors: true });
-          
+          const isValid = await mermaid.parse(mermaidCode, {
+            suppressErrors: true,
+          });
+
           if (isValid) {
             // Generate a unique id for this diagram
             const diagramId = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
-            
+
             // Try to render the mermaid diagram
             const { svg } = await mermaid.render(diagramId, mermaidCode);
-            
+
             // Replace the code block with the rendered diagram
-            const mermaidDiv = document.createElement('div');
+            const mermaidDiv = document.createElement("div");
             mermaidDiv.innerHTML = svg;
-            mermaidDiv.classList.add('mermaid-diagram');
+            mermaidDiv.classList.add("mermaid-diagram");
             preWrapper.replaceWith(mermaidDiv);
           }
         } catch (error) {
