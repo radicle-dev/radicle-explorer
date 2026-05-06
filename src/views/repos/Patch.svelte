@@ -87,6 +87,13 @@
   export let nodeId: string;
   export let nodeAvatarUrl: string | undefined;
 
+  const patchStatusLabel: Record<Patch["state"]["status"], string> = {
+    draft: "Draft Patches",
+    open: "Open Patches",
+    archived: "Archived Patches",
+    merged: "Merged Patches",
+  };
+
   function badgeColor(status: string): ComponentProps<Badge>["variant"] {
     if (status === "draft") {
       return "draft";
@@ -308,8 +315,9 @@
         resource: "repo.patches",
         repo: repo.rid,
         node: baseUrl,
+        search: `status=${patch.state.status}`,
       }}>
-      Patches
+      {patchStatusLabel[patch.state.status]}
     </Link>
     <Separator />
     <span class="txt-id">

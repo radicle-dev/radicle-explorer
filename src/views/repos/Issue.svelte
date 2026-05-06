@@ -52,6 +52,11 @@
     issue.discussion[0].edits.length > 1
       ? issue.discussion[0].edits.at(-1)
       : undefined;
+
+  const issueStatusLabel: Record<Issue["state"]["status"], string> = {
+    open: "Open Issues",
+    closed: "Closed Issues",
+  };
 </script>
 
 <style>
@@ -132,8 +137,9 @@
         resource: "repo.issues",
         repo: repo.rid,
         node: baseUrl,
+        status: issue.state.status,
       }}>
-      Issues
+      {issueStatusLabel[issue.state.status]}
     </Link>
     <Separator />
     <span class="txt-id">
