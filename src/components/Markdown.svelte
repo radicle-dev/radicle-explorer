@@ -18,7 +18,7 @@
     canonicalize,
     isCommit,
   } from "@app/lib/utils";
-  import { Renderer, markdown } from "@app/lib/markdown";
+  import { Renderer, markdown, sanitizeConfig } from "@app/lib/markdown";
 
   export let content: string;
   export let path: string = "/";
@@ -97,7 +97,8 @@
         renderer: new Renderer($activeUnloadedRouteStore),
         breaks,
       }) as string,
-    );
+      sanitizeConfig,
+    ) as string;
   }
 
   afterUpdate(async () => {

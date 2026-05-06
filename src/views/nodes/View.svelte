@@ -2,7 +2,7 @@
   import type { BaseUrl, Node, NodeStats } from "@http-client";
 
   import dompurify from "dompurify";
-  import { markdown } from "@app/lib/markdown";
+  import { markdown, sanitizeConfig } from "@app/lib/markdown";
 
   import Command from "@app/components/Command.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -25,7 +25,8 @@
   function render(content: string): string {
     return dompurify.sanitize(
       markdown({ linkify: true, emojis: true }).parse(content) as string,
-    );
+      sanitizeConfig,
+    ) as string;
   }
 </script>
 

@@ -2,7 +2,7 @@
   import type { BaseUrl, Repo, SeedingPolicy } from "@http-client";
 
   import dompurify from "dompurify";
-  import { markdown } from "@app/lib/markdown";
+  import { markdown, sanitizeConfig } from "@app/lib/markdown";
   import { formatRepositoryId, twemoji } from "@app/lib/utils";
 
   import Badge from "@app/components/Badge.svelte";
@@ -19,7 +19,8 @@
   function render(content: string): string {
     return dompurify.sanitize(
       markdown({ linkify: true, emojis: true }).parseInline(content) as string,
-    );
+      sanitizeConfig,
+    ) as string;
   }
 
   $: project = repo.payloads["xyz.radicle.project"];

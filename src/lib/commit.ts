@@ -142,10 +142,10 @@ export function renderCommitDescription(text: string): string {
   out += escape(trimmed.slice(cursor));
   return dompurify.sanitize(out, {
     /* eslint-disable @typescript-eslint/naming-convention */
-    ADD_TAGS: ["radicle-external-link"],
-    ADD_ATTR: ["href"],
+    ALLOWED_TAGS: ["radicle-external-link"],
+    ALLOWED_ATTR: ["href"],
     /* eslint-enable @typescript-eslint/naming-convention */
-  });
+  }) as string;
 }
 
 export async function loadRepoActivity(

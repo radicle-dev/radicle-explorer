@@ -1,6 +1,7 @@
 <script lang="ts">
   import dompurify from "dompurify";
   import escape from "lodash/escape";
+  import { sanitizeConfig } from "@app/lib/markdown";
   import { formatInlineTitle } from "@app/lib/utils";
 
   export let content: string;
@@ -23,5 +24,5 @@
   class:txt-heading-l={fontSize === "heading-l"}
   class:txt-body-l-medium={fontSize === "body-l-medium"}
   class:txt-body-m-regular={fontSize === "body-m-regular"}>
-  {@html dompurify.sanitize(formatInlineTitle(escape(content)))}
+  {@html dompurify.sanitize(formatInlineTitle(escape(content)), sanitizeConfig)}
 </span>

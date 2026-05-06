@@ -1,7 +1,7 @@
+import type { Config } from "dompurify";
 import type { MarkedExtension, Tokens } from "marked";
 import type { Route } from "@app/lib/router";
 
-import dompurify from "dompurify";
 import footnoteMarkedExtension from "marked-footnote";
 import katexMarkedExtension from "marked-katex-extension";
 import linkifyMarkedExtension from "marked-linkify-it";
@@ -12,7 +12,14 @@ import emojis from "@app/lib/emojis";
 import { canonicalize, isUrl } from "@app/lib/utils";
 import { routeToPath } from "@app/lib/router";
 
-dompurify.setConfig({
+/**
+ * DOMPurify configuration for sanitizing markdown-derived HTML. Pass this as
+ * the second argument to `dompurify.sanitize` at each call site instead of
+ * setting it globally — a global config leaks into other consumers of the
+ * DOMPurify singleton (e.g. mermaid's internal strict-mode sanitization),
+ * which would strip the SVG output of valid diagrams.
+ */
+export const sanitizeConfig: Config = {
   /* eslint-disable @typescript-eslint/naming-convention */
   ALLOWED_ATTR: [
     "align",
@@ -67,7 +74,7 @@ dompurify.setConfig({
     "ul",
   ],
   /* eslint-enable @typescript-eslint/naming-convention */
-});
+};
 
 export class Renderer extends BaseRenderer {
   #route: Route;
