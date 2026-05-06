@@ -215,7 +215,6 @@
             {baseUrl}
             repoId={repo.rid}
             blob={blobResult.blob}
-            highlighted={blobResult.highlighted}
             rawPath={rawPath(tree.lastCommit.id)} />
         {:else if blobResult.error.status === 413}
           <div class="placeholder">

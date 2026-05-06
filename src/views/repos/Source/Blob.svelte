@@ -21,13 +21,33 @@
   export let repoId: string;
   export let path: string;
   export let blob: Blob;
-  export let highlighted: Syntax.Root | undefined;
   export let rawPath: string;
 
   $: lastCommit = blob.lastCommit;
 
-  $: content = highlighted ? lineNumbersGutter(highlighted) : undefined;
   $: extension = path.split(".").pop();
+
+  let highlighted: Syntax.Root | undefined;
+  $: refreshHighlight(blob.content, extension);
+
+  function refreshHighlight(
+    blobContent: string | undefined,
+    ext: string | undefined,
+  ) {
+    highlighted = undefined;
+    if (!blobContent) return;
+    void Syntax.highlight(blobContent, ext ?? "").then(tree => {
+      if (blob.content === blobContent) {
+        highlighted = tree;
+      }
+    });
+  }
+
+  $: content = highlighted
+    ? lineNumbersGutter(highlighted)
+    : blob.content
+      ? lineNumbersGutter(Syntax.plainTree(blob.content))
+      : undefined;
 
   let selectedLineId: string | undefined = undefined;
   $: {

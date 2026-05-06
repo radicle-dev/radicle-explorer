@@ -24,7 +24,6 @@ import type {
   Tree,
 } from "@http-client";
 
-import * as Syntax from "@app/lib/syntax";
 import config from "@app/lib/config";
 import { HttpdClient } from "@http-client";
 import { ResponseError, ResponseParseError } from "@http-client/lib/fetcher";
@@ -245,7 +244,7 @@ export type RepoLoadedRoute =
     };
 
 export type BlobResult =
-  | { ok: true; blob: Blob; highlighted: Syntax.Root | undefined }
+  | { ok: true; blob: Blob }
   | { ok: false; error: { status?: number; message: string; path: string } };
 
 export type PatchView =
@@ -552,9 +551,6 @@ async function loadBlob(
     return {
       ok: true,
       blob,
-      highlighted: blob.content
-        ? await Syntax.highlight(blob.content, blob.path.split(".").pop() ?? "")
-        : undefined,
     };
   } catch (e: unknown) {
     if (e instanceof ResponseError) {
