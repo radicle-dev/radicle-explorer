@@ -1,3 +1,23 @@
+<script context="module" lang="ts">
+  // Mermaid is heavy (~700 KB gzipped) and initialize() mutates a
+  // process-wide singleton, so load and configure it at most once across
+  // all Markdown instances and afterUpdate firings.
+  let mermaidPromise: Promise<typeof import("mermaid").default> | undefined;
+
+  function loadMermaid(): Promise<typeof import("mermaid").default> {
+    if (!mermaidPromise) {
+      mermaidPromise = import("mermaid").then(({ default: mermaid }) => {
+        mermaid.initialize({
+          startOnLoad: false,
+          securityLevel: "strict",
+        });
+        return mermaid;
+      });
+    }
+    return mermaidPromise;
+  }
+</script>
+
 <script lang="ts">
   import dompurify from "dompurify";
   import matter from "@radicle/gray-matter";
@@ -214,9 +234,6 @@
     const nodes = Array.from(container.querySelectorAll("pre code"));
 
     const treeChanges: Promise<void>[] = [];
-    // Lazily loaded the first time a mermaid block is encountered, so the
-    // ~1MB mermaid bundle stays out of the main chunk.
-    let mermaid: typeof import("mermaid").default | undefined;
 
     for (const node of nodes) {
       const preElement = node.parentElement as HTMLElement;
@@ -239,13 +256,7 @@
 
       // Handle mermaid diagrams
       if (language === "mermaid") {
-        if (!mermaid) {
-          mermaid = (await import("mermaid")).default;
-          mermaid.initialize({
-            startOnLoad: false,
-            securityLevel: "strict",
-          });
-        }
+        const mermaid = await loadMermaid();
         const mermaidCode = node.textContent || "";
         try {
           // First, validate the syntax without rendering
