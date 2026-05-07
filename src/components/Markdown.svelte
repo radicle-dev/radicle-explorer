@@ -23,7 +23,6 @@
 
 <script lang="ts">
   import dompurify from "dompurify";
-  import matter from "@radicle/gray-matter";
   import { afterUpdate } from "svelte";
   import { toDom } from "hast-util-to-dom";
 
@@ -41,6 +40,7 @@
     isCommit,
   } from "@app/lib/utils";
   import { Renderer, markdown, sanitizeConfig } from "@app/lib/markdown";
+  import { parseFrontmatter } from "@app/lib/frontmatter";
 
   export let content: string;
   export let path: string = "/";
@@ -54,7 +54,7 @@
 
   $: {
     try {
-      const doc = matter(content);
+      const doc = parseFrontmatter(content);
       content = doc.content;
       frontMatter = Object.entries(doc.data).filter(
         ([, val]) => typeof val === "string" || typeof val === "number",
