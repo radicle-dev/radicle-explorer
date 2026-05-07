@@ -10,6 +10,9 @@
         mermaid.initialize({
           startOnLoad: false,
           securityLevel: "strict",
+          // Don't let mermaid inject its own "Syntax error" bomb into the
+          // document; we render a custom warning instead.
+          suppressErrorRendering: true,
         });
         return mermaid;
       });
@@ -254,31 +257,36 @@
 
       const language = className.slice(prefix.length);
 
-      // Handle mermaid diagrams
       if (language === "mermaid") {
         const mermaid = await loadMermaid();
-        const mermaidCode = node.textContent || "";
+        const diagramId = `mermaid-${crypto.randomUUID()}`;
         try {
-          // First, validate the syntax without rendering
-          const isValid = await mermaid.parse(mermaidCode, {
-            suppressErrors: true,
-          });
-
-          if (isValid) {
-            // Generate a unique id for this diagram
-            const diagramId = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
-
-            // Try to render the mermaid diagram
-            const { svg } = await mermaid.render(diagramId, mermaidCode);
-
-            // Replace the code block with the rendered diagram
+          const { svg } = await mermaid.render(
+            diagramId,
+            node.textContent ?? "",
+          );
+          // The component may have re-rendered or unmounted while we were
+          // awaiting; in that case `preWrapper` is detached and there's
+          // nothing to replace.
+          if (preWrapper.isConnected) {
             const mermaidDiv = document.createElement("div");
             mermaidDiv.innerHTML = svg;
             mermaidDiv.classList.add("mermaid-diagram");
             preWrapper.replaceWith(mermaidDiv);
           }
         } catch (error) {
-          // On any error, keep the raw text visible (do nothing, let it render as code)
+          console.warn("Not able to render mermaid diagram", error);
+          if (preWrapper.isConnected) {
+            const warning = document.createElement("div");
+            warning.classList.add("mermaid-error");
+            const icon = document.createElement("radicle-icon-small");
+            icon.setAttribute("name", "warning");
+            warning.appendChild(icon);
+            const text = document.createElement("span");
+            text.textContent = "Couldn't render diagram";
+            warning.appendChild(text);
+            preWrapper.before(warning);
+          }
         }
         continue;
       }
@@ -561,6 +569,15 @@
   .markdown :global(.mermaid-diagram svg) {
     max-width: 100%;
     height: auto;
+  }
+
+  .markdown :global(.mermaid-error) {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: var(--color-feedback-warning-text);
+    font: var(--txt-body-s-regular);
+    margin: 1rem 0 0.25rem;
   }
 </style>
 

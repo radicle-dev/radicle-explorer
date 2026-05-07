@@ -125,20 +125,26 @@ test("math", async ({ page }) => {
   await expect(page).toHaveScreenshot({ fullPage: true });
 });
 
-test("mermaid diagram", async ({ page }) => {
+test("mermaid diagrams", async ({ page }) => {
   await page.goto(`${markdownUrl}/tree/main/mermaid.md`, {
     waitUntil: "networkidle",
   });
-  await expect(page.locator(".mermaid-diagram svg")).toBeVisible();
+  await expect(page.locator(".mermaid-diagram svg")).toHaveCount(2);
   await expect(page).toHaveScreenshot({ fullPage: true });
 });
 
-test("broken mermaid falls back to code block", async ({ page }) => {
+test("broken mermaid shows warning and does not block subsequent diagrams", async ({
+  page,
+}) => {
   await page.goto(`${markdownUrl}/tree/main/mermaid-broken.md`, {
     waitUntil: "networkidle",
   });
+  // Our custom warning replaces mermaid's built-in error overlay.
+  await expect(page.locator(".mermaid-error")).toBeVisible();
+  // The original source for the broken diagram stays visible.
   await expect(page.locator("pre code.language-mermaid")).toBeVisible();
-  await expect(page.locator(".mermaid-diagram")).toHaveCount(0);
+  // The valid diagram following the broken one still renders.
+  await expect(page.locator(".mermaid-diagram svg")).toHaveCount(1);
   await expect(page).toHaveScreenshot({ fullPage: true });
 });
 
