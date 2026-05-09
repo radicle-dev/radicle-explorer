@@ -3,7 +3,6 @@ import type { MarkedExtension, Tokens } from "marked";
 import type { Route } from "@app/lib/router";
 
 import footnoteMarkedExtension from "marked-footnote";
-import katexMarkedExtension from "marked-katex-extension";
 import linkifyMarkedExtension from "marked-linkify-it";
 import { Marked, Renderer as BaseRenderer } from "marked";
 import { markedEmoji } from "marked-emoji";
@@ -167,7 +166,22 @@ const emojiExtension = markedEmoji({
 
 const footnoteExtension = footnoteMarkedExtension({ refMarkers: true });
 const linkifyExtension = linkifyMarkedExtension({}, { fuzzyLink: false });
-const katexExtension = katexMarkedExtension({ throwOnError: false });
+
+// `marked-katex-extension` pulls in katex (~256 KB). Load it on demand and
+// cache the resulting extension so each subsequent `markdown({ katex: true })`
+// call gets it synchronously.
+let katexExtension: MarkedExtension | undefined;
+let katexLoading: Promise<MarkedExtension> | undefined;
+
+export function loadKatexExtension(): Promise<MarkedExtension> {
+  if (!katexLoading) {
+    katexLoading = import("marked-katex-extension").then(m => {
+      katexExtension = m.default({ throwOnError: false });
+      return katexExtension;
+    });
+  }
+  return katexLoading;
+}
 
 export function markdown(options: MarkedOptions): Marked {
   return new Marked(
@@ -177,7 +191,7 @@ export function markdown(options: MarkedOptions): Marked {
     ...[
       ...(options.emojis ? [emojiExtension] : []),
       ...(options.footnotes ? [footnoteExtension] : []),
-      ...(options.katex ? [katexExtension] : []),
+      ...(options.katex && katexExtension ? [katexExtension] : []),
       ...(options.linkify ? [linkifyExtension] : []),
     ],
   );

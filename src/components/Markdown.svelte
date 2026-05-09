@@ -39,7 +39,12 @@
     canonicalize,
     isCommit,
   } from "@app/lib/utils";
-  import { Renderer, markdown, sanitizeConfig } from "@app/lib/markdown";
+  import {
+    Renderer,
+    loadKatexExtension,
+    markdown,
+    sanitizeConfig,
+  } from "@app/lib/markdown";
   import { parseFrontmatter } from "@app/lib/frontmatter";
 
   export let content: string;
@@ -121,6 +126,16 @@
       }) as string,
       sanitizeConfig,
     ) as string;
+  }
+
+  let renderedHtml = "";
+  $: void prepareRender(content);
+
+  async function prepareRender(c: string) {
+    await loadKatexExtension();
+    if (content === c) {
+      renderedHtml = render(c);
+    }
   }
 
   afterUpdate(async () => {
@@ -604,5 +619,5 @@
   bind:this={container}
   use:twemoji={{ exclude: ["21a9"] }}
   on:click={navigateInternalOnAnchor}>
-  {@html render(content)}
+  {@html renderedHtml}
 </div>
