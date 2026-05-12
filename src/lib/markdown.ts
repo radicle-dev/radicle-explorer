@@ -127,8 +127,12 @@ interface MarkedOptions {
   footnotes?: boolean;
   /** Detect links and convert them into anchor tags. */
   linkify?: boolean;
-  /** Enable katex support. */
-  katex?: boolean;
+  /**
+   * Enable katex math rendering. Pass the extension returned by
+   * `ensureKatexLoaded()`. Omit (or pass `undefined`) to render math
+   * markers as literal text — `markdown()` will not load katex on its own.
+   */
+  katex?: MarkedExtension;
 }
 
 // Converts self closing anchor tags into empty anchor tags, to avoid erratic wrapping behaviour
@@ -168,12 +172,11 @@ const footnoteExtension = footnoteMarkedExtension({ refMarkers: true });
 const linkifyExtension = linkifyMarkedExtension({}, { fuzzyLink: false });
 
 // `marked-katex-extension` pulls in katex (~256 KB). Load it on demand and
-// cache the resulting extension so each subsequent `markdown({ katex: true })`
-// call gets it synchronously.
+// cache the resulting extension so subsequent calls resolve immediately.
 let katexExtension: MarkedExtension | undefined;
 let katexLoading: Promise<MarkedExtension> | undefined;
 
-export function loadKatexExtension(): Promise<MarkedExtension> {
+export function ensureKatexLoaded(): Promise<MarkedExtension> {
   if (!katexLoading) {
     katexLoading = import("marked-katex-extension").then(m => {
       katexExtension = m.default({ throwOnError: false });
@@ -181,6 +184,19 @@ export function loadKatexExtension(): Promise<MarkedExtension> {
     });
   }
   return katexLoading;
+}
+
+/** Returns the loaded katex extension, or `undefined` if it hasn't loaded yet. */
+export function getKatexExtension(): MarkedExtension | undefined {
+  return katexExtension;
+}
+
+// Cheap heuristic to decide whether katex is worth loading. Matches the
+// delimiters `marked-katex-extension` recognises: `$...$`, `$$...$$`,
+// `\(...\)`, `\[...\]`. False positives just trigger an unused chunk load.
+const MATH_RE = /\$\$|\\\(|\\\[|(?<!\\)\$[^\s$]/;
+export function containsMath(content: string): boolean {
+  return MATH_RE.test(content);
 }
 
 export function markdown(options: MarkedOptions): Marked {
@@ -191,7 +207,7 @@ export function markdown(options: MarkedOptions): Marked {
     ...[
       ...(options.emojis ? [emojiExtension] : []),
       ...(options.footnotes ? [footnoteExtension] : []),
-      ...(options.katex && katexExtension ? [katexExtension] : []),
+      ...(options.katex ? [options.katex] : []),
       ...(options.linkify ? [linkifyExtension] : []),
     ],
   );

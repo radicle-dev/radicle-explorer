@@ -39,9 +39,13 @@
     canonicalize,
     isCommit,
   } from "@app/lib/utils";
+  import type { MarkedExtension } from "marked";
+
   import {
     Renderer,
-    loadKatexExtension,
+    containsMath,
+    ensureKatexLoaded,
+    getKatexExtension,
     markdown,
     sanitizeConfig,
   } from "@app/lib/markdown";
@@ -113,10 +117,10 @@
     }
   }
 
-  function render(content: string): string {
+  function render(content: string, katex: MarkedExtension | undefined): string {
     return dompurify.sanitize(
       markdown({
-        katex: true,
+        katex,
         emojis: true,
         footnotes: true,
         linkify: true,
@@ -128,13 +132,19 @@
     ) as string;
   }
 
+  // Katex is module-scoped (see `ensureKatexLoaded`). Render synchronously
+  // with whatever's loaded now; if the content needs math and katex isn't
+  // loaded yet, kick off the load and re-render once it resolves.
   let renderedHtml = "";
-  $: void prepareRender(content);
 
-  async function prepareRender(c: string) {
-    await loadKatexExtension();
-    if (content === c) {
-      renderedHtml = render(c);
+  $: void renderForContent(content);
+
+  async function renderForContent(c: string) {
+    renderedHtml = render(c, getKatexExtension());
+    if (containsMath(c) && !getKatexExtension()) {
+      const ext = await ensureKatexLoaded();
+      if (content !== c) return;
+      renderedHtml = render(c, ext);
     }
   }
 

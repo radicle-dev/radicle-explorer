@@ -54,7 +54,14 @@ export default defineConfig({
     },
   ],
   optimizeDeps: {
+    // Lazy-loaded deps must be listed here so Vite's dev-mode dep optimizer
+    // picks them up on startup. Otherwise the first dynamic import triggers
+    // a mid-session re-optimization that 404s in-flight chunk requests
+    // (e.g. lodash internals pulled in by mermaid).
     include: [
+      "katex",
+      "marked-katex-extension",
+      "mermaid",
       "@wooorm/starry-night",
       "@wooorm/starry-night/etc",
       "@wooorm/starry-night/go.mod",
