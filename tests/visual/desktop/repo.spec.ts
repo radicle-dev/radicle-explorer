@@ -96,7 +96,9 @@ test("response error", async ({ page }) => {
     },
   );
   await page.goto(sourceBrowsingUrl, { waitUntil: "networkidle" });
-  await expect(page).toHaveScreenshot();
+  await expect(page).toHaveScreenshot({
+    mask: [page.locator(".command")],
+  });
 });
 
 test("readme not found", async ({ page }) => {

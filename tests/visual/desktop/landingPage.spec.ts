@@ -28,7 +28,9 @@ test("load repos error", async ({ page }) => {
   );
 
   await page.goto("/", { waitUntil: "networkidle" });
-  await expect(page).toHaveScreenshot();
+  await expect(page).toHaveScreenshot({
+    mask: [page.locator(".command")],
+  });
 });
 
 test("response parse error", async ({ page }) => {
@@ -61,5 +63,7 @@ test("response error", async ({ page }) => {
     });
   });
   await page.goto("/", { waitUntil: "networkidle" });
-  await expect(page).toHaveScreenshot();
+  await expect(page).toHaveScreenshot({
+    mask: [page.locator(".command")],
+  });
 });

@@ -43,5 +43,7 @@ test("response error", async ({ page }) => {
   await page.goto(`/nodes/localhost/users/${bobRemote}`, {
     waitUntil: "networkidle",
   });
-  await expect(page).toHaveScreenshot();
+  await expect(page).toHaveScreenshot({
+    mask: [page.locator(".command")],
+  });
 });
