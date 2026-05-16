@@ -25,6 +25,13 @@
     icon = "checkmark";
     restoreIcon();
   }
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.stopPropagation();
+      void copy();
+    }
+  }
 </script>
 
 <style>
@@ -39,13 +46,13 @@
   }
 </style>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
 <span
   role="button"
   tabindex="0"
   aria-label="Copy"
   title={tooltip}
   class="copy"
-  on:click|stopPropagation={copy}>
+  on:click|stopPropagation={copy}
+  on:keydown={handleKeydown}>
   <Icon name={icon} />
 </span>
