@@ -11,7 +11,7 @@
   export let disabled: boolean = false;
   export let stopPropagation: boolean = false;
 
-  const dispatch = createEventDispatcher<{ click: MouseEvent | KeyboardEvent }>();
+  const dispatch = createEventDispatcher<{ click: MouseEvent }>();
 
   function handleKeydown(ev: KeyboardEvent) {
     if (ev.key === "Enter" || ev.key === " ") {
@@ -21,7 +21,7 @@
       if (disabled) {
         return;
       }
-      dispatch("click", ev);
+      dispatch("click", new MouseEvent("click"));
     }
   }
 </script>
