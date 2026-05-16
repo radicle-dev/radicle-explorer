@@ -149,6 +149,7 @@
 <div class="wrapper {size}">
   <input
     class:invalid={!valid && value}
+    aria-invalid={!valid && value ? "true" : "false"}
     style:padding-right={rightContainerWidth
       ? `${rightContainerWidth}px`
       : "auto"}

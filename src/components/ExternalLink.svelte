@@ -32,4 +32,4 @@
 </style>
 
 <!-- prettier-ignore -->
-<a {href} target="_blank" rel="noreferrer"><slot>{href}</slot><span class="icon"><Icon name="open-external" /></span></a>
+<a {href} target="_blank" rel="noopener noreferrer"><slot>{href}</slot><span class="icon"><Icon name="open-external" /></span></a>
