@@ -11,7 +11,19 @@
   export let disabled: boolean = false;
   export let stopPropagation: boolean = false;
 
-  const dispatch = createEventDispatcher<{ click: MouseEvent }>();
+  const dispatch = createEventDispatcher<{ click: MouseEvent | KeyboardEvent }>();
+
+  function handleKeydown(ev: KeyboardEvent) {
+    if (ev.key === "Enter" || ev.key === " ") {
+      if (stopPropagation) {
+        ev.stopPropagation();
+      }
+      if (disabled) {
+        return;
+      }
+      dispatch("click", ev);
+    }
+  }
 </script>
 
 <style>
@@ -45,7 +57,6 @@
 {#if loading}
   <Loading small noDelay />
 {:else}
-  <!-- svelte-ignore a11y-click-events-have-key-events -->
   <div
     class:disabled
     aria-label={ariaLabel}
@@ -60,6 +71,7 @@
       }
       dispatch("click", ev);
     }}
+    on:keydown={handleKeydown}
     role="button"
     style:padding={stylePadding}
     tabindex="0"
