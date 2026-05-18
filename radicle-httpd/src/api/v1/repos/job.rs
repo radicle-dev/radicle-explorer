@@ -113,7 +113,7 @@ pub struct JobsSource<'a> {
 impl FindJobs for JobsSource<'_> {
     fn find_by_commit(&self, oid: Oid) -> Result<Vec<(JobId, radicle_job::Job)>, ApiError> {
         let (repo, _) = self.ctx.repo(self.rid)?;
-        let store = radicle_job::Jobs::open(&repo)?;
+        let store = radicle_job::Jobs::open(&repo, radicle::cob::store::access::ReadOnly)?;
         let iter = radicle_job::Jobs::find_by_commit(&store, oid)?;
 
         Ok(iter.collect::<Result<_, _>>()?)

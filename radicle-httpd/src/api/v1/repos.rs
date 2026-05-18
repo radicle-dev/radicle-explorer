@@ -579,7 +579,7 @@ where
         )
 }
 
-#[tracing::instrument(skip_all, fields(remote.id = %remote.id))]
+#[tracing::instrument(skip_all, fields(remote.id = %remote.id()))]
 fn remote_info(
     repo: &radicle::storage::git::Repository,
     remote: &radicle::storage::Remote,
@@ -587,11 +587,12 @@ fn remote_info(
     aliases: &radicle::profile::Aliases,
 ) -> RemoteInfo {
     let (heads, refs) = partition_refs(&remote.refs, repo);
-    RemoteInfo::new(remote.id)
+    let id = remote.id();
+    RemoteInfo::new(id)
         .with_heads(heads)
         .with_refs(refs)
-        .with_alias(aliases.alias(&remote.id))
-        .set_delegate(delegates.contains(&remote.id.into()))
+        .with_alias(aliases.alias(&id))
+        .set_delegate(delegates.contains(&id.into()))
 }
 
 /// Get repo source file.
@@ -833,7 +834,7 @@ mod routes {
                 },
                 "rid": RID,
                 "seeding": 1,
-                "refs": { "tags": {}, "refs": {} }
+                "refs": { "tags": {}, "refs": { "refs/heads/master": HEAD } }
               },
               {
                 "payloads": {
@@ -870,7 +871,7 @@ mod routes {
                 },
                 "rid": "rad:z4GypKmh1gkEfmkXtarcYnkvtFUfE",
                 "seeding": 1,
-                "refs": { "tags": {}, "refs": {} }
+                "refs": { "tags": {}, "refs": { "refs/heads/master": "344dcd184df5bf37aab6c107fa9371a1c5b3321a" } }
               },
             ])
         );
@@ -920,7 +921,7 @@ mod routes {
                 },
                 "rid": RID,
                 "seeding": 1,
-                "refs": { "tags": {}, "refs": {} }
+                "refs": { "tags": {}, "refs": { "refs/heads/master": HEAD } }
               },
               {
                 "payloads": {
@@ -957,7 +958,7 @@ mod routes {
                 },
                 "rid": "rad:z4GypKmh1gkEfmkXtarcYnkvtFUfE",
                 "seeding": 1,
-                "refs": { "tags": {}, "refs": {} }
+                "refs": { "tags": {}, "refs": { "refs/heads/master": "344dcd184df5bf37aab6c107fa9371a1c5b3321a" } }
               },
             ])
         );
@@ -1007,7 +1008,7 @@ mod routes {
                },
                "rid": RID,
                "seeding": 1,
-               "refs": { "tags": {}, "refs": {} }
+               "refs": { "tags": {}, "refs": { "refs/heads/master": HEAD } }
             })
         );
     }

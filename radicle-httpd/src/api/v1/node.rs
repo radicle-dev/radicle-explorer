@@ -72,7 +72,7 @@ impl Response {
 /// `GET /node`
 async fn node_handler(State(ctx): State<Context>) -> impl IntoResponse {
     let node_id = ctx.profile.public_key;
-    let home = ctx.profile.home.database()?;
+    let home = ctx.profile.database()?;
     let agent = AddressStore::get(&home, &node_id)
         .unwrap_or_default()
         .map(|node| node.agent);
@@ -81,7 +81,7 @@ async fn node_handler(State(ctx): State<Context>) -> impl IntoResponse {
     // Spawn a thread with a timeout to ensure that the call to `is_running` does not slow down the
     // response of the `/node` route too much.
     let node_state = {
-        let socket = ctx.profile.socket();
+        let socket = ctx.profile.socket_from_env();
         let is_running = timeout(
             SOCKET_QUERY_TIMEOUT_MS,
             tokio::task::spawn_blocking(move || Node::new(socket).is_running()),
@@ -98,7 +98,7 @@ async fn node_handler(State(ctx): State<Context>) -> impl IntoResponse {
         }
     };
     let config = {
-        let socket = ctx.profile.socket();
+        let socket = ctx.profile.socket_from_env();
         match timeout(
             SOCKET_QUERY_TIMEOUT_MS,
             tokio::task::spawn_blocking(move || Node::new(socket).config()),

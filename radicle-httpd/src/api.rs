@@ -6,7 +6,6 @@ use axum::routing::get;
 use axum::Router;
 use serde_json::{json, Value};
 
-use radicle::identity::crefs::GetCanonicalRefs;
 use radicle::identity::doc::PayloadId;
 use radicle::identity::{DocAt, RepoId};
 use radicle::issue::cache::Issues as _;
@@ -236,10 +235,9 @@ fn canonical_refs<R: ReadCanonicalRefs + PeelToCommit + ResolveTag>(
     repo: &R,
     doc: &radicle::identity::Doc,
 ) -> Result<repo::CanonicalReferences, error::Error> {
-    let Some(crefs) = doc.canonical_refs()? else {
-        return Ok(repo::CanonicalReferences::default());
-    };
-    canonical_refs_for_patterns(repo, crefs.rules().iter().map(|(p, _)| p.as_ref()))
+    let crefs = doc.canonical_refs()?;
+    let raw: radicle::git::canonical::rules::RawRules = crefs.rules().clone().into();
+    canonical_refs_for_patterns(repo, raw.iter().map(|(p, _)| p))
 }
 
 #[allow(clippy::result_large_err)]
@@ -593,7 +591,7 @@ mod tests {
         }
 
         #[test]
-        fn test_canonical_refs_empty_without_config() {
+        fn test_canonical_refs_synthesized_without_config() {
             let tmp = tempfile::tempdir().unwrap();
             let ctx = test::seed(tmp.path());
             let rid = RepoId::from_str(test::RID).unwrap();
@@ -603,7 +601,7 @@ mod tests {
 
             let refs = super::super::canonical_refs(&repo, &doc.doc).unwrap();
             assert!(refs.tags.is_empty());
-            assert!(refs.refs.is_empty());
+            assert!(refs.refs.contains_key(r("refs/heads/master")));
         }
 
         #[test]
@@ -616,7 +614,7 @@ mod tests {
             let info = ctx.repo_info(&repo, doc).unwrap();
 
             assert!(info.refs.tags.is_empty());
-            assert!(info.refs.refs.is_empty());
+            assert!(info.refs.refs.contains_key(r("refs/heads/master")));
         }
 
         #[test]

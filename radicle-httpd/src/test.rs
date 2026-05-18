@@ -58,7 +58,7 @@ pub fn profile(home: &Path, seed: [u8; 32]) -> radicle::Profile {
     let mut db = home.policies_mut().unwrap();
     db.follow(&keypair.pk.into(), Some(&alias)).unwrap();
 
-    let node_db = home.database_mut().unwrap();
+    let node_db = home.database_mut(Default::default()).unwrap();
     node_db
         .init(
             &keypair.pk.into(),
@@ -244,7 +244,7 @@ fn seed_with_signer<G: Signer<Signature>>(
     )
     .unwrap();
     policies.seed(&rid, node::policy::Scope::All).unwrap();
-    let node_handle = &mut Node::new(profile.socket());
+    let node_handle = &mut Node::new(profile.socket_from_env());
     profile
         .seed(rid, node::policy::Scope::All, node_handle)
         .unwrap();
@@ -252,7 +252,7 @@ fn seed_with_signer<G: Signer<Signature>>(
 
     let storage = &profile.storage;
     let repo = storage.repository(rid).unwrap();
-    let mut issues = profile.issues_mut(&repo).unwrap();
+    let mut issues = profile.issues_mut(&repo, signer).unwrap();
     let issue = issues
         .create(
             Title::new("Issue #1").unwrap(),
@@ -260,13 +260,12 @@ fn seed_with_signer<G: Signer<Signature>>(
             &[],
             &[],
             [],
-            signer,
         )
         .unwrap();
     tracing::debug!(target: "test", "Contributor issue: {}", issue.id());
 
     // eq. rad patch open
-    let mut patches = profile.patches_mut(&repo).unwrap();
+    let mut patches = profile.patches_mut(&repo, signer).unwrap();
     let oid = radicle::git::Oid::from_str(HEAD).unwrap();
     let base = radicle::git::Oid::from_str(PARENT).unwrap();
     let patch = patches
@@ -277,7 +276,6 @@ fn seed_with_signer<G: Signer<Signature>>(
             base,
             oid,
             &[],
-            signer,
         )
         .unwrap();
     tracing::debug!(target: "test", "Contributor patch: {}", patch.id());
@@ -372,7 +370,7 @@ pub fn seed_multi_peer(dir: &Path) -> Context {
 
     {
         let repo = storage.repository_mut(rid).unwrap();
-        let mut identity = Identity::load_mut(&repo).unwrap();
+        let mut identity = Identity::load_mut(&repo, &signer1).unwrap();
         let current_doc = repo.identity_doc().unwrap();
 
         let new_doc = current_doc
@@ -408,7 +406,6 @@ pub fn seed_multi_peer(dir: &Path) -> Context {
                 Title::new("Add second delegate and crefs").unwrap(),
                 "",
                 &new_doc,
-                &signer1,
             )
             .unwrap();
 
