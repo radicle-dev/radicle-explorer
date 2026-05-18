@@ -35,8 +35,8 @@ mime_guess = { version = "2.0.5" }
 nonempty = { version = "0.12.0", features = ["serialize"] }
 radicle = { version = "0.21.0" }
 radicle-job = { version = "0.5.1" }
-radicle-surf = { version = "0.27.0", default-features = false, features = ["serde"] }
-radicle-term = { version = "0.17.0", default-features = false }
+radicle-surf = { version = "0.27.1", default-features = false, features = ["serde"] }
+radicle-term = { version = "0.18.0", default-features = false }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }
 thiserror = { version = "2" }
@@ -53,6 +53,6 @@ uuid = { version = "1.13.1", features = ["serde"] }
 hyper = { version = "1.6", default-features = false, features = ["client"] }
 pretty_assertions = { version = "1.4.1" }
 radicle = { version = "0.21.0", features = ["test"] }
-radicle-crypto = { version = "0.15.0", features = ["test"] }
+radicle-crypto = { version = "0.17.0", features = ["test"] }
 tempfile = { version = "3.20.0" }
 tower = { version = "0.5.2", features = ["util"] }
