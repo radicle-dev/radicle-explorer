@@ -97,7 +97,7 @@ export type Node = z.infer<typeof nodeSchema>;
 
 const nodeSchema = z.object({
   id: z.string(),
-  agent: z.string(),
+  agent: z.string().nullable(),
   config: nodeConfigSchema.nullable(),
   state: z.union([z.literal("running"), z.literal("stopped")]),
   avatarUrl: z.string().optional(),

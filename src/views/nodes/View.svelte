@@ -166,9 +166,11 @@
               <div style:width="2rem"></div>
             </Seeding>
           </div>
-          <div class="sidebar-item">
-            <UserAgent agent={node.agent} />
-          </div>
+          {#if node.agent}
+            <div class="sidebar-item">
+              <UserAgent agent={node.agent} />
+            </div>
+          {/if}
         </div>
       </div>
 
