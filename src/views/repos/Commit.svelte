@@ -116,9 +116,7 @@
             slot="after-timestamp"
             {baseUrl}
             rid={repo.rid}
-            commit={header.id}
-            stylePopoverPositionTop="0.5rem"
-            stylePopoverPositionLeft="0" />
+            commit={header.id} />
         </CommitAuthorship>
         <span class="txt-body-m-regular">
           {header.parents.length === 1 ? "Parent" : "Parents"}:

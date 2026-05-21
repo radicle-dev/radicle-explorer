@@ -443,12 +443,7 @@
                 <CobCommitTeaser {commit} {baseUrl} {repoId}>
                   {#if response.commits.length - 1 === index}
                     <div class="global-flex-item" style:margin-right="0.25rem">
-                      <JobCob
-                        {baseUrl}
-                        rid={repoId}
-                        commit={commit.id}
-                        stylePopoverPositionBottom="2rem"
-                        stylePopoverPositionLeft="0" />
+                      <JobCob {baseUrl} rid={repoId} commit={commit.id} />
                     </div>
                   {/if}
                 </CobCommitTeaser>

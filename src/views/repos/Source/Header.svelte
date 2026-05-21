@@ -145,12 +145,7 @@
       </Link>
     {/if}
     <div style:margin-left="0.5rem">
-      <JobCob
-        baseUrl={node}
-        rid={repo.rid}
-        commit={lastCommit.id}
-        stylePopoverPositionTop="0.5rem"
-        stylePopoverPositionLeft="0" />
+      <JobCob baseUrl={node} rid={repo.rid} commit={lastCommit.id} />
     </div>
   </div>
 </div>
@@ -219,12 +214,7 @@
       </Link>
     {/if}
     <div style:margin-left="0.5rem">
-      <JobCob
-        baseUrl={node}
-        rid={repo.rid}
-        commit={lastCommit.id}
-        stylePopoverPositionTop="0.5rem"
-        stylePopoverPositionLeft="0" />
+      <JobCob baseUrl={node} rid={repo.rid} commit={lastCommit.id} />
     </div>
   </div>
 </div>
