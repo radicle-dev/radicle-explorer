@@ -2,6 +2,7 @@ import type { Config } from "dompurify";
 import type { MarkedExtension, Tokens } from "marked";
 import type { Route } from "@app/lib/router";
 
+import escape from "lodash/escape";
 import footnoteMarkedExtension from "marked-footnote";
 import katexMarkedExtension from "marked-katex-extension";
 import linkifyMarkedExtension from "marked-linkify-it";
@@ -29,6 +30,7 @@ export const sanitizeConfig: Config = {
     "href",
     "id",
     "name",
+    "rel",
     "src",
     "target",
     "text",
@@ -106,10 +108,8 @@ export class Renderer extends BaseRenderer {
     const text = this.parser.parseInline(tokens);
     if (href.startsWith("#")) {
       // By lowercasing we avoid casing mismatches, between headings and links.
-      return `<a ${title ? `title="${title}"` : ""} href="${href.toLowerCase()}">${text}</a>`;
-    }
-
-    if (this.#route.resource === "repo.source" && !isUrl(href)) {
+      href = href.toLowerCase();
+    } else if (this.#route.resource === "repo.source" && !isUrl(href)) {
       href = routeToPath({
         ...this.#route,
         path: canonicalize(href, this.#route.path || "README.md"),
@@ -117,7 +117,12 @@ export class Renderer extends BaseRenderer {
       });
     }
 
-    return `<a ${title ? `title="${title}"` : ""} href="${href}">${text}</a>`;
+    const attrs = [`href="${escape(href)}"`];
+    if (title) {
+      attrs.push(`title="${escape(title)}"`);
+    }
+
+    return `<a ${attrs.join(" ")}>${text}</a>`;
   }
 }
 
