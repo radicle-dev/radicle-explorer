@@ -31,6 +31,7 @@
   }
   .no-alias {
     color: var(--color-text-tertiary);
+    white-space: nowrap;
   }
 </style>
 
