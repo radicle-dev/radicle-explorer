@@ -224,6 +224,18 @@ export function isOnion(addr: string): boolean {
   return addr.endsWith(".onion");
 }
 
+export function safeHttpUrl(url: string): string | undefined {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+      return parsed.toString();
+    }
+  } catch {
+    // fall through
+  }
+  return undefined;
+}
+
 // Get the gravatar URL of an email.
 export function gravatarURL(email: string): string {
   const address = email.trim().toLowerCase();
