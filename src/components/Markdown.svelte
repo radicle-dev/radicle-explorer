@@ -129,6 +129,7 @@
         const url = new URL(e.href);
         if (url.origin !== window.origin) {
           e.target = "_blank";
+          e.rel = "noopener noreferrer";
         }
       } catch (e) {
         console.warn("Not able to parse url", e);
