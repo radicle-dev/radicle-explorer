@@ -24,6 +24,8 @@
 </script>
 
 <script lang="ts">
+  import { safeHttpUrl } from "@app/lib/utils";
+
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Loading from "@app/components/Loading.svelte";
@@ -42,7 +44,7 @@
   type RunView = {
     run: Run;
     label: string;
-    linkable: boolean;
+    safeLog: string | undefined;
   };
 
   type HostGroup = {
@@ -71,13 +73,6 @@
     } catch {
       return undefined;
     }
-  }
-
-  function isLinkable(url: URL | undefined): boolean {
-    if (!url) return false;
-    if (url.protocol !== "http:" && url.protocol !== "https:") return false;
-    if (url.host === "no.url.example.com") return false;
-    return true;
   }
 
   function runLabel(run: Run, url: URL | undefined): string {
@@ -134,10 +129,12 @@
       for (const run of job.runs) {
         const url = parseUrl(run.log);
         const host = url && url.host ? url.host : "(unknown host)";
+        const safeLog =
+          url?.host !== "no.url.example.com" ? safeHttpUrl(run.log) : undefined;
         const view: RunView = {
           run,
           label: runLabel(run, url),
-          linkable: isLinkable(url),
+          safeLog,
         };
         const key = run.node.id;
         let entry = byNode[key];
@@ -375,12 +372,12 @@
             {#if !isCollapsed}
               {#if group.flatRuns}
                 {#each group.flatRuns as view (view.run.runId)}
-                  {#if view.linkable}
+                  {#if view.safeLog}
                     <a
                       class="row run-row"
-                      href={view.run.log}
+                      href={view.safeLog}
                       target="_blank"
-                      rel="noreferrer">
+                      rel="noopener noreferrer">
                       <span class="chip {view.run.status}">
                         {#if view.run.status === "succeeded"}
                           <Icon name="checkmark" />
@@ -419,12 +416,12 @@
                 {#each group.hosts as host}
                   <div class="row host-row"><span>{host.host}</span></div>
                   {#each host.runs as view (view.run.runId)}
-                    {#if view.linkable}
+                    {#if view.safeLog}
                       <a
                         class="row run-row"
-                        href={view.run.log}
+                        href={view.safeLog}
                         target="_blank"
-                        rel="noreferrer">
+                        rel="noopener noreferrer">
                         <span class="chip {view.run.status}">
                           {#if view.run.status === "succeeded"}
                             <Icon name="checkmark" />
