@@ -87,7 +87,13 @@
         }}>
         <div style="position: relative;">
           <div class="summary" use:twemoji>
-            <InlineTitle fontSize="body-m-regular" content={commit.summary} />
+            {#if !commit.summary}
+              <span style:color="var(--color-text-tertiary)">
+                No commit message
+              </span>
+            {:else}
+              <InlineTitle fontSize="body-m-regular" content={commit.summary} />
+            {/if}
           </div>
         </div>
       </Link>

@@ -86,7 +86,15 @@
     <div class="header">
       <div style="display:flex; flex-direction: column; gap: 0.5rem;">
         <span class="title">
-          <InlineTitle fontSize="heading-l" content={header.summary} />
+          {#if !header.summary}
+            <span
+              class="txt-heading-l"
+              style:color="var(--color-text-tertiary)">
+              No commit message
+            </span>
+          {:else}
+            <InlineTitle fontSize="heading-l" content={header.summary} />
+          {/if}
           <div class="button-container">
             <Link
               route={{
