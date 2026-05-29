@@ -83,6 +83,10 @@
     return run.runId.slice(0, 8);
   }
 
+  function isTerminal(status: Status): boolean {
+    return status === "succeeded" || status === "failed";
+  }
+
   function aggregateStatus(c: Counts): Status {
     if (c.failed) return "failed";
     if (c.started) return "started";
@@ -122,6 +126,7 @@
         nodeId: string;
         alias: string | undefined;
         byHost: Record<string, RunView[]>;
+        seen: Map<string, RunView>;
       }
     > = {};
     const nodeOrder: string[] = [];
@@ -143,10 +148,26 @@
             nodeId: run.node.id,
             alias: run.node.alias,
             byHost: {},
+            seen: new Map(),
           };
           byNode[key] = entry;
           nodeOrder.push(key);
         }
+        const existing = entry.seen.get(run.runId);
+        if (existing) {
+          // The same run can appear under multiple job COBs. Keep one view
+          // per runId, but let a terminal status override a stale "started"
+          // one when COBs polled at different times disagree. We mutate the
+          // existing view in place because it is the same object referenced
+          // from its host bucket below.
+          if (!isTerminal(existing.run.status) && isTerminal(run.status)) {
+            existing.run = run;
+            existing.label = view.label;
+            existing.safeLog = view.safeLog;
+          }
+          continue;
+        }
+        entry.seen.set(run.runId, view);
         const bucket = entry.byHost[host] ?? (entry.byHost[host] = []);
         bucket.push(view);
       }
