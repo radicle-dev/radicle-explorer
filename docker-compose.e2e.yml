@@ -1,0 +1,43 @@
+x-e2e-common: &e2e-common
+  init: true
+  working_dir: /work
+  environment:
+    PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+
+services:
+  # Runs the suite against the released radicle-httpd binary.
+  e2e:
+    <<: *e2e-common
+    build:
+      context: .
+      dockerfile: Dockerfile.e2e
+      target: base
+    volumes:
+      # Repo bind-mounted so code edits, test artifacts, and the
+      # binary/fixture cache (tests/tmp) are shared with the host.
+      - .:/work
+      # Container-private node_modules: keeps the host's untouched and
+      # avoids a glibc mismatch with host-built native modules.
+      - e2e-node-modules:/work/node_modules
+
+  # Compiles radicle-httpd from source and runs the suite against it.
+  # Used via `scripts/test-e2e-docker --local` when testing backend changes.
+  e2e-local:
+    <<: *e2e-common
+    build:
+      context: .
+      dockerfile: Dockerfile.e2e
+      target: local
+    volumes:
+      - .:/work
+      - e2e-node-modules:/work/node_modules
+      # Container-private cargo crate cache and httpd build dir, so the
+      # Rust build is incremental across runs and never mixes with the
+      # host's (different glibc/rustc) target artifacts.
+      - e2e-cargo-registry:/usr/local/cargo/registry
+      - e2e-httpd-target:/work/radicle-httpd/target
+
+volumes:
+  e2e-node-modules:
+  e2e-cargo-registry:
+  e2e-httpd-target:

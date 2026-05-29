@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# Build and run the Playwright e2e suite inside a Docker container. Use this
+# when the host OS is not supported by Playwright's browser builds.
+#
+# Usage:
+#   scripts/test-e2e-docker                          # all chromium e2e tests
+#   scripts/test-e2e-docker tests/e2e/foo.spec.ts    # a single spec
+#   scripts/test-e2e-docker --project chromium -g "some test"
+#   scripts/test-e2e-docker --local                  # build radicle-httpd from
+#                                                    # source and test against it
+#
+# Any non-flag arguments are forwarded to the test command. When none are
+# given, defaults to `--project chromium`.
+set -euo pipefail
+
+REPO_ROOT=$(cd "$(dirname "$0")/.." && pwd)
+cd "$REPO_ROOT"
+
+COMPOSE="docker compose -f docker-compose.e2e.yml"
+
+# Strip our own --local flag; forward everything else to Playwright.
+LOCAL=false
+ARGS=()
+for arg in "$@"; do
+  if [ "$arg" = "--local" ]; then
+    LOCAL=true
+  else
+    ARGS+=("$arg")
+  fi
+done
+
+SERVICE=e2e
+EXTRA_ENV=()
+if $LOCAL; then
+  SERVICE=e2e-local
+  EXTRA_ENV=(-e USE_LOCAL_HTTPD=true)
+fi
+
+$COMPOSE build "$SERVICE"
+
+if [ "${#ARGS[@]}" -eq 0 ]; then
+  ARGS=(--project chromium)
+fi
+
+# SKIP_SETUP (no value) forwards the host's value through, mirroring the
+# native runner's fast-iteration flag.
+exec $COMPOSE run --rm \
+  -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+  -e SKIP_SETUP \
+  "${EXTRA_ENV[@]}" \
+  "$SERVICE" "${ARGS[@]}"

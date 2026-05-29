@@ -57,6 +57,38 @@ This will:
 1. Compile radicle-httpd from the `radicle-httpd/` directory
 2. Run the full test suite against the locally compiled binary
 
+**Running e2e tests in Docker:**
+
+If your host OS isn't supported by Playwright's browser builds (e.g. a very
+new or unusual Linux distribution), run the suite inside a container instead.
+Requires Docker with the Compose plugin.
+
+    scripts/test-e2e-docker
+
+Any arguments are forwarded to `npm run test:e2e` (defaulting to
+`--project chromium` when none are given):
+
+    scripts/test-e2e-docker tests/e2e/repo.spec.ts
+    scripts/test-e2e-docker --project chromium -g "some test name"
+
+`SKIP_SETUP=true` is forwarded the same as for the native runner:
+
+    SKIP_SETUP=true scripts/test-e2e-docker
+
+To test against a radicle-httpd you compile from source (the equivalent of
+`npm run test:e2e:local`), pass `--local`:
+
+    scripts/test-e2e-docker --local
+
+Notes:
+* The first image build is slow (it downloads Chromium); subsequent runs are
+  cached. `--local` additionally installs a Rust toolchain and compiles
+  radicle-httpd on first use.
+* The repo is bind-mounted, so test artifacts and the binary/fixture cache
+  land on the host as usual. `node_modules`, the cargo cache, and httpd's
+  build directory live in container-private volumes, leaving your host copies
+  untouched.
+
 Proposing changes
 -----------------
 When proposing changes via a patch:

@@ -1,0 +1,53 @@
+# Runs the Playwright e2e suite in a Playwright-supported Linux distro.
+# Useful when the host OS is too new/old for Playwright's browser builds.
+#
+# Two stages:
+#   base  - Node + Chromium; runs the suite against the released radicle-httpd.
+#   local - base + a Rust toolchain; additionally compiles radicle-httpd from
+#           source for `--local` runs (needed when testing backend changes).
+#
+# Chromium and its OS dependencies are baked in at the project's pinned
+# Playwright version. node_modules and the repo are provided at runtime via
+# bind mount + named volume (see docker-compose.e2e.yml).
+FROM node:24-bookworm AS base
+
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
+    DEBIAN_FRONTEND=noninteractive
+
+# xz-utils: install-binaries unpacks .tar.xz release archives.
+# git/curl/ca-certificates: fetching binaries and git operations in fixtures.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       xz-utils ca-certificates git curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /work
+
+# Install Chromium plus its apt-level runtime dependencies, pinned to the
+# Playwright version in package-lock.json so the baked browser matches the
+# @playwright/test that npm ci installs into the volume at runtime. Copying
+# only the lockfiles keeps this layer cached across source changes.
+# --ignore-scripts: the repo's postinstall (copy-katex/twemoji assets) needs
+# scripts/ which isn't in this layer; those run at runtime instead.
+COPY package.json package-lock.json ./
+RUN npm ci --ignore-scripts \
+    && npx playwright install --with-deps chromium \
+    && rm -rf node_modules
+
+ENTRYPOINT ["/work/scripts/docker-e2e-entrypoint.sh"]
+
+# --- local stage: adds Rust so the entrypoint can build radicle-httpd ---
+FROM base AS local
+
+# Toolchain + build deps for compiling radicle-httpd (debug build).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       build-essential pkg-config libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV RUSTUP_HOME=/usr/local/rustup \
+    CARGO_HOME=/usr/local/cargo \
+    PATH=/usr/local/cargo/bin:$PATH
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+      | sh -s -- -y --no-modify-path --profile minimal --default-toolchain stable \
+    && rustc --version
