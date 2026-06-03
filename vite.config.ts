@@ -84,6 +84,9 @@ export default defineConfig({
       "@wooorm/starry-night/text.html.vue",
       "@wooorm/starry-night/text.robots-txt",
       "@wooorm/starry-night/text.zone_file",
+      // Loaded via dynamic import in Markdown.svelte; pre-include it so the
+      // dep optimizer doesn't re-run mid-session and invalidate chunks.
+      "mermaid",
     ],
   },
   server: {
