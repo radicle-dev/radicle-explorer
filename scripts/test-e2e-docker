@@ -44,8 +44,10 @@ fi
 
 # SKIP_SETUP (no value) forwards the host's value through, mirroring the
 # native runner's fast-iteration flag.
+# `${EXTRA_ENV[@]+...}` guards against `set -u` erroring on the empty array
+# (non-local runs) under bash 3.2, which ships on macOS.
 exec $COMPOSE run --rm \
   -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
   -e SKIP_SETUP \
-  "${EXTRA_ENV[@]}" \
+  ${EXTRA_ENV[@]+"${EXTRA_ENV[@]}"} \
   "$SERVICE" "${ARGS[@]}"
