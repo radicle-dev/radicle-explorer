@@ -44,8 +44,11 @@ fi
 
 # SKIP_SETUP (no value) forwards the host's value through, mirroring the
 # native runner's fast-iteration flag.
-# `${EXTRA_ENV[@]+...}` guards against `set -u` erroring on the empty array
-# (non-local runs) under bash 3.2, which ships on macOS.
+# Expanding an empty array as "${EXTRA_ENV[@]}" under `set -u` aborts with
+# "unbound variable" on bash < 4.4; macOS still ships bash 3.2, so we can't
+# rely on the 4.4 fix. ${arr[@]+...} expands to nothing when the array is
+# empty and to the quoted elements otherwise — a no-op on bash >= 4.4, so it
+# stays correct on modern shells. See https://stackoverflow.com/q/7577052
 exec $COMPOSE run --rm \
   -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
   -e SKIP_SETUP \
