@@ -2,12 +2,17 @@
   import type { BaseUrl } from "@http-client";
 
   import config from "@app/lib/config";
+  import {
+    archiveDownloadSupported,
+    archiveUnsupportedMessage,
+  } from "@app/lib/archive";
   import { parseRepositoryId } from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
   import Command from "@app/components/Command.svelte";
   import ExternalLink from "@app/components/ExternalLink.svelte";
   import Icon from "@app/components/Icon.svelte";
+  import Loading from "@app/components/Loading.svelte";
   import Popover from "@app/components/Popover.svelte";
   import Radio from "@app/components/Radio.svelte";
 
@@ -18,18 +23,15 @@
   export let name: string;
   export let currentRefname: string;
 
-  let enabledArchiveDownload = false;
-
-  void fetch(
-    `${baseUrlToString(baseUrl)}/raw/${id}/archive/${currentRefname}`,
-    {
-      method: "HEAD",
-    },
-  ).then(response => {
-    enabledArchiveDownload = response.ok;
-  });
-
   let activeTab: "radicle" | "git" | "archive" = "radicle";
+  let archiveProbe: Promise<boolean> | undefined;
+
+  function showArchiveTab() {
+    activeTab = "archive";
+    archiveProbe = archiveDownloadSupported(
+      `${baseUrlToString(baseUrl)}/raw/${id}/archive/${currentRefname}`,
+    );
+  }
 
   $: radCloneUrl = `rad clone ${id}`;
   $: portFragment =
@@ -83,19 +85,15 @@
           <Icon name="git" />
           Git
         </Button>
-        {#if enabledArchiveDownload}
-          <div class="global-spacer"></div>
-          <Button
-            styleWidth="100%"
-            styleBorderRadius="0"
-            variant={activeTab === "archive" ? "selected" : "not-selected"}
-            on:click={() => {
-              activeTab = "archive";
-            }}>
-            <Icon name="archive" />
-            Download
-          </Button>
-        {/if}
+        <div class="global-spacer"></div>
+        <Button
+          styleWidth="100%"
+          styleBorderRadius="0"
+          variant={activeTab === "archive" ? "selected" : "not-selected"}
+          on:click={showArchiveTab}>
+          <Icon name="archive" />
+          Download
+        </Button>
       </Radio>
     </div>
 
@@ -119,17 +117,28 @@
         </div>
       </div>
     {:else if activeTab === "archive"}
-      <div>
-        <label for="git-clone-url">
-          If you don't have Radicle installed, you can still download an archive
-          of the repository.
-        </label>
-        <Command command={archiveUrl} />
-        <div style:margin-top="1.5rem">
-          Note that a compressed archive of the source code does not include any
-          of the social artifacts such as issues or patches nor the git history.
-        </div>
-      </div>
+      {#await archiveProbe}
+        <Loading small center />
+      {:then supported}
+        {#if supported}
+          <div>
+            <label for="git-clone-url">
+              If you don't have Radicle installed, you can still download an
+              archive of the repository.
+            </label>
+            <Command command={archiveUrl} />
+            <div style:margin-top="1.5rem">
+              Note that a compressed archive of the source code does not include
+              any of the social artifacts such as issues or patches nor the git
+              history.
+            </div>
+          </div>
+        {:else}
+          {archiveUnsupportedMessage}
+        {/if}
+      {:catch}
+        {archiveUnsupportedMessage}
+      {/await}
     {/if}
   </div>
 </Popover>

@@ -1,6 +1,10 @@
 <script lang="ts">
   import type { BaseUrl, Commit, Repo } from "@http-client";
 
+  import {
+    archiveDownloadSupported,
+    archiveUnsupportedMessage,
+  } from "@app/lib/archive";
   import { baseUrlToString, formatObjectId } from "@app/lib/utils";
   import { renderCommitDescription } from "@app/lib/commit";
 
@@ -13,6 +17,7 @@
   import JobCob from "@app/components/JobCob.svelte";
   import Layout from "./Layout.svelte";
   import Link from "@app/components/Link.svelte";
+  import Popover from "@app/components/Popover.svelte";
   import Separator from "./Separator.svelte";
 
   export let baseUrl: BaseUrl;
@@ -21,16 +26,20 @@
   export let nodeId: string;
   export let nodeAvatarUrl: string | undefined;
 
-  let enabledArchiveDownload = false;
+  let downloading = false;
 
-  void fetch(
-    `${baseUrlToString(baseUrl)}/raw/${repo.rid}/${commit.commit.id}.tar.gz`,
-    {
-      method: "HEAD",
-    },
-  ).then(response => {
-    enabledArchiveDownload = response.ok;
-  });
+  async function downloadArchive(): Promise<boolean> {
+    const url = `${baseUrlToString(baseUrl)}/raw/${repo.rid}/${commit.commit.id}.tar.gz`;
+    try {
+      if (await archiveDownloadSupported(url)) {
+        window.location.href = url;
+        return true;
+      }
+    } catch {
+      return false;
+    }
+    return false;
+  }
 
   $: header = commit.commit;
 </script>
@@ -58,6 +67,10 @@
     margin-left: auto;
     display: flex;
     gap: 0.5rem;
+  }
+  .download-error {
+    font: var(--txt-body-m-regular);
+    width: 18rem;
   }
 </style>
 
@@ -108,14 +121,30 @@
                 <Icon name="chevron-left-right" />
               </Button>
             </Link>
-            {#if enabledArchiveDownload}
-              <a
-                href={`${baseUrlToString(baseUrl)}/raw/${repo.rid}/${commit.commit.id}.tar.gz`}>
-                <Button variant="outline">
-                  <Icon name="archive" />Download
-                </Button>
-              </a>
-            {/if}
+            <Popover popoverPositionTop="2.5rem" popoverPositionRight="0">
+              <Button
+                slot="toggle"
+                let:toggle
+                let:expanded
+                on:click={async () => {
+                  if (expanded) {
+                    toggle();
+                  } else if (!downloading) {
+                    downloading = true;
+                    const ok = await downloadArchive();
+                    downloading = false;
+                    if (!ok) {
+                      toggle();
+                    }
+                  }
+                }}
+                variant="outline">
+                <Icon name="archive" />Download
+              </Button>
+              <div slot="popover" class="download-error">
+                {archiveUnsupportedMessage}
+              </div>
+            </Popover>
           </div>
         </span>
         <CommitAuthorship {header}>
