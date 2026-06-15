@@ -97,6 +97,7 @@ pub trait FindJobs {
         let mut jobs: Vec<Job> = self
             .find_by_commit(commit)?
             .into_iter()
+            .filter(|(_, job)| !job.runs().is_empty())
             .map(|(id, job)| Job::new(id, &job, aliases))
             .collect();
         jobs.sort_by_key(|job| job.job_id);
@@ -130,4 +131,59 @@ pub async fn handler(
     let jobs = JobsSource { ctx: &ctx, rid }.jobs_by_commit(sha, &aliases)?;
 
     Ok::<_, ApiError>(Json(jobs))
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+    use std::str::FromStr;
+
+    use radicle::node::NodeId;
+
+    use super::*;
+
+    /// A [`FindJobs`] implementation backed by an in-memory list of jobs.
+    struct StubJobs(Vec<(JobId, radicle_job::Job)>);
+
+    impl FindJobs for StubJobs {
+        fn find_by_commit(&self, _oid: Oid) -> Result<Vec<(JobId, radicle_job::Job)>, ApiError> {
+            Ok(self.0.clone())
+        }
+    }
+
+    fn job(job_id: &str, with_run: bool) -> (JobId, radicle_job::Job) {
+        let oid = "e8c676b9e3b42308dc9d218b70faa5408f8e58ca";
+        let runs = if with_run {
+            serde_json::json!({
+                "z6MknSLrJoTcukLrE435hVNQT4JUhbvWLX4kUzqkEStBU8Vi": {
+                    "f1ad9c19-6f9c-4f1a-9a9e-1d0d3e7c1c2f": {
+                        "status": "Started",
+                        "log": "https://example.com/log",
+                        "timestamp": 0,
+                    }
+                }
+            })
+        } else {
+            serde_json::json!({})
+        };
+        let job: radicle_job::Job =
+            serde_json::from_value(serde_json::json!({ "oid": oid, "runs": runs })).unwrap();
+
+        (JobId::from_str(job_id).unwrap(), job)
+    }
+
+    #[test]
+    fn jobs_without_runs_are_excluded() {
+        let commit = Oid::from_str("e8c676b9e3b42308dc9d218b70faa5408f8e58ca").unwrap();
+        let aliases: HashMap<NodeId, Alias> = HashMap::new();
+        let source = StubJobs(vec![
+            job("e8c676b9e3b42308dc9d218b70faa5408f8e58ca", false),
+            job("a1b2c3d4e5f6071829304a5b6c7d8e9f00112233", true),
+        ]);
+
+        let jobs = source.jobs_by_commit(commit, &aliases).unwrap();
+
+        assert_eq!(jobs.len(), 1);
+        assert_eq!(jobs[0].runs.len(), 1);
+    }
 }
