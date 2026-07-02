@@ -690,7 +690,7 @@ async fn issues_handler(
         })
         .collect::<Vec<_>>();
 
-    issues.sort_by(|(_, a), (_, b)| b.timestamp().cmp(&a.timestamp()));
+    issues.sort_by_key(|(_, b)| std::cmp::Reverse(b.timestamp()));
     let aliases = &ctx.profile.aliases();
     let issues = issues
         .into_iter()
@@ -745,7 +745,7 @@ async fn patches_handler(
             (status.matches(patch.state())).then_some((id, patch))
         })
         .collect::<Vec<_>>();
-    patches.sort_by(|(_, a), (_, b)| b.timestamp().cmp(&a.timestamp()));
+    patches.sort_by_key(|(_, b)| std::cmp::Reverse(b.timestamp()));
     let aliases = ctx.profile.aliases();
     let patches = patches
         .into_iter()
