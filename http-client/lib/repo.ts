@@ -87,6 +87,22 @@ const reposSchema = array(repoSchema);
 
 export type Repo = z.infer<typeof repoSchema>;
 
+const searchResultSchema = object({
+  rid: string(),
+  payloads: object({
+    "xyz.radicle.project": object({
+      name: string(),
+      description: string(),
+      defaultBranch: string(),
+    }).optional(),
+  }),
+  delegates: array(authorSchema),
+  seeds: number(),
+});
+const searchResultsSchema = array(searchResultSchema);
+
+export type SearchResult = z.infer<typeof searchResultSchema>;
+
 const activitySchema = object({
   activity: array(number()),
 });
@@ -176,6 +192,7 @@ export type RepoListQuery = {
   page?: number;
   perPage?: number;
   show?: "pinned" | "all";
+  sort?: "rid" | "activity" | "seeding";
 };
 export class Client {
   #fetcher: Fetcher;
@@ -223,6 +240,21 @@ export class Client {
         options,
       },
       reposSchema,
+    );
+  }
+
+  public async search(
+    query: string,
+    options?: RequestOptions,
+  ): Promise<SearchResult[]> {
+    return this.#fetcher.fetchOk(
+      {
+        method: "GET",
+        path: "repos/search",
+        query: { q: query },
+        options,
+      },
+      searchResultsSchema,
     );
   }
 

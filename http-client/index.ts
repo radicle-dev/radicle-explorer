@@ -7,6 +7,7 @@ import type {
   Remote,
   Repo,
   RepoListQuery,
+  SearchResult,
   TagInfo,
   Tree,
   TreeStats,
@@ -46,7 +47,9 @@ import type { ZodSchema } from "zod";
 import * as z from "zod";
 
 import * as repo from "./lib/repo.js";
-import { Fetcher } from "./lib/fetcher.js";
+import { Fetcher, ResponseError } from "./lib/fetcher.js";
+
+export { ResponseError };
 import {
   nodeConfigSchema,
   scopeSchema,
@@ -86,6 +89,7 @@ export type {
   RepoListQuery,
   Review,
   Revision,
+  SearchResult,
   SeedingPolicy,
   TagInfo,
   Tree,
@@ -103,6 +107,15 @@ const nodeSchema = z.object({
   avatarUrl: z.string().optional(),
   bannerUrl: z.string().optional(),
   description: z.string().optional(),
+});
+
+export type Info = z.infer<typeof infoSchema>;
+
+const infoSchema = z.object({
+  node: nodeSchema,
+  httpd: z.object({
+    searchAvailable: z.boolean(),
+  }),
 });
 
 export type NodeIdentity = z.infer<typeof nodeIdentitySchema>;
@@ -243,6 +256,17 @@ export class HttpdClient {
         options,
       },
       nodeSchema,
+    );
+  }
+
+  public async getInfo(options?: RequestOptions): Promise<Info> {
+    return this.#fetcher.fetchOk(
+      {
+        method: "GET",
+        path: "info",
+        options,
+      },
+      infoSchema,
     );
   }
 
