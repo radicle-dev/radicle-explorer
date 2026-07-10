@@ -1,8 +1,8 @@
 [package]
 name = "radicle-httpd"
 description = "Radicle HTTP daemon"
-homepage = "https://radicle.dev"
-license = "MIT OR Apache-2.0"
+homepage.workspace = true
+license.workspace = true
 version = "0.25.0"
 authors = ["cloudhead <cloudhead@radicle.xyz>", "sebastinez <me@sebastinez.dev>"]
 edition = "2021"
@@ -21,38 +21,39 @@ name = "radicle-httpd"
 path = "src/main.rs"
 
 [dependencies]
-anyhow = { version = "1" }
+anyhow.workspace = true
 axum = { version = "0.8.4", default-features = false, features = ["json", "query", "tokio", "http1"] }
 axum-listener = { version = "0.2.2" }
 base64 = { version = "0.22.1" }
-chrono = { version = "0.4.41", default-features = false, features = ["clock"] }
+chrono.workspace = true
 futures-util = { version = "0.3.32", default-features = false }
 hyper = { version = "1.6.0", default-features = false }
 infer = { version = "0.19.0" }
-lexopt = { version = "0.3.1" }
+lexopt.workspace = true
 lru = { version = "0.16.0" }
 mime_guess = { version = "2.0.5" }
 nonempty = { version = "0.12.0", features = ["serialize"] }
-radicle = { version = "0.24.0" }
+radicle.workspace = true
 radicle-job = { version = "0.6.0" }
-radicle-surf = { version = "0.27.1", default-features = false, features = ["serde"] }
+radicle-search = { path = "../radicle-search" }
+radicle-surf = { workspace = true, features = ["serde"] }
 radicle-term = { version = "0.18.0", default-features = false }
-serde = { version = "1", features = ["derive"] }
-serde_json = { version = "1", features = ["preserve_order"] }
-thiserror = { version = "2" }
-tokio = { version = "1.47.1", default-features = false, features = ["macros", "rt-multi-thread", "signal", "process", "io-util"] }
+serde.workspace = true
+serde_json = { workspace = true, features = ["preserve_order"] }
+thiserror.workspace = true
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "signal", "process", "io-util"] }
 tokio-util = { version = "0.7.18", default-features = false, features = ["io"] }
 tower-http = { version = "0.6.6", default-features = false, features = ["trace", "cors", "set-header", "decompression-full"] }
-tracing = { version = "0.1.41", default-features = false, features = ["std", "log"] }
+tracing.workspace = true
 tracing-logfmt = { version = "0.3.5", optional = true }
-tracing-subscriber = { version = "0.3.19", default-features = false, features = ["std", "ansi", "fmt"] }
+tracing-subscriber.workspace = true
 url = { version = "2.5.4", features = ["serde"] }
 uuid = { version = "1.13.1", features = ["serde"] }
 
 [dev-dependencies]
 hyper = { version = "1.6", default-features = false, features = ["client"] }
 pretty_assertions = { version = "1.4.1" }
-radicle = { version = "0.24.0", features = ["test"] }
+radicle = { workspace = true, features = ["test"] }
 radicle-crypto = { version = "0.17.0", features = ["test"] }
 tempfile = { version = "3.20.0" }
 tower = { version = "0.5.2", features = ["util"] }

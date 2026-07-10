@@ -51,6 +51,17 @@ pub struct Options {
     pub aliases: HashMap<String, RepoId>,
     pub listen: DualAddr,
     pub cache: Option<NonZeroUsize>,
+    /// Search backend configuration. `None` disables search at runtime and
+    /// falls back to the built-in storage walk.
+    pub search: Option<SearchOptions>,
+}
+
+#[derive(Debug, Clone)]
+pub struct SearchOptions {
+    pub url: String,
+    pub api_key: Option<String>,
+    pub index_name: String,
+    pub query_timeout: std::time::Duration,
 }
 
 /// Run the Server.
@@ -73,7 +84,7 @@ pub async fn run(options: Options) -> anyhow::Result<()> {
 
     let web_config = api::WebConfig::from_profile(&profile);
     let profile = Arc::new(profile);
-    let ctx = api::Context::new(profile.clone(), web_config.clone(), &options);
+    let ctx = api::Context::new(profile.clone(), web_config.clone(), &options)?;
 
     #[cfg(unix)]
     tokio::spawn(async move {
@@ -251,11 +262,12 @@ mod routes {
             aliases: HashMap::new(),
             listen: DualAddr::Tcp(SocketAddr::from(([0, 0, 0, 0], 8080))),
             cache: None,
+            search: None,
         };
         let profile = test::profile(tmp.path(), [0xff; 32]);
         let web_config = crate::api::WebConfig::from_profile(&profile);
         let profile = std::sync::Arc::new(profile);
-        let ctx = crate::api::Context::new(profile.clone(), web_config, &options);
+        let ctx = crate::api::Context::new(profile.clone(), web_config, &options).unwrap();
         let app = super::router(options, profile, ctx)
             .unwrap()
             .layer(MockConnectInfo(DualAddr::Tcp(SocketAddr::from((

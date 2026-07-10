@@ -35,7 +35,7 @@ pub fn router(ctx: Context) -> Router {
 
 #[derive(Clone, Debug, Default, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct Response {
+pub(crate) struct Response {
     id: String,
     agent: Option<UserAgent>,
     config: Option<Config>,
@@ -68,9 +68,9 @@ impl Response {
     }
 }
 
-/// Return local node information.
-/// `GET /node`
-async fn node_handler(State(ctx): State<Context>) -> impl IntoResponse {
+/// Build the local node response. Used by `GET /node` and by the
+/// `GET /info` aggregate.
+pub(crate) async fn build_response(ctx: &Context) -> Result<Response, Error> {
     let node_id = ctx.profile.public_key;
     let home = ctx.profile.database()?;
     let agent = AddressStore::get(&home, &node_id)
@@ -79,7 +79,7 @@ async fn node_handler(State(ctx): State<Context>) -> impl IntoResponse {
 
     // The call to `is_running` is a blocking call, which has been, anecdotally, slow to respond.
     // Spawn a thread with a timeout to ensure that the call to `is_running` does not slow down the
-    // response of the `/node` route too much.
+    // response of the route too much.
     let node_state = {
         let socket = ctx.profile.socket_from_env();
         let is_running = timeout(
@@ -116,14 +116,19 @@ async fn node_handler(State(ctx): State<Context>) -> impl IntoResponse {
         }
     };
 
-    let response = Response::new(
+    Ok(Response::new(
         node_id,
         agent,
         config,
         node_state.to_string(),
         ctx.web_config().read().await,
-    );
+    ))
+}
 
+/// Return local node information.
+/// `GET /node`
+async fn node_handler(State(ctx): State<Context>) -> impl IntoResponse {
+    let response = build_response(&ctx).await?;
     Ok::<_, Error>(cached_response(response, 600))
 }
 

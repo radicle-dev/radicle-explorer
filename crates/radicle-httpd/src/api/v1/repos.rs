@@ -1,6 +1,6 @@
 mod job;
 
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, HashMap};
 
 use axum::extract::{DefaultBodyLimit, State};
 use axum::http::header;
@@ -17,12 +17,12 @@ use serde_json::json;
 use radicle::cob::{issue::cache::Issues as _, patch::cache::Patches as _};
 use radicle::identity::RepoId;
 use radicle::node::{Alias, AliasStore, NodeId};
-use radicle::storage::{ReadRepository, ReadStorage, RemoteRepository};
+use radicle::storage::{ReadRepository, RemoteRepository};
 
 use crate::api;
 use crate::api::error::Error;
-use crate::api::query::{CobsQuery, PaginationQuery, RepoQuery};
-use crate::api::search::{SearchQueryString, SearchResult};
+use crate::api::query::{CobsQuery, PaginationQuery, RepoQuery, MAX_PER_PAGE, MAX_QUERY_LEN};
+use crate::api::search::SearchQueryString;
 use crate::api::Context;
 use crate::api::PeelToCommit;
 use crate::axum_extra::{cached_response, immutable_response, Path, Query};
@@ -54,6 +54,295 @@ pub fn router(ctx: Context) -> Router {
         .layer(DefaultBodyLimit::max(MAX_BODY_LIMIT))
 }
 
+/// Storage-walk implementations for repo listing and search. Used directly
+/// when no search backend is configured, and as a fallback for sort modes
+/// the index doesn't serve (pinned, rid) or when a configured backend is
+/// unreachable.
+mod storage {
+    use std::collections::BTreeSet;
+
+    use radicle::node::routing::Store as _;
+    use radicle::storage::{ReadRepository, ReadStorage};
+    use radicle_surf::Repository;
+
+    use crate::api;
+    use crate::api::error::Error;
+    use crate::api::query::{RepoQuery, RepoSort};
+    use crate::api::search::SearchResult;
+    use crate::api::Context;
+    use crate::axum_extra::cached_response;
+
+    /// Repo listing via storage walk. Activity/seeding sorts are collapsed
+    /// to rid sort — walking storage for every repo per request is too
+    /// expensive without a pre-computed index.
+    #[allow(clippy::result_large_err)]
+    pub fn list_repos(
+        ctx: &Context,
+        show: RepoQuery,
+        sort: RepoSort,
+        page: usize,
+        per_page: usize,
+        web_config: &radicle::web::Config,
+    ) -> Result<Vec<api::repo::Info>, Error> {
+        let sort = if matches!(show, RepoQuery::All)
+            && matches!(sort, RepoSort::Activity | RepoSort::Seeding)
+        {
+            RepoSort::Rid
+        } else {
+            sort
+        };
+
+        let storage = &ctx.profile.storage;
+        let pinned = &web_config.pinned;
+        let policies = ctx.profile.policies()?;
+
+        let repos = match show {
+            RepoQuery::All => storage
+                .repositories()?
+                .into_iter()
+                .filter(|repo| repo.doc.visibility().is_public())
+                .collect::<Vec<_>>(),
+            RepoQuery::Pinned => storage
+                .repositories_by_id(pinned.repositories.iter())
+                .filter_map(|result| match result {
+                    Ok(repo) => Some(repo),
+                    Err(e) => {
+                        tracing::warn!("Failed to load pinned repository: {}", e);
+                        None
+                    }
+                })
+                .filter(|repo| repo.doc.visibility().is_public())
+                .collect::<Vec<_>>(),
+        };
+
+        let infos = match sort {
+            RepoSort::Rid => {
+                let mut repos = repos;
+                repos.sort_by_key(|p| p.rid);
+                repos
+                    .into_iter()
+                    .filter_map(|info| {
+                        if !policies.is_seeding(&info.rid).unwrap_or_default() {
+                            return None;
+                        }
+                        let (repo, doc) = ctx.repo(info.rid).ok()?;
+                        ctx.repo_info(&repo, doc).ok()
+                    })
+                    .skip(page * per_page)
+                    .take(per_page)
+                    .collect::<Vec<_>>()
+            }
+            RepoSort::Activity => {
+                let mut with_time: Vec<(radicle::identity::RepoId, i64)> = repos
+                    .into_iter()
+                    .filter_map(|info| {
+                        if !policies.is_seeding(&info.rid).unwrap_or_default() {
+                            return None;
+                        }
+                        let (repo, _doc) = ctx.repo(info.rid).ok()?;
+                        let surf = Repository::open(repo.path()).ok()?;
+                        let head = surf.head().ok()?;
+                        let commit = surf.commit(head).ok()?;
+                        Some((info.rid, commit.committer.time.seconds()))
+                    })
+                    .collect();
+                with_time.sort_by_key(|x| std::cmp::Reverse(x.1));
+                with_time
+                    .into_iter()
+                    .skip(page * per_page)
+                    .take(per_page)
+                    .filter_map(|(rid, _)| {
+                        let (repo, doc) = ctx.repo(rid).ok()?;
+                        ctx.repo_info(&repo, doc).ok()
+                    })
+                    .collect::<Vec<_>>()
+            }
+            RepoSort::Seeding => {
+                let db = ctx.profile.database()?;
+                let mut with_count: Vec<(radicle::identity::RepoId, usize)> = repos
+                    .into_iter()
+                    .filter_map(|info| {
+                        if !policies.is_seeding(&info.rid).unwrap_or_default() {
+                            return None;
+                        }
+                        let count = db.count(&info.rid).unwrap_or_default();
+                        Some((info.rid, count))
+                    })
+                    .collect();
+                with_count.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+                with_count
+                    .into_iter()
+                    .skip(page * per_page)
+                    .take(per_page)
+                    .filter_map(|(rid, _)| {
+                        let (repo, doc) = ctx.repo(rid).ok()?;
+                        ctx.repo_info(&repo, doc).ok()
+                    })
+                    .collect::<Vec<_>>()
+            }
+        };
+
+        Ok(infos)
+    }
+
+    /// Substring search via storage walk. Matches are sorted by position
+    /// of the first match in the name (prefix matches first), with seeding
+    /// count as tie-breaker. Results are cached for 10 minutes.
+    #[allow(clippy::result_large_err)]
+    pub async fn search_repos(
+        ctx: &Context,
+        q: &str,
+        page: usize,
+        per_page: usize,
+    ) -> Result<axum::response::Response, Error> {
+        use axum::response::IntoResponse;
+
+        let storage = &ctx.profile.storage;
+        let aliases = &ctx.profile.aliases();
+        let db = &ctx.profile.database()?;
+        let found_repos = storage
+            .repositories()?
+            .into_iter()
+            .filter_map(|info| SearchResult::new(q, info, db, aliases))
+            .collect::<BTreeSet<SearchResult>>();
+
+        let found_repos = found_repos
+            .into_iter()
+            .skip(page * per_page)
+            .take(per_page)
+            .collect::<Vec<_>>();
+
+        Ok(cached_response(found_repos, 600).into_response())
+    }
+}
+
+/// Repo listing and search dispatch. When a search backend is configured
+/// (`ctx.search()` is `Some`), activity/seeding sorts and `/repos/search` are
+/// served from the Meilisearch index, transparently falling back to the
+/// storage walk on any backend failure. Without a backend, or for sort modes
+/// the index doesn't serve (pinned, rid), everything uses the storage walk.
+mod listing {
+    use axum::response::IntoResponse;
+    use axum::Json;
+    use radicle::node::routing::Store as _;
+    use radicle::node::AliasStore;
+    use radicle_search::query::{SearchClient, SortField};
+    use serde_json::json;
+
+    use crate::api;
+    use crate::api::error::Error;
+    use crate::api::query::{RepoQuery, RepoSort};
+    use crate::api::search::SearchResult;
+    use crate::api::Context;
+
+    #[allow(clippy::result_large_err)]
+    pub async fn list_repos(
+        ctx: &Context,
+        show: RepoQuery,
+        sort: RepoSort,
+        page: usize,
+        per_page: usize,
+        web_config: &radicle::web::Config,
+    ) -> Result<Vec<api::repo::Info>, Error> {
+        let search_sort = match (&show, sort) {
+            (RepoQuery::All, RepoSort::Activity) => Some(SortField::HeadCommitterTime),
+            (RepoQuery::All, RepoSort::Seeding) => Some(SortField::SeedingCount),
+            _ => None,
+        };
+        if let (Some(field), Some(client)) = (search_sort, ctx.search()) {
+            match sorted_repos(ctx, client, field, page, per_page).await {
+                Ok(infos) => return Ok(infos),
+                Err(e) => {
+                    tracing::warn!("search backend failed, falling back to storage walk ({e:#})")
+                }
+            }
+        }
+        super::storage::list_repos(ctx, show, sort, page, per_page, web_config)
+    }
+
+    #[allow(clippy::result_large_err)]
+    pub async fn search_repos(
+        ctx: &Context,
+        q: &str,
+        page: usize,
+        per_page: usize,
+    ) -> Result<axum::response::Response, Error> {
+        if let Some(client) = ctx.search() {
+            match search_by_query(ctx, client, q, page, per_page).await {
+                Ok(response) => return Ok(response),
+                Err(e) => {
+                    tracing::warn!("search backend failed, falling back to storage walk ({e:#})")
+                }
+            }
+        }
+        super::storage::search_repos(ctx, q, page, per_page).await
+    }
+
+    /// Full-text search via Meilisearch. Typo-tolerant prefix matching with
+    /// seedingCount tie-breaking. Returns `Err` on any backend failure so the
+    /// caller falls back to the storage walk.
+    async fn search_by_query(
+        ctx: &Context,
+        client: &SearchClient,
+        q: &str,
+        page: usize,
+        per_page: usize,
+    ) -> anyhow::Result<axum::response::Response> {
+        let rids = client.search_by_query(q, page * per_page, per_page).await?;
+        let aliases = ctx.profile.aliases();
+        let db = ctx.profile.database()?;
+        let found_repos: Vec<SearchResult> = rids
+            .into_iter()
+            .enumerate()
+            .filter_map(|(i, rid)| {
+                let (_repo, doc_at) = ctx.repo(rid).ok()?;
+                let seeds = db.count(&rid).unwrap_or_default();
+                let delegates = doc_at
+                    .doc
+                    .delegates()
+                    .iter()
+                    .map(|did| match aliases.alias(did) {
+                        Some(alias) => json!({ "id": did, "alias": alias }),
+                        None => json!({ "id": did }),
+                    })
+                    .collect();
+                Some(SearchResult {
+                    rid,
+                    payloads: doc_at.doc.payload().clone(),
+                    delegates,
+                    seeds,
+                    index: i,
+                })
+            })
+            .collect();
+        Ok(Json(found_repos).into_response())
+    }
+
+    /// Sorted repo listing (activity/seeding) via the index. Returns `Err` on
+    /// backend failure so the caller falls back to the storage walk.
+    async fn sorted_repos(
+        ctx: &Context,
+        client: &SearchClient,
+        field: SortField,
+        page: usize,
+        per_page: usize,
+    ) -> anyhow::Result<Vec<api::repo::Info>> {
+        let policies = ctx.profile.policies()?;
+        let offset = page.saturating_mul(per_page);
+        let rids = client.sorted_rids(field, offset, per_page).await?;
+        Ok(rids
+            .into_iter()
+            .filter_map(|rid| {
+                if !policies.is_seeding(&rid).unwrap_or_default() {
+                    return None;
+                }
+                let (repo, doc) = ctx.repo(rid).ok()?;
+                ctx.repo_info(&repo, doc).ok()
+            })
+            .collect())
+    }
+}
+
 /// List all repos.
 /// `GET /repos`
 async fn repo_root_handler(
@@ -62,95 +351,36 @@ async fn repo_root_handler(
 ) -> impl IntoResponse {
     let PaginationQuery {
         show,
+        sort,
         page,
         per_page,
     } = qs;
     let page = page.unwrap_or(0);
+    let sort = sort.unwrap_or_default();
     let web_config = ctx.web_config().read().await;
-    let per_page = per_page.unwrap_or_else(|| match show {
-        RepoQuery::Pinned => web_config.pinned.repositories.len(),
-        _ => 10,
-    });
-    let storage = &ctx.profile.storage;
-    let pinned = &web_config.pinned;
-    let policies = ctx.profile.policies()?;
-
-    let mut repos = match show {
-        RepoQuery::All => storage
-            .repositories()?
-            .into_iter()
-            .filter(|repo| repo.doc.visibility().is_public())
-            .collect::<Vec<_>>(),
-        RepoQuery::Pinned => storage
-            .repositories_by_id(pinned.repositories.iter())
-            .filter_map(|result| match result {
-                Ok(repo) => Some(repo),
-                Err(e) => {
-                    tracing::warn!("Failed to load pinned repository: {}", e);
-                    None
-                }
-            })
-            .filter(|repo| repo.doc.visibility().is_public())
-            .collect::<Vec<_>>(),
+    let per_page = match per_page {
+        Some(n) => n.min(MAX_PER_PAGE),
+        None => match show {
+            RepoQuery::Pinned => web_config.pinned.repositories.len(),
+            _ => 10,
+        },
     };
-    repos.sort_by_key(|p| p.rid);
 
-    let infos = repos
-        .into_iter()
-        .filter_map(|info| {
-            if !policies.is_seeding(&info.rid).unwrap_or_default() {
-                return None;
-            }
-            let Ok((repo, doc)) = ctx.repo(info.rid) else {
-                return None;
-            };
-            let Ok(repo_info) = ctx.repo_info(&repo, doc) else {
-                return None;
-            };
-
-            Some(repo_info)
-        })
-        .skip(page * per_page)
-        .take(per_page)
-        .collect::<Vec<_>>();
-
+    let infos = listing::list_repos(&ctx, show, sort, page, per_page, &web_config).await?;
     Ok::<_, Error>(Json(infos))
 }
 
 /// Search repositories by name.
 /// `GET /repos/search?q=<query>`
-///
-/// We obtain the byte index of the first character of the query that matches the repo name.
-/// And skip if the query doesn't match the repo name.
-///
-/// Sorting algorithm:
-/// If both byte indices are 0, compare by seeding count.
-/// A repo name with a byte index of 0 should come before non-zero indices.
-/// If both indices are non-zero and equal, then compare by seeding count.
-/// If none of the above, all non-zero indices are compared by their seeding count primarily.
 async fn repo_search_handler(
     State(ctx): State<Context>,
     Query(SearchQueryString { q, per_page, page }): Query<SearchQueryString>,
 ) -> impl IntoResponse {
-    let q = q.unwrap_or_default();
+    let q: String = q.unwrap_or_default().chars().take(MAX_QUERY_LEN).collect();
     let page = page.unwrap_or(0);
-    let per_page = per_page.unwrap_or(10);
-    let storage = &ctx.profile.storage;
-    let aliases = &ctx.profile.aliases();
-    let db = &ctx.profile.database()?;
-    let found_repos = storage
-        .repositories()?
-        .into_iter()
-        .filter_map(|info| SearchResult::new(&q, info, db, aliases))
-        .collect::<BTreeSet<SearchResult>>();
+    let per_page = per_page.unwrap_or(10).min(MAX_PER_PAGE);
 
-    let found_repos = found_repos
-        .into_iter()
-        .skip(page * per_page)
-        .take(per_page)
-        .collect::<Vec<_>>();
-
-    Ok::<_, Error>(cached_response(found_repos, 600).into_response())
+    listing::search_repos(&ctx, &q, page, per_page).await
 }
 
 /// Get repo metadata.
@@ -690,7 +920,7 @@ async fn issues_handler(
         })
         .collect::<Vec<_>>();
 
-    issues.sort_by(|(_, a), (_, b)| b.timestamp().cmp(&a.timestamp()));
+    issues.sort_by_key(|(_, b)| std::cmp::Reverse(b.timestamp()));
     let aliases = &ctx.profile.aliases();
     let issues = issues
         .into_iter()
@@ -745,7 +975,7 @@ async fn patches_handler(
             (status.matches(patch.state())).then_some((id, patch))
         })
         .collect::<Vec<_>>();
-    patches.sort_by(|(_, a), (_, b)| b.timestamp().cmp(&a.timestamp()));
+    patches.sort_by_key(|(_, b)| std::cmp::Reverse(b.timestamp()));
     let aliases = ctx.profile.aliases();
     let patches = patches
         .into_iter()
@@ -962,6 +1192,136 @@ mod routes {
               },
             ])
         );
+    }
+
+    #[tokio::test]
+    async fn test_repos_root_sort_seeding() {
+        let tmp = tempfile::tempdir().unwrap();
+        let app = super::router(seed(tmp.path()))
+            .layer(MockConnectInfo(SocketAddr::from(([127, 0, 0, 1], 8080))));
+        let response = get(&app, "/repos?show=all&sort=seeding").await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body: serde_json::Value = response.json().await;
+        let rids: Vec<&str> = body
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|repo| repo["rid"].as_str().unwrap())
+            .collect();
+        assert_eq!(rids.len(), 2);
+        assert!(rids.contains(&RID));
+        assert!(rids.contains(&"rad:z4GypKmh1gkEfmkXtarcYnkvtFUfE"));
+    }
+
+    #[tokio::test]
+    async fn test_repos_root_sort_activity() {
+        let tmp = tempfile::tempdir().unwrap();
+        let app = super::router(seed(tmp.path()))
+            .layer(MockConnectInfo(SocketAddr::from(([127, 0, 0, 1], 8080))));
+        let response = get(&app, "/repos?show=all&sort=activity").await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body: serde_json::Value = response.json().await;
+        let rids: Vec<&str> = body
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|repo| repo["rid"].as_str().unwrap())
+            .collect();
+        // Without a search backend, activity sort collapses to rid sort.
+        // hello-world's rid sorts before again-hello-world's.
+        assert_eq!(rids, vec![RID, "rad:z4GypKmh1gkEfmkXtarcYnkvtFUfE"]);
+    }
+
+    #[tokio::test]
+    async fn test_repos_root_sort_falls_back_without_search() {
+        // Without a search backend, sort=activity and sort=seeding should
+        // produce the same response as the default rid sort, instead of
+        // walking storage and opening every repo per request.
+        let tmp = tempfile::tempdir().unwrap();
+        let app = super::router(seed(tmp.path()))
+            .layer(MockConnectInfo(SocketAddr::from(([127, 0, 0, 1], 8080))));
+
+        let rid_sorted: serde_json::Value = get(&app, "/repos?show=all").await.json().await;
+        let activity_sorted: serde_json::Value = get(&app, "/repos?show=all&sort=activity")
+            .await
+            .json()
+            .await;
+        let seeding_sorted: serde_json::Value =
+            get(&app, "/repos?show=all&sort=seeding").await.json().await;
+
+        assert_eq!(rid_sorted, activity_sorted);
+        assert_eq!(rid_sorted, seeding_sorted);
+    }
+
+    #[tokio::test]
+    async fn test_repos_per_page_is_clamped() {
+        // A caller requesting more than MAX_PER_PAGE must not be able to
+        // pull an unbounded result set. With the small fixture we can't
+        // observe the cap directly, but the request must succeed and the
+        // returned length must respect the cap.
+        let tmp = tempfile::tempdir().unwrap();
+        let app = super::router(seed(tmp.path()))
+            .layer(MockConnectInfo(SocketAddr::from(([127, 0, 0, 1], 8080))));
+        let response = get(&app, "/repos?show=all&perPage=99999").await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body: serde_json::Value = response.json().await;
+        let len = body.as_array().unwrap().len();
+        assert!(len <= super::MAX_PER_PAGE);
+    }
+
+    #[tokio::test]
+    async fn test_repos_search_per_page_is_clamped() {
+        let tmp = tempfile::tempdir().unwrap();
+        let app = super::router(seed(tmp.path()))
+            .layer(MockConnectInfo(SocketAddr::from(([127, 0, 0, 1], 8080))));
+        let response = get(&app, "/repos/search?q=hello&perPage=99999").await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body: serde_json::Value = response.json().await;
+        let len = body.as_array().unwrap().len();
+        assert!(len <= super::MAX_PER_PAGE);
+    }
+
+    #[tokio::test]
+    async fn test_repos_search_fallback_sets_cache_control() {
+        // Without a search backend, /repos/search runs the storage-walk
+        // substring scan and must still set Cache-Control so intermediaries
+        // can serve repeat queries from cache.
+        let tmp = tempfile::tempdir().unwrap();
+        let app = super::router(seed(tmp.path()))
+            .layer(MockConnectInfo(SocketAddr::from(([127, 0, 0, 1], 8080))));
+        let response = get(&app, "/repos/search?q=hello").await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let cache_control = response
+            .headers()
+            .get("cache-control")
+            .expect("cache-control header should be present")
+            .to_str()
+            .unwrap();
+        assert!(
+            cache_control.contains("max-age=600"),
+            "unexpected cache-control: {cache_control}"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_repos_search_clamps_long_query() {
+        // A user-supplied `q` longer than MAX_QUERY_LEN is truncated rather
+        // than rejected; the request still succeeds.
+        let tmp = tempfile::tempdir().unwrap();
+        let app = super::router(seed(tmp.path()))
+            .layer(MockConnectInfo(SocketAddr::from(([127, 0, 0, 1], 8080))));
+        let long_q = "a".repeat(super::MAX_QUERY_LEN * 4);
+        let response = get(&app, format!("/repos/search?q={long_q}")).await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body: serde_json::Value = response.json().await;
+        // Substring scan over "aaa…" finds no repo names; clamp didn't crash.
+        assert_eq!(body.as_array().unwrap().len(), 0);
     }
 
     #[tokio::test]
