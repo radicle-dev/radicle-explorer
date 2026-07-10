@@ -31,11 +31,11 @@ services:
     volumes:
       - .:/work
       - e2e-node-modules:/work/node_modules
-      # Container-private cargo crate cache and httpd build dir, so the
+      # Container-private cargo crate cache and workspace build dir, so the
       # Rust build is incremental across runs and never mixes with the
       # host's (different glibc/rustc) target artifacts.
       - e2e-cargo-registry:/usr/local/cargo/registry
-      - e2e-httpd-target:/work/radicle-httpd/target
+      - e2e-httpd-target:/work/target
 
 volumes:
   e2e-node-modules:

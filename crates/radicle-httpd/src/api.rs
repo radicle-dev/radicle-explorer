@@ -21,6 +21,8 @@ mod json;
 pub(crate) mod query;
 mod v1;
 
+pub(crate) use radicle_search::query::SearchClient;
+
 use crate::api::error::Error;
 use crate::cache::Cache;
 use crate::Options;
@@ -69,15 +71,59 @@ pub struct Context {
     profile: Arc<Profile>,
     cache: Option<Cache>,
     web_config: WebConfig,
+    /// Search backend client, present only when configured via
+    /// `RADICLE_SEARCH_URL`. When absent, listing and search fall back to
+    /// the storage walk.
+    search: Option<SearchClient>,
 }
 
 impl Context {
-    pub fn new(profile: Arc<Profile>, web_config: WebConfig, options: &Options) -> Self {
-        Self {
+    pub fn new(
+        profile: Arc<Profile>,
+        web_config: WebConfig,
+        options: &Options,
+    ) -> anyhow::Result<Self> {
+        // Search is optional and resolved at runtime: build a client only
+        // when configured. A construction failure is non-fatal — httpd still
+        // starts and serves everything from the storage walk.
+        let search = match &options.search {
+            Some(cfg) => match SearchClient::new(
+                &cfg.url,
+                cfg.api_key.as_deref(),
+                &cfg.index_name,
+                cfg.query_timeout,
+            ) {
+                Ok(client) => {
+                    tracing::info!(
+                        "search backend enabled: url={} index={}",
+                        cfg.url,
+                        cfg.index_name
+                    );
+                    Some(client)
+                }
+                Err(e) => {
+                    tracing::warn!(
+                        "failed to construct search backend client, \
+                         falling back to storage walk: {e:#}"
+                    );
+                    None
+                }
+            },
+            None => None,
+        };
+
+        Ok(Self {
             profile: profile.clone(),
             cache: options.cache.map(Cache::new),
             web_config,
-        }
+            search,
+        })
+    }
+
+    /// The search backend client, if one is configured and reachable at
+    /// startup. `None` means listing and search use the storage walk.
+    pub fn search(&self) -> Option<&SearchClient> {
+        self.search.as_ref()
     }
 
     #[allow(clippy::result_large_err)]
@@ -366,13 +412,13 @@ mod search {
 
     impl Ord for SearchResult {
         fn cmp(&self, other: &Self) -> Ordering {
-            match (self.index, other.index) {
+            let primary = match (self.index, other.index) {
                 (0, 0) => self.seeds.cmp(&other.seeds),
-                (0, _) => std::cmp::Ordering::Less,
-                (_, 0) => std::cmp::Ordering::Greater,
-                (ai, bi) if ai == bi => self.seeds.cmp(&other.seeds),
-                (_, _) => self.seeds.cmp(&other.seeds),
-            }
+                (0, _) => Ordering::Less,
+                (_, 0) => Ordering::Greater,
+                _ => self.seeds.cmp(&other.seeds),
+            };
+            primary.then_with(|| self.rid.cmp(&other.rid))
         }
     }
 

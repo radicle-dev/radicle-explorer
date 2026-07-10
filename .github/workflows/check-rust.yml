@@ -1,4 +1,4 @@
-name: check-radicle-httpd
+name: check-rust
 on:
   push:
   workflow_dispatch:
@@ -10,54 +10,49 @@ jobs:
   test:
     name: Build & Test
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./radicle-httpd
     steps:
       - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@1.87
+      - uses: dtolnay/rust-toolchain@1.95
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: radicle-httpd -> target
-      - name: Build
-        run: cargo build --all-features
+          workspaces: ". -> target"
+      - name: Build (all features)
+        run: cargo build --workspace --all-features
         env:
           RUSTFLAGS: -D warnings
-      - name: Run tests
-        run: cargo test --all-features
+      - name: Test (all features)
+        run: cargo test --workspace --all-features
+      - name: Test httpd without search
+        run: cargo test -p radicle-httpd
+
   docs:
     name: Docs
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./radicle-httpd
     steps:
       - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@1.87
+      - uses: dtolnay/rust-toolchain@1.95
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: radicle-httpd -> target
+          workspaces: ". -> target"
       - name: Docs
-        run: cargo doc --all-features
+        run: cargo doc --workspace --all-features
         env:
           RUSTDOCFLAGS: -D warnings
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./radicle-httpd
     steps:
       - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@1.87
+      - uses: dtolnay/rust-toolchain@1.95
         with:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: radicle-httpd -> target
+          workspaces: ". -> target"
       - name: Run clippy
-        run: cargo clippy --tests
+        run: cargo clippy --workspace --all-features --tests
         env:
           RUSTFLAGS: -D warnings
       - name: Check formatting
-        run: cargo fmt -- --check
+        run: cargo fmt --all -- --check

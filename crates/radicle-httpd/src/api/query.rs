@@ -2,11 +2,22 @@ use serde::{Deserialize, Serialize};
 
 use radicle::cob::{issue, patch};
 
+/// Upper bound on caller-supplied `per_page` for paginated list and search
+/// endpoints. Larger requests are silently clamped to this value to avoid
+/// unbounded fan-out (e.g. N repository lookups, or N Meili results).
+pub const MAX_PER_PAGE: usize = 100;
+
+/// Upper bound on caller-supplied `q` length on search endpoints. Queries
+/// longer than this are truncated before being forwarded to the search
+/// backend.
+pub const MAX_QUERY_LEN: usize = 256;
+
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct PaginationQuery {
     #[serde(default)]
     pub show: RepoQuery,
+    pub sort: Option<RepoSort>,
     pub page: Option<usize>,
     pub per_page: Option<usize>,
 }
@@ -17,6 +28,15 @@ pub enum RepoQuery {
     All,
     #[default]
     Pinned,
+}
+
+#[derive(Serialize, Deserialize, Clone, Copy, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum RepoSort {
+    #[default]
+    Rid,
+    Activity,
+    Seeding,
 }
 
 #[derive(Serialize, Deserialize, Clone)]

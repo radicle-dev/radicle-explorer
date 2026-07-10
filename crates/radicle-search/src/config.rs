@@ -1,0 +1,117 @@
+use std::env;
+use std::time::Duration;
+
+use anyhow::{Context, Result, bail};
+
+const DEFAULT_MEILI_URL: &str = "http://localhost:7700";
+const DEFAULT_INDEX_NAME: &str = "repos";
+const DEFAULT_RESCAN_INTERVAL_SECS: u64 = 3600;
+const DEFAULT_RECONNECT_BACKOFF_SECS: u64 = 5;
+
+#[derive(Debug, Clone)]
+pub struct Config {
+    pub meili_url: String,
+    pub meili_key: Option<String>,
+    pub index_name: String,
+    pub rescan_interval: Duration,
+    pub reconnect_backoff: Duration,
+}
+
+impl Config {
+    pub fn from_env() -> Result<Self> {
+        let meili_url =
+            env::var("RADICLE_SEARCH_MEILI_URL").unwrap_or_else(|_| DEFAULT_MEILI_URL.to_string());
+        let meili_key = env::var("RADICLE_SEARCH_MEILI_KEY")
+            .ok()
+            .filter(|k| !k.is_empty());
+        let index_name = env::var("RADICLE_SEARCH_INDEX_NAME")
+            .unwrap_or_else(|_| DEFAULT_INDEX_NAME.to_string());
+        let rescan_interval =
+            duration_from_env("RADICLE_SEARCH_RESCAN_SECS", DEFAULT_RESCAN_INTERVAL_SECS)?;
+        let reconnect_backoff = duration_from_env(
+            "RADICLE_SEARCH_RECONNECT_BACKOFF_SECS",
+            DEFAULT_RECONNECT_BACKOFF_SECS,
+        )?;
+
+        Ok(Self {
+            meili_url,
+            meili_key,
+            index_name,
+            rescan_interval,
+            reconnect_backoff,
+        })
+    }
+}
+
+fn duration_from_env(var: &str, default_secs: u64) -> Result<Duration> {
+    let raw = match env::var(var) {
+        Ok(v) if !v.is_empty() => v,
+        _ => return Ok(Duration::from_secs(default_secs)),
+    };
+    let secs: u64 = raw
+        .parse()
+        .with_context(|| format!("{var}={raw:?} is not a non-negative integer"))?;
+    if secs == 0 {
+        bail!("{var}=0 is not allowed (would cause a tight loop or panic)");
+    }
+    Ok(Duration::from_secs(secs))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Process-global env vars: each test uses its own variable name so
+    // parallel runs don't race.
+
+    #[test]
+    fn unset_returns_default() {
+        let d = duration_from_env("RADICLE_SEARCH_TEST_UNSET", 42).unwrap();
+        assert_eq!(d, Duration::from_secs(42));
+    }
+
+    #[test]
+    fn empty_returns_default() {
+        let var = "RADICLE_SEARCH_TEST_EMPTY";
+        unsafe { env::set_var(var, "") };
+        let d = duration_from_env(var, 7);
+        unsafe { env::remove_var(var) };
+        assert_eq!(d.unwrap(), Duration::from_secs(7));
+    }
+
+    #[test]
+    fn valid_integer_parses() {
+        let var = "RADICLE_SEARCH_TEST_VALID";
+        unsafe { env::set_var(var, "15") };
+        let d = duration_from_env(var, 99);
+        unsafe { env::remove_var(var) };
+        assert_eq!(d.unwrap(), Duration::from_secs(15));
+    }
+
+    #[test]
+    fn zero_is_rejected() {
+        let var = "RADICLE_SEARCH_TEST_ZERO";
+        unsafe { env::set_var(var, "0") };
+        let result = duration_from_env(var, 99);
+        unsafe { env::remove_var(var) };
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn unparseable_is_rejected() {
+        let var = "RADICLE_SEARCH_TEST_GARBAGE";
+        unsafe { env::set_var(var, "not-a-number") };
+        let result = duration_from_env(var, 99);
+        unsafe { env::remove_var(var) };
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn negative_is_rejected() {
+        let var = "RADICLE_SEARCH_TEST_NEG";
+        unsafe { env::set_var(var, "-5") };
+        let result = duration_from_env(var, 99);
+        unsafe { env::remove_var(var) };
+        assert!(result.is_err());
+    }
+}

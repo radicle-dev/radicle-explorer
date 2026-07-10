@@ -1,4 +1,5 @@
 mod delegates;
+mod info;
 mod node;
 mod repos;
 mod stats;
@@ -18,6 +19,7 @@ pub fn router(ctx: Context) -> Router {
 
     let routes = Router::new()
         .merge(root_router)
+        .merge(info::router(ctx.clone()))
         .merge(node::router(ctx.clone()))
         .merge(delegates::router(ctx.clone()))
         .merge(repos::router(ctx.clone()))
@@ -43,6 +45,11 @@ async fn root_handler(State(ctx): State<Context>) -> impl IntoResponse {
             {
                 "href": "/repos/:rid",
                 "rel": "repo",
+                "type": "GET"
+            },
+            {
+                "href": "/info",
+                "rel": "info",
                 "type": "GET"
             },
             {

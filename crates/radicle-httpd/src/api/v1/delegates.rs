@@ -7,7 +7,7 @@ use radicle::identity::Did;
 use radicle::storage::ReadStorage;
 
 use crate::api::error::Error;
-use crate::api::query::{PaginationQuery, RepoQuery};
+use crate::api::query::{PaginationQuery, RepoQuery, MAX_PER_PAGE};
 use crate::api::Context;
 use crate::axum_extra::{Path, Query};
 
@@ -28,9 +28,10 @@ async fn delegates_repos_handler(
         show,
         page,
         per_page,
+        ..
     } = qs;
     let page = page.unwrap_or(0);
-    let per_page = per_page.unwrap_or(10);
+    let per_page = per_page.unwrap_or(10).min(MAX_PER_PAGE);
     let storage = &ctx.profile.storage;
     let web_config = ctx.web_config().read().await;
     let pinned = &web_config.pinned;

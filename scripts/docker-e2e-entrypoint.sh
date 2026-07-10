@@ -13,7 +13,7 @@ cd /work
 # The container runs as root, so anything it writes into the bind-mounted repo
 # would otherwise be root-owned on the host. Hand those paths back to the
 # invoking user (HOST_UID/HOST_GID set by scripts/test-e2e-docker) on exit.
-# radicle-httpd/target lives in a named volume, so it's not host-visible.
+# The workspace target/ lives in a named volume, so it's not host-visible.
 cleanup() {
   if [ -n "${HOST_UID:-}" ]; then
     chown -R "$HOST_UID:${HOST_GID:-$HOST_UID}" \

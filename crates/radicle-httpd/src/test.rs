@@ -332,10 +332,11 @@ fn seed_with_signer<G: Signer<Signature>>(
         aliases: std::collections::HashMap::new(),
         listen: axum_listener::DualAddr::Tcp(std::net::SocketAddr::from(([0, 0, 0, 0], 8080))),
         cache: Some(crate::DEFAULT_CACHE_SIZE),
+        search: None,
     };
 
     let web_config = crate::api::WebConfig::from_profile(&profile);
-    Context::new(Arc::new(profile), web_config, &options)
+    Context::new(Arc::new(profile), web_config, &options).expect("test context creation failed")
 }
 
 /// Create a test context with multiple peers and canonical refs configured.
@@ -505,6 +506,10 @@ impl Response {
 
     pub fn status(&self) -> axum::http::StatusCode {
         self.0.status()
+    }
+
+    pub fn headers(&self) -> &axum::http::HeaderMap {
+        self.0.headers()
     }
 
     pub async fn body(self) -> Bytes {

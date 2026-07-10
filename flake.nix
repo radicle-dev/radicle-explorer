@@ -62,11 +62,11 @@
       };
       inherit (pkgs) lib;
 
-      rustToolchain = pkgs.rust-bin.fromRustupToolchainFile ./radicle-httpd/rust-toolchain;
+      rustToolchain = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain;
       craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
       basicArgs = {
-        pname = "radicle-httpd";
-        src = ./radicle-httpd;
+        pname = "radicle-explorer-rust";
+        src = craneLib.cleanCargoSource ./.;
         strictDeps = true;
       };
     in {
@@ -75,6 +75,7 @@
       checks = {
         radicle-explorer = self.packages.${system}.radicle-explorer.override {doCheck = true;};
         radicle-httpd = self.packages.${system}.radicle-httpd.overrideAttrs (_: {doCheck = true;});
+        radicle-search = self.packages.${system}.radicle-search.overrideAttrs (_: {doCheck = true;});
       };
 
       packages = {
@@ -132,7 +133,7 @@
 
         radicle-httpd = craneLib.buildPackage (basicArgs
           // {
-            inherit (craneLib.crateNameFromCargoToml {cargoToml = ./radicle-httpd + "/Cargo.toml";}) pname version;
+            inherit (craneLib.crateNameFromCargoToml {cargoToml = ./crates/radicle-httpd + "/Cargo.toml";}) pname version;
             cargoArtifacts = craneLib.buildDepsOnly basicArgs;
 
             nativeBuildInputs = with pkgs;
@@ -166,6 +167,24 @@
                 installManPage ''${page::-5}
               done
             '';
+          });
+
+        radicle-search = craneLib.buildPackage (basicArgs
+          // {
+            inherit (craneLib.crateNameFromCargoToml {cargoToml = ./crates/radicle-search + "/Cargo.toml";}) pname version;
+            cargoArtifacts = craneLib.buildDepsOnly basicArgs;
+
+            nativeBuildInputs = with pkgs;
+              [
+                git
+              ]
+              ++ lib.optionals pkgs.stdenv.isDarwin (with pkgs; [
+                libiconv
+                darwin.apple_sdk.frameworks.Security
+              ]);
+
+            cargoExtraArgs = "-p radicle-search";
+            doCheck = false;
           });
       };
 

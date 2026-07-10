@@ -1,0 +1,21 @@
+[workspace]
+members = ["crates/*"]
+resolver = "2"
+
+[workspace.package]
+license = "MIT OR Apache-2.0"
+homepage = "https://radicle.dev"
+
+[workspace.dependencies]
+anyhow = "1"
+chrono = { version = "0.4.41", default-features = false, features = ["clock"] }
+lexopt = "0.3.1"
+meilisearch-sdk = "0.33.0"
+radicle = "0.24.0"
+radicle-surf = { version = "0.27.1", default-features = false }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+tokio = { version = "1.47.1", default-features = false }
+tracing = { version = "0.1.41", default-features = false, features = ["std", "log"] }
+tracing-subscriber = { version = "0.3.19", default-features = false, features = ["std", "ansi", "fmt"] }
