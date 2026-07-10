@@ -62,9 +62,9 @@ export class ResponseParseError extends Error {
 
     let description: string;
     if (!satisfies(nodeApiVersion, explorerRequiredApiVersion)) {
-      description = `The node you are fetching from (v${nodeApiVersion}) doesn't match the version requirements of <code>radicle-explorer</code> ${explorerRequiredApiVersion}.`;
+      description = `The node you are fetching from (v${nodeApiVersion}) doesn’t match the version requirements of <code>radicle-explorer</code> ${explorerRequiredApiVersion}.`;
     } else {
-      description = `The node (v${nodeApiVersion}) matches the version requirement of <code>radicle-explorer</code> (${explorerRequiredApiVersion}), but <code>radicle-explorer</code> isn't able to parse the response.`;
+      description = `The node (v${nodeApiVersion}) matches the version requirement of <code>radicle-explorer</code> (${explorerRequiredApiVersion}), but <code>radicle-explorer</code> isn’t able to parse the response.`;
     }
     this.apiVersion = apiVersion;
     this.description =
@@ -72,7 +72,7 @@ export class ResponseParseError extends Error {
         description,
         config.deploymentId
           ? ""
-          : "<br/>If you are self-hosting <code>radicle-explorer</code> and run into this error, try to clear the browser's <code>localStorage</code> and the cache.",
+          : "<br/>If you are self-hosting <code>radicle-explorer</code> and run into this error, try to clear the browser’s <code>localStorage</code> and the cache.",
       );
 
     this.method = method;
