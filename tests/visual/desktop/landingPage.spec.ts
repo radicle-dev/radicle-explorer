@@ -67,3 +67,20 @@ test("response error", async ({ page }) => {
     mask: [page.locator(".command")],
   });
 });
+
+test("unable to reach any seed", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "configuredPreferredSeeds",
+      JSON.stringify([{ hostname: "127.0.0.1", port: 8081, scheme: "http" }]),
+    );
+  });
+  // Fail every seed request so no candidate responds, exercising the
+  // failover dead-end on the explore page.
+  await page.route(
+    url => url.port === "8081",
+    route => route.abort(),
+  );
+  await page.goto("/", { waitUntil: "networkidle" });
+  await expect(page).toHaveScreenshot();
+});

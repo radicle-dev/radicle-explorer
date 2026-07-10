@@ -69,15 +69,10 @@ test("unreachable node shows error with seed selector", async ({ page }) => {
     page.getByText("Select a different node to continue."),
   ).toBeVisible();
 
-  // Shows the seed selector dropdown toggle.
+  // Shows the seed selector toggle.
   await expect(
-    page.getByRole("button", { name: "Toggle seed selector dropdown" }),
+    page.getByRole("button", { name: "Seed selector" }),
   ).toBeVisible();
-
-  // Bookmark button is not shown in compact mode.
-  await expect(
-    page.getByRole("button", { name: "Add bookmark" }),
-  ).not.toBeVisible();
 });
 
 test("seed selector on not-found page allows navigating to a working node", async ({
@@ -90,10 +85,9 @@ test("seed selector on not-found page allows navigating to a working node", asyn
   await expect(page.getByText("Could not connect to")).toBeVisible();
 
   // Open the seed selector and navigate to the working local node.
-  await page
-    .getByRole("button", { name: "Toggle seed selector dropdown" })
-    .click();
-  await page.getByPlaceholder("seed.radicle.example").fill("localhost");
+  await page.getByRole("button", { name: "Seed selector" }).click();
+  await page.getByRole("button", { name: "Add new" }).click();
+  await page.getByPlaceholder("seed.radicle.example").fill("localhost:8081");
   await page.getByPlaceholder("seed.radicle.example").press("Enter");
 
   // Should navigate to the working node.
@@ -113,7 +107,7 @@ test("unreachable seed on repo page shows error with seed selector", async ({
 
   // Seed selector is available to navigate away.
   await expect(
-    page.getByRole("button", { name: "Toggle seed selector dropdown" }),
+    page.getByRole("button", { name: "Seed selector" }),
   ).toBeVisible();
 });
 
@@ -135,53 +129,41 @@ test("edit seed bookmarks", async ({ page }) => {
 
   await page.goto("/");
 
-  await page
-    .getByRole("button", { name: "Toggle seed selector dropdown" })
-    .click();
-  await expect(page.getByPlaceholder("seed.radicle.example")).toHaveValue(
-    "localhost",
-  );
-  await expect(
-    page.getByRole("button", { name: "Default seeds can't be removed" }),
-  ).toBeVisible();
-  await expect(page.locator(".dropdown > .dropdown-item")).toHaveCount(1);
+  // The seed picker lives in the Settings dropdown now.
+  const openSettings = () =>
+    page.getByRole("button", { name: "Settings" }).click();
+  await openSettings();
 
-  // The input box is focussed, has the text selected and ready to be overwritten.
+  const seedSelector = page.getByRole("button", { name: "Seed selector" });
+
+  // Add a custom seed via the seed selector.
+  await seedSelector.click();
+  await page.getByRole("button", { name: "Add new" }).click();
   await page.getByPlaceholder("seed.radicle.example").fill("seed.example.tld");
   await page.getByPlaceholder("seed.radicle.example").press("Enter");
 
-  await expect(page).toHaveURL("/nodes/seed.example.tld");
+  // On the explore page the URL is unchanged, but the active seed switches to
+  // the new custom seed, which is added to the bookmarked custom seeds.
+  await expect(seedSelector).toContainText("seed.example.tld");
+
+  await seedSelector.click();
   await expect(
-    page.getByRole("button", { name: "Add bookmark" }),
+    page.getByRole("button", { name: "Remove bookmark", exact: true }),
   ).toBeVisible();
 
+  // The bookmark persists across reloads.
+  await page.reload();
+  await openSettings();
+  await seedSelector.click();
+  await expect(
+    page.getByRole("button", { name: "Remove bookmark", exact: true }),
+  ).toBeVisible();
+
+  // Removing the bookmark drops it from the custom seeds.
   await page
-    .getByRole("button", { name: "Toggle seed selector dropdown" })
+    .getByRole("button", { name: "Remove bookmark", exact: true })
     .click();
-
-  // After navigating to the seed it should not yet be added to the bookmarks.
-  await expect(page.locator(".dropdown > .dropdown-item")).toHaveCount(1);
-
-  await page.getByRole("button", { name: "Add bookmark" }).click();
-  await expect(page.locator(".dropdown > .dropdown-item")).toHaveCount(2);
-
-  // Test that new seed is persisted and opened when we go to the landing page.
-  await page.getByRole("link", { name: "Home" }).click();
-  await expect(page.getByText("seed.example.tld").first()).toBeVisible();
-
-  // Test removing a bookmark.
-  await page
-    .getByRole("button", { name: "Toggle seed selector dropdown" })
-    .click();
-  await page.getByRole("button", { name: "Remove bookmark" }).nth(1).click();
-  await expect(page.locator(".dropdown > .dropdown-item")).toHaveCount(1);
-
-  // Remove the bookmark from within the dropdown.
-  await page.getByRole("button", { name: "Add bookmark" }).click();
-  await expect(page.locator(".dropdown > .dropdown-item")).toHaveCount(2);
-  await page
-    .getByRole("button", { name: "seed.example.tld" })
-    .getByRole("button", { name: "Remove bookmark" })
-    .click();
-  await expect(page.locator(".dropdown > .dropdown-item")).toHaveCount(1);
+  await expect(
+    page.getByRole("button", { name: "Remove bookmark", exact: true }),
+  ).not.toBeVisible();
 });
