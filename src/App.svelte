@@ -14,9 +14,12 @@
   import LoadingBar from "./App/LoadingBar.svelte";
 
   import Commit from "@app/views/repos/Commit.svelte";
+  import Explore from "@app/views/explore/View.svelte";
+  import ExploreRepos from "@app/views/explore/ReposView.svelte";
   import History from "@app/views/repos/History.svelte";
   import Issue from "@app/views/repos/Issue.svelte";
   import Issues from "@app/views/repos/Issues.svelte";
+  import Marketing from "@app/views/marketing/Marketing.svelte";
   import Nodes from "@app/views/nodes/View.svelte";
   import NotFound from "@app/views/NotFound.svelte";
   import Patch from "@app/views/repos/Patch.svelte";
@@ -46,6 +49,10 @@
 
   $: document.documentElement.setAttribute("data-codefont", $codeFont);
   $: document.documentElement.setAttribute("data-theme", $theme);
+  $: document.documentElement.setAttribute(
+    "data-repo-view",
+    $activeRouteStore.resource.startsWith("repo.") ? "true" : "false",
+  );
 </script>
 
 <style>
@@ -71,6 +78,12 @@
   </div>
 {:else if $activeRouteStore.resource === "nodes"}
   <Nodes {...$activeRouteStore.params} />
+{:else if $activeRouteStore.resource === "explore"}
+  <Explore {...$activeRouteStore.params} />
+{:else if $activeRouteStore.resource === "explore.repos"}
+  <ExploreRepos {...$activeRouteStore.params} />
+{:else if $activeRouteStore.resource === "landing" || $activeRouteStore.resource === "learn" || $activeRouteStore.resource === "install" || $activeRouteStore.resource === "guides" || $activeRouteStore.resource === "desktop" || $activeRouteStore.resource === "cli" || $activeRouteStore.resource === "principles" || $activeRouteStore.resource === "docs"}
+  <Marketing route={$activeRouteStore} />
 {:else if $activeRouteStore.resource === "users"}
   <Users {...$activeRouteStore.params} />
 {:else if $activeRouteStore.resource === "repo.source"}

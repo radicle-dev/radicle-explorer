@@ -102,6 +102,51 @@ The structure of the runtime `config.json` must match the shape of the
 application's base configuration defined in `config/default.json`.
 
 
+### Homepage
+
+The `nodes.homepage` key controls what is rendered at the root URL (`/`):
+
+* `"node"` (default) — show the node view of the user's primary seed
+  directly, as if the user had navigated to `/nodes/<your-node>`. The
+  primary seed is resolved from `preferredSeeds` (see [`default.json`][def]).
+  This is the default so that a self-hosted deployment acts as a dedicated
+  front-end for its own seed.
+* `"landing"` — serve the full Radicle marketing site: the landing page and
+  its `/learn`, `/install` and documentation (`/faq`, `/glossary`,
+  `/guides/*`) sub-routes. This is opt-in and intended for the canonical
+  [radicle.dev][app] deployment; the marketing sub-routes are only reachable
+  in this mode.
+
+The cross-seed Explore page is always available at `/explore`, regardless of
+the `homepage` setting.
+
+#### Node-homepage deployment
+
+If you operate your own seed node and want the explorer to act as a
+dedicated front-end for it (the default behaviour), put your own node first
+(and ideally as the only entry) in `preferredSeeds` so it is always picked
+as the primary seed.
+
+Example `local.json`:
+
+```json
+{
+  "preferredSeeds": [
+    {
+      "hostname": "seed.example.com",
+      "port": 443,
+      "scheme": "https"
+    }
+  ]
+}
+```
+
+With this configuration, opening `/` lands the visitor on the node view
+for `seed.example.com`. Keeping `preferredSeeds` to a single entry
+ensures the primary seed is deterministic; if you list multiple, users
+are bucketed across them and may land on a different node.
+
+
 ## Contributing
 
 * For detailed contribution guidelines, refer to the [CONTRIBUTING.md][con]

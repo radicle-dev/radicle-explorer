@@ -93,7 +93,7 @@
   <div class="description">
     {#if seedingPolicy.policy === "block"}
       Seeding scope only has an effect when a repository is seeded. This repo
-      isn't seeded by the seed node.
+      isn’t seeded by the seed node.
     {:else if seedingPolicy.scope === "all"}
       This repository tracks changes by any peer.
     {:else}

@@ -14,6 +14,7 @@ export default defineConfig({
   },
   plugins: [
     svelte({
+      extensions: [".svelte", ".md"],
       // Reference: https://github.com/sveltejs/vite-plugin-svelte/issues/270#issuecomment-1033190138
       dynamicCompileOptions({ filename }) {
         if (

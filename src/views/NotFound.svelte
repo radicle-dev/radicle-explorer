@@ -3,7 +3,7 @@
 
   import Layout from "@app/App/Layout.svelte";
   import IconLarge from "@app/components/IconLarge.svelte";
-  import SeedSelector from "@app/views/nodes/SeedSelector.svelte";
+  import SeedPicker from "@app/views/explore/SeedPicker.svelte";
 
   export let title: string;
   export let description: string | undefined = undefined;
@@ -33,7 +33,7 @@
     <div class="title-row txt-heading-m">
       <span>{title}</span>
       {#if baseUrl}
-        <SeedSelector {baseUrl} compact />
+        <SeedPicker {baseUrl} />
       {/if}
     </div>
     {#if description}

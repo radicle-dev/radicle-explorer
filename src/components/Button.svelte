@@ -8,6 +8,7 @@
     | "gray-white"
     | "selected"
     | "outline"
+    | "foreground"
     | "secondary"
     | "secondary-toggle-off"
     | "secondary-mobile"
@@ -36,13 +37,14 @@
     cursor: pointer;
     display: flex;
     align-items: center;
-    border: none;
+    border: 1px solid transparent;
     border-radius: var(--border-radius-sm);
-    font: var(--txt-body-m-medium);
+    font: var(--txt-body-m-semibold);
     font-feature-settings: inherit;
     white-space: nowrap;
     gap: 0.5rem;
     touch-action: manipulation;
+    box-sizing: border-box;
   }
 
   button:disabled {
@@ -161,6 +163,20 @@
     background-color: var(--color-surface-brand-secondary);
   }
 
+  .foreground {
+    color: var(--color-surface-base);
+    background-color: var(--color-text-primary);
+  }
+
+  .foreground[disabled] {
+    background-color: var(--color-surface-mid);
+    color: var(--color-text-disabled);
+  }
+
+  .foreground:not([disabled]):hover {
+    opacity: 0.9;
+  }
+
   .secondary {
     color: var(--color-text-on-brand);
     background-color: var(--color-surface-brand-primary);
@@ -270,6 +286,7 @@
   class:selected={variant === "selected"}
   class:gray={variant === "gray"}
   class:outline={variant === "outline"}
+  class:foreground={variant === "foreground"}
   class:secondary-toggle-off={variant === "secondary-toggle-off"}
   class:secondary={variant === "secondary"}
   class:secondary-mobile={variant === "secondary-mobile"}

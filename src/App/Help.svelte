@@ -1,5 +1,4 @@
 <script lang="ts">
-  import ExternalLink from "@app/components/ExternalLink.svelte";
   import KeyHint from "@app/components/KeyHint.svelte";
 
   export let hideShortcuts: boolean = false;
@@ -20,19 +19,10 @@
     white-space: nowrap;
     gap: 2rem;
   }
-  .divider {
-    border-bottom: 1px solid var(--color-border-subtle);
-  }
 </style>
 
 <div class="help">
-  <div class="item">
-    About
-    <ExternalLink href="https://radicle.dev">radicle.dev</ExternalLink>
-  </div>
-
   {#if !hideShortcuts}
-    <div class="divider"></div>
     <div class="item">
       Keyboard shortcuts <KeyHint>?</KeyHint>
     </div>

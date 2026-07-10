@@ -3,6 +3,13 @@
   import Icon from "@app/components/Icon.svelte";
   import KeyHint from "@app/components/KeyHint.svelte";
   import Modal from "@app/components/Modal.svelte";
+
+  // Show the platform's search modifier: ⌘ on macOS, Ctrl elsewhere. The
+  // handler itself accepts either (`metaKey || ctrlKey`), this only labels it.
+  const searchModifier =
+    typeof navigator !== "undefined" && /Mac/i.test(navigator.userAgent)
+      ? "⌘"
+      : "Ctrl";
 </script>
 
 <style>
@@ -31,6 +38,15 @@
 
   <div slot="body">
     <div class="hotkeys">
+      <div class="pair">
+        <span>Search</span>
+        <div class="keys">
+          <KeyHint>{searchModifier}</KeyHint>
+          +
+          <KeyHint>K</KeyHint>
+        </div>
+      </div>
+
       <div class="pair">
         <span>Submit</span>
         <KeyHint>⏎</KeyHint>

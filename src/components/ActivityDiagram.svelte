@@ -113,7 +113,7 @@
 </script>
 
 <svg
-  style:min-width="185px"
+  style:min-width="130px"
   style:color={styleColor}
   viewBox="0 0 {viewBoxWidth} {heightWithPadding}"
   xmlns="http://www.w3.org/2000/svg"

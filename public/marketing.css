@@ -1,0 +1,676 @@
+/*
+  Marketing site styles, ported from radicle.dev's global stylesheets.
+
+  Everything here is scoped under the `.marketing` wrapper applied to the
+  marketing layout root, so the reset, element defaults, tokens and utility
+  classes never leak into the rest of the explorer app. Colour and accent
+  tokens are NOT redefined — the marketing pages reuse the explorer's own
+  theme-aware tokens from colors.css. Only the typography tokens, border-radius
+  aliases and layout classes that radicle.dev relies on are added here.
+*/
+
+.marketing {
+  --border-radius-tiny: 2px;
+  --border-radius-small: 4px;
+  --border-radius-regular: 8px;
+  --border-radius-round: 10rem;
+
+  --section-gap: 10rem;
+
+  /* Horizontal gutter shared by every marketing page's content and the
+     footer, so they align regardless of which page is shown. */
+  --marketing-inline-gap: 4rem;
+
+  /* Bold */
+  --txt-bold-48: 600 48px/52px Booton, sans-serif;
+  --txt-bold-32: 600 32px/40px Booton, sans-serif;
+  --txt-bold-24: 600 24px/32px Booton, sans-serif;
+  --txt-bold-22: 600 22px/30px Booton, sans-serif;
+  --txt-bold-18: 600 18px/24px Booton, sans-serif;
+  --txt-bold-16: 600 16px/22px Booton, sans-serif;
+  --txt-bold-14: 600 14px/20px Booton, sans-serif;
+  --txt-bold-12: 600 12px/16px Booton, sans-serif;
+
+  /* Medium */
+  --txt-medium-32: 468 32px/40px Booton, sans-serif;
+  --txt-medium-24: 468 24px/32px Booton, sans-serif;
+  --txt-medium-22: 468 22px/30px Booton, sans-serif;
+  --txt-medium-20: 468 20px/28px Booton, sans-serif;
+  --txt-medium-18: 468 18px/24px Booton, sans-serif;
+  --txt-medium-16: 468 16px/22px Booton, sans-serif;
+  --txt-medium-14: 468 14px/20px Booton, sans-serif;
+  --txt-medium-12: 468 12px/16px Booton, sans-serif;
+
+  line-height: 1.5;
+  color: var(--color-text-primary);
+}
+
+/* Reset (scoped) */
+.marketing *,
+.marketing *::before,
+.marketing *::after {
+  box-sizing: border-box;
+}
+
+.marketing * {
+  margin: 0;
+}
+
+.marketing img,
+.marketing picture,
+.marketing video,
+.marketing canvas,
+.marketing svg {
+  display: block;
+  max-width: 100%;
+}
+
+.marketing input,
+.marketing button,
+.marketing textarea,
+.marketing select {
+  font: inherit;
+}
+
+.marketing p,
+.marketing h1,
+.marketing h2,
+.marketing h3,
+.marketing h4,
+.marketing h5,
+.marketing h6 {
+  overflow-wrap: break-word;
+}
+
+.marketing p {
+  margin: 1rem 0;
+  text-wrap: pretty;
+}
+
+/* Link defaults. `.product-link` is the standard blue call-to-action link, so
+   it opts out of the default dark link color. */
+.marketing a:-webkit-any-link:not(.button):not(.product-link) {
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--color-text-primary);
+}
+
+.marketing a:-webkit-any-link:not(.button):not(.product-link):hover {
+  color: var(--color-text-secondary);
+}
+
+.marketing a.arrow-link,
+.marketing button.arrow-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.marketing a.arrow-link:hover,
+.marketing button.arrow-link:hover {
+  text-decoration: none;
+}
+
+.marketing a.arrow-link:active,
+.marketing button.arrow-link:active {
+  filter: brightness(0.85);
+}
+
+.marketing .link-arrow {
+  display: inline-block;
+  transition: transform 0.15s ease;
+}
+
+.marketing .arrow-link:hover .link-arrow-right {
+  transform: translateX(0.15rem);
+}
+
+.marketing .arrow-link:hover .link-arrow-down {
+  transform: translateY(0.15rem);
+}
+
+.marketing .arrow-link:hover .link-arrow-up-right {
+  transform: translate(0.15rem, -0.15rem);
+}
+
+/* Typography utility classes */
+.marketing .txt-bold-48 {
+  font: var(--txt-bold-48);
+  letter-spacing: -0.02em;
+}
+.marketing .txt-bold-32 {
+  font: var(--txt-bold-32);
+  letter-spacing: -0.02em;
+}
+.marketing .txt-bold-24 {
+  font: var(--txt-bold-24);
+  letter-spacing: -0.02em;
+}
+.marketing .txt-bold-22 {
+  font: var(--txt-bold-22);
+}
+.marketing .txt-bold-18 {
+  font: var(--txt-bold-18);
+}
+.marketing .txt-bold-16 {
+  font: var(--txt-bold-16);
+}
+.marketing .txt-bold-14 {
+  font: var(--txt-bold-14);
+}
+.marketing .txt-bold-12 {
+  font: var(--txt-bold-12);
+}
+.marketing .txt-medium-32 {
+  font: var(--txt-medium-32);
+  letter-spacing: -0.01em;
+}
+.marketing .txt-medium-24 {
+  font: var(--txt-medium-24);
+}
+.marketing .txt-medium-22 {
+  font: var(--txt-medium-22);
+}
+.marketing .txt-medium-20 {
+  font: var(--txt-medium-20);
+}
+.marketing .txt-medium-18 {
+  font: var(--txt-medium-18);
+}
+.marketing .txt-medium-16 {
+  font: var(--txt-medium-16);
+}
+.marketing .txt-medium-14 {
+  font: var(--txt-medium-14);
+}
+.marketing .txt-medium-12 {
+  font: var(--txt-medium-12);
+}
+.marketing .txt-color-tertiary {
+  color: var(--color-text-tertiary);
+}
+
+.marketing .global-flex {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Shared page styles */
+.marketing .page-container {
+  padding: 6rem var(--marketing-inline-gap);
+}
+
+@media (max-width: 90rem) {
+  .marketing {
+    --marketing-inline-gap: 2rem;
+  }
+}
+
+@media (max-width: 64rem) {
+  .marketing {
+    --marketing-inline-gap: 1.5rem;
+  }
+}
+
+.marketing h1[id],
+.marketing h2[id],
+.marketing h3[id] {
+  scroll-margin-top: 5rem;
+}
+
+.marketing .page-header {
+  margin-bottom: 3rem;
+}
+
+.marketing .page-label {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-text-tertiary);
+  margin-bottom: 0.5rem;
+}
+
+.marketing .page-title {
+  margin: 0 0 0.5rem;
+}
+
+.marketing .page-subtitle {
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+/* Card list styles */
+.marketing .card-list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.marketing .card-link {
+  display: block;
+  padding: 1.5rem;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--border-radius-small);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.2s;
+}
+
+.marketing .card-link:hover {
+  border-color: var(--color-brand-hover);
+  text-decoration: none;
+}
+
+.marketing .card-link strong {
+  display: block;
+  color: var(--color-text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.marketing .card-link span {
+  color: var(--color-text-secondary);
+}
+
+/* Shared markdown/prose styles */
+.marketing .markdown-content {
+  max-width: 48rem;
+  font-weight: 468;
+  line-height: 1.7;
+  position: relative;
+}
+
+.marketing .markdown-content aside {
+  position: absolute;
+  left: 100%;
+  margin-left: 2rem;
+  width: 16rem;
+  font: var(--txt-medium-14);
+  line-height: 1.6;
+  color: var(--color-text-tertiary);
+  background: none !important;
+}
+
+.marketing .markdown-content aside p {
+  font: var(--txt-medium-14);
+  line-height: 1.6;
+}
+
+.marketing .guide-hero {
+  height: 20rem;
+  object-fit: cover;
+  border-radius: var(--border-radius-small);
+  margin-bottom: 2rem;
+}
+
+.marketing .guides-markdown .markdown-content {
+  max-width: min(66rem, 100%);
+}
+
+.marketing .guides-markdown .markdown-content > :not(aside) {
+  max-width: none;
+  width: min(42rem, calc(100% - clamp(15rem, 26vw, 20rem) - 2rem));
+}
+
+.marketing .guides-markdown .markdown-content aside {
+  position: static;
+  float: right;
+  clear: right;
+  margin-left: 0;
+  margin-right: 0;
+  margin-bottom: 1rem;
+  margin-inline-start: 0;
+  width: clamp(15rem, 26vw, 20rem);
+  font: var(--txt-medium-14);
+  line-height: 1.6;
+  color: var(--color-text-tertiary);
+  background: none !important;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (max-width: 72rem) {
+  .marketing .guides-markdown .markdown-content {
+    max-width: min(62rem, 100%);
+  }
+
+  .marketing .guides-markdown .markdown-content > :not(aside) {
+    width: min(38rem, calc(100% - clamp(13.5rem, 30vw, 17rem) - 1.25rem));
+  }
+
+  .marketing .guides-markdown .markdown-content aside {
+    width: clamp(13.5rem, 30vw, 17rem);
+    margin-inline-start: 1.25rem;
+  }
+}
+
+@media (max-width: 56rem) {
+  .marketing .guides-markdown .markdown-content > :not(aside) {
+    width: min(36rem, calc(100% - clamp(12rem, 32vw, 15rem) - 1rem));
+  }
+
+  .marketing .guides-markdown .markdown-content aside {
+    width: clamp(12rem, 32vw, 15rem);
+    margin-inline-start: 1rem;
+  }
+}
+
+@media (max-width: 44rem) {
+  .marketing .guides-markdown .markdown-content {
+    max-width: 48rem;
+  }
+
+  .marketing .guides-markdown .markdown-content > :not(aside) {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .marketing .guides-markdown .markdown-content aside {
+    float: none;
+    clear: none;
+    width: auto;
+    margin: 1rem 0;
+    padding: 0.75rem 1rem;
+    background: var(--color-surface-subtle) !important;
+    overflow-wrap: anywhere;
+  }
+
+  .marketing .guides-markdown .markdown-content aside p {
+    margin: 0;
+  }
+}
+
+.marketing .markdown-content h1 {
+  font: var(--txt-bold-48);
+  letter-spacing: -0.02em;
+  margin-bottom: 0.5rem;
+}
+
+.marketing .markdown-content h2 {
+  font: var(--txt-bold-32);
+  letter-spacing: -0.02em;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.marketing .markdown-content h3 {
+  font: var(--txt-bold-24);
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+.marketing .markdown-content h4 {
+  font: var(--txt-bold-18);
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+@media (max-width: 44rem) {
+  .marketing .markdown-content h1 {
+    font: var(--txt-bold-32);
+  }
+
+  .marketing .markdown-content h2 {
+    font: var(--txt-bold-24);
+  }
+
+  .marketing .markdown-content h3 {
+    font: var(--txt-bold-18);
+  }
+}
+
+.marketing .markdown-content p {
+  font: var(--txt-medium-16);
+  line-height: 1.7;
+  margin-bottom: 1rem;
+}
+
+.marketing .markdown-content ul,
+.marketing .markdown-content ol {
+  font: var(--txt-medium-16);
+  line-height: 1.7;
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.marketing .markdown-content li {
+  margin-bottom: 0.5rem;
+}
+
+.marketing .markdown-content strong {
+  font-weight: 600;
+}
+
+.marketing .markdown-content code {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.9em;
+  background: var(--color-surface-subtle);
+  padding: 0.125rem 0.375rem;
+  border-radius: var(--border-radius-tiny);
+}
+
+.marketing .markdown-content pre {
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--border-radius-tiny);
+  overflow-x: auto;
+  background: var(--color-surface-subtle) !important;
+  margin-bottom: 1rem;
+}
+
+.marketing .markdown-content pre code {
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 500;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  background: none;
+  padding: 0;
+}
+
+.marketing .markdown-content pre.shiki {
+  background: var(--color-surface-subtle) !important;
+  color: var(--shiki-dark) !important;
+}
+
+.marketing .markdown-content pre.shiki span {
+  color: var(--shiki-dark) !important;
+  background: none !important;
+}
+
+:root[data-theme="light"] .marketing .markdown-content pre.shiki,
+:root[data-theme="light"] .marketing .markdown-content pre.shiki span {
+  color: var(--shiki-light) !important;
+}
+
+.marketing .copy-code-button {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.25rem;
+  background: none;
+  border: none;
+  border-radius: 0.125rem;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.marketing .markdown-content pre:hover .copy-code-button {
+  opacity: 1;
+}
+
+.marketing .copy-code-button:hover {
+  background: var(--color-surface-subtle);
+}
+
+.marketing .markdown-content a {
+  color: var(--color-brand-hover);
+}
+
+.marketing .markdown-content a:hover {
+  text-decoration: underline;
+}
+
+.marketing .markdown-content blockquote {
+  border-left: 3px solid var(--color-border-mid);
+  padding-left: 1rem;
+  margin: 1rem 0;
+  color: var(--color-text-secondary);
+}
+
+.marketing .markdown-content table {
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+  width: 100%;
+}
+
+.marketing .markdown-content th,
+.marketing .markdown-content td {
+  font: var(--txt-medium-14);
+  line-height: 1.5;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border-subtle);
+  text-align: left;
+}
+
+.marketing .markdown-content th {
+  font: var(--txt-bold-14);
+  background: var(--color-surface-subtle);
+}
+
+.marketing .markdown-content hr {
+  border: none;
+  border-top: 1px solid var(--color-border-subtle);
+  margin: 2rem 0;
+}
+
+.marketing .markdown-content figure {
+  margin: 2rem 0;
+}
+
+.marketing .markdown-content figure img {
+  max-width: 100%;
+  height: auto;
+}
+
+.marketing .markdown-content figcaption {
+  font: var(--txt-medium-14);
+  color: var(--color-text-tertiary);
+  margin-top: 0.75rem;
+}
+
+/* Inline link styles */
+.marketing .inline-link {
+  color: var(--color-brand-hover);
+  text-decoration: none;
+}
+
+.marketing .inline-link:hover {
+  text-decoration: underline;
+}
+
+/* Product card styles (shared by Install and Learn pages) */
+.marketing .card-row {
+  --product-card-gap: 4rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  row-gap: var(--product-card-gap);
+  column-gap: var(--product-card-gap);
+  align-items: start;
+}
+
+.marketing .product-card {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 1.25rem;
+}
+
+.marketing .product-media {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  border-radius: var(--border-radius-small);
+}
+
+.marketing .product-card-text {
+  display: flex;
+  flex-direction: column;
+  padding-right: 1.5rem;
+  min-width: 0;
+}
+
+.marketing .product-title {
+  font: var(--txt-bold-18);
+  color: var(--color-text-primary);
+  padding: 0 0 0.5rem;
+}
+
+.marketing .product-description {
+  font: var(--txt-medium-16);
+  color: var(--color-text-tertiary);
+  margin: 0 0 0.75rem;
+}
+
+.marketing .product-link {
+  font: var(--txt-bold-16);
+  color: var(--color-accent-blue-500);
+  text-decoration: none;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  width: fit-content;
+}
+
+.marketing .product-link:hover {
+  text-decoration: none;
+}
+
+@media (max-width: 64rem) {
+  .marketing .card-row {
+    grid-template-columns: 1fr;
+    row-gap: 1.5rem;
+    column-gap: 0;
+  }
+
+  .marketing .product-card-text {
+    padding-right: 0;
+  }
+}
+
+/* Marketing sidebar active-indicator dot (see Sidebar.svelte). When the dot
+   exists on both the outgoing and incoming page the browser morphs it between
+   nav items automatically. When it only appears (enter) or disappears (exit),
+   slide it in from / out to the left edge. `:only-child` singles out those
+   enter/exit cases, leaving the morph untouched. */
+@keyframes sidebar-dot-in {
+  from {
+    opacity: 0;
+    transform: translateX(-1.5rem);
+  }
+}
+
+@keyframes sidebar-dot-out {
+  to {
+    opacity: 0;
+    transform: translateX(-1.5rem);
+  }
+}
+
+/* `both` holds the final keyframe after the 0.2s animation ends: the overall
+   transition runs longer (the root fade+slide is 0.3s), and without a forwards
+   fill the dot snapshot would revert to full opacity at its start position for
+   the remaining time before the transition tears down. */
+::view-transition-new(sidebar-dot):only-child {
+  animation: sidebar-dot-in 0.2s ease both;
+}
+
+::view-transition-old(sidebar-dot):only-child {
+  animation: sidebar-dot-out 0.2s ease both;
+}

@@ -144,7 +144,7 @@
     <div class="container">
       <Placeholder
         iconName="desert"
-        caption="This user doesn't have any repositories on this node." />
+        caption="This user doesn’t have any repositories on this node." />
     </div>
   {/if}
 {:catch error}
