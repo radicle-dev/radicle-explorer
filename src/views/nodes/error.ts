@@ -1,6 +1,8 @@
 import type { BaseUrl } from "@http-client";
 import type { ErrorRoute, NotFoundRoute } from "@app/lib/router/definitions";
 
+import escape from "lodash/escape";
+
 import { ResponseParseError, ResponseError } from "@http-client/lib/fetcher";
 import { baseUrlToString } from "@app/lib/utils";
 
@@ -9,6 +11,7 @@ export function handleError(
   baseUrl: BaseUrl,
 ): NotFoundRoute | ErrorRoute {
   const url = baseUrlToString(baseUrl);
+  const safeUrl = escape(url);
 
   if (error instanceof ResponseParseError) {
     return {
@@ -17,6 +20,7 @@ export function handleError(
         error,
         title: "Could not parse the request",
         description: error.description,
+        baseUrl,
       },
     };
   } else if (error instanceof ResponseError) {
@@ -25,7 +29,8 @@ export function handleError(
       params: {
         error,
         title: "Could not load this node",
-        description: `You're trying to access a node that is not reachable, make sure the address <a href="${url}">${url}</a> is correct and the right ports are exposed if its your node.`,
+        description: `You’re trying to access a node that is not reachable, make sure the address <a href="${safeUrl}">${safeUrl}</a> is correct and the right ports are exposed if its your node.`,
+        baseUrl,
       },
     };
   } else if (
@@ -48,7 +53,8 @@ export function handleError(
         error,
         title: "Could not load this node",
         description:
-          "You stumbled on an unknown error, we aren't exactly sure what happened.",
+          "You stumbled on an unknown error, we aren’t exactly sure what happened.",
+        baseUrl,
       },
     };
   }

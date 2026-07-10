@@ -422,7 +422,7 @@ export const cachedUserAvatar = cached(
   { max: 2000 },
 );
 
-function renderRepoAvatar(key: string): string {
+export function renderRepoAvatar(key: string): string {
   if (typeof window === "undefined") {
     return "";
   }

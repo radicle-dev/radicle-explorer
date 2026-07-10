@@ -65,13 +65,13 @@
 
   .activity {
     flex: 1;
-    max-width: 12rem;
+    max-width: 9rem;
     align-self: flex-end;
   }
 
   .activity-shimmer {
     width: 100%;
-    min-width: 185px;
+    min-width: 130px;
     aspect-ratio: 493 / 116;
     background: linear-gradient(
       90deg,
@@ -144,7 +144,7 @@
     color: var(--color-text-on-brand);
   }
 
-  @container (max-width: 30rem) {
+  @container (max-width: 22rem) {
     .activity {
       display: none;
     }

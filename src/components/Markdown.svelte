@@ -284,7 +284,7 @@
             icon.setAttribute("name", "warning");
             warning.appendChild(icon);
             const text = document.createElement("span");
-            text.textContent = "Couldn't render diagram";
+            text.textContent = "Couldn’t render diagram";
             warning.appendChild(text);
             preWrapper.before(warning);
           }

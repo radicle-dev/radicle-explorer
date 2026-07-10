@@ -6,12 +6,34 @@ import type {
 import type { RepoLoadedRoute, RepoRoute } from "@app/views/repos/router";
 import type { UserLoadedRoute, UserRoute } from "@app/views/users/router";
 import type { NodesRoute, NodesLoadedRoute } from "@app/views/nodes/router";
+import type {
+  ExploreLoadedRoute,
+  ExploreReposLoadedRoute,
+  ExploreReposRoute,
+  ExploreRoute,
+} from "@app/views/explore/router";
+import type {
+  CliRoute,
+  DesktopRoute,
+  DocsLoadedRoute,
+  DocsRoute,
+  GuidesRoute,
+  InstallRoute,
+  LandingRoute,
+  LearnRoute,
+  PrinciplesRoute,
+} from "@app/marketing/types";
 import type { ComponentProps } from "svelte";
 import type IconLarge from "@app/components/IconLarge.svelte";
 
 import { loadRepoRoute } from "@app/views/repos/router";
 import { loadUserRoute } from "@app/views/users/router";
 import { loadNodeRoute } from "@app/views/nodes/router";
+import {
+  loadExploreReposRoute,
+  loadExploreRoute,
+} from "@app/views/explore/router";
+import { loadDocsRoute } from "@app/marketing/router";
 
 interface BootingRoute {
   resource: "booting";
@@ -31,6 +53,7 @@ export interface ErrorRoute {
     description: string;
     error?: ErrorParam;
     icon?: ComponentProps<IconLarge>["name"];
+    baseUrl?: BaseUrl;
   };
 }
 
@@ -40,7 +63,17 @@ export type Route =
   | ErrorRoute
   | NotFoundRoute
   | RepoRoute
-  | NodesRoute;
+  | NodesRoute
+  | ExploreRoute
+  | ExploreReposRoute
+  | LandingRoute
+  | LearnRoute
+  | InstallRoute
+  | GuidesRoute
+  | DesktopRoute
+  | CliRoute
+  | PrinciplesRoute
+  | DocsRoute;
 
 export type LoadedRoute =
   | BootingRoute
@@ -48,7 +81,17 @@ export type LoadedRoute =
   | ErrorRoute
   | NotFoundRoute
   | RepoLoadedRoute
-  | NodesLoadedRoute;
+  | NodesLoadedRoute
+  | ExploreLoadedRoute
+  | ExploreReposLoadedRoute
+  | LandingRoute
+  | LearnRoute
+  | InstallRoute
+  | GuidesRoute
+  | DesktopRoute
+  | CliRoute
+  | PrinciplesRoute
+  | DocsLoadedRoute;
 
 export async function loadRoute(
   route: Route,
@@ -58,6 +101,12 @@ export async function loadRoute(
     return await loadNodeRoute(route.params);
   } else if (route.resource === "users") {
     return await loadUserRoute(route);
+  } else if (route.resource === "explore") {
+    return await loadExploreRoute();
+  } else if (route.resource === "explore.repos") {
+    return await loadExploreReposRoute(route.params);
+  } else if (route.resource === "docs") {
+    return await loadDocsRoute(route.params);
   } else if (
     route.resource === "repo.source" ||
     route.resource === "repo.history" ||

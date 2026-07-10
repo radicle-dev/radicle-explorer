@@ -237,11 +237,11 @@
         {#if listState === "pinned"}
           <Placeholder
             iconName="desert"
-            caption="This node doesn't have any pinned repositories." />
+            caption="This node doesn’t have any pinned repositories." />
         {:else}
           <Placeholder
             iconName="desert"
-            caption="This node doesn't seed any repositories." />
+            caption="This node doesn’t seed any repositories." />
         {/if}
       </div>
     {/if}

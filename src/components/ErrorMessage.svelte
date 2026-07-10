@@ -54,7 +54,7 @@
   <div class="txt-heading-m">
     {title}
   </div>
-  <!-- This @html is secure since we don't allow user input -->
+  <!-- description is rendered as HTML; callers must escape any interpolated user input. -->
   <div class="label">{@html description}</div>
   {#if error}
     <div class="help">

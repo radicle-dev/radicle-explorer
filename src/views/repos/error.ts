@@ -64,7 +64,7 @@ export function handleError(
         error,
         title: "Could not load this repository",
         description:
-          "You stumbled on an unknown error, we aren't exactly sure what happened.",
+          "You stumbled on an unknown error, we aren’t exactly sure what happened.",
       },
     };
   }
@@ -77,7 +77,7 @@ export function unreachableError(): NotFoundRoute | ErrorRoute {
       error: undefined,
       title: "Could not load this route",
       description:
-        "You stumbled on an unknown error, we aren't exactly sure what happened.",
+        "You stumbled on an unknown error, we aren’t exactly sure what happened.",
     },
   };
 }

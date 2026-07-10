@@ -60,10 +60,10 @@
   }
 
   @media (max-width: 719.98px) {
-    .desktop-header {
+    .tab-bar {
       display: none;
     }
-    .tab-bar {
+    .breadcrumbs {
       display: none;
     }
     .content {
@@ -78,7 +78,7 @@
 </style>
 
 <div class="layout">
-  <div class="desktop-header">
+  <div class="app-header">
     <Header>
       <svelte:fragment slot="breadcrumbs">
         <nav class="breadcrumbs" aria-label="Breadcrumb">

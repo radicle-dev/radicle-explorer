@@ -13,7 +13,6 @@
   import UserAvatar from "@app/components/UserAvatar.svelte";
 
   import PolicyExplainer from "./PolicyExplainer.svelte";
-  import SeedSelector from "./SeedSelector.svelte";
   import Seeding from "./Seeding.svelte";
   import UserAgent from "./UserAgent.svelte";
   import NodeAddress from "./NodeAddress.svelte";
@@ -116,8 +115,8 @@
             <UserAvatar nodeId={node.id} styleWidth="4rem" />
           {/if}
           <div style:width="100%">
-            <div class="global-flex-item">
-              <SeedSelector {baseUrl} />
+            <div class="txt-body-m-semibold txt-overflow">
+              {baseUrl.hostname}
             </div>
             <NodeAddress {node} />
           </div>
@@ -141,7 +140,7 @@
               </IconButton>
 
               <div slot="popover" class="box">
-                If you're the owner of this node, you can customize this page by
+                If you’re the owner of this node, you can customize this page by
                 setting the
                 <code>avatarUrl</code>
                 ,

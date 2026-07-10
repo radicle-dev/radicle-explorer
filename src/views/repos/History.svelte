@@ -167,7 +167,7 @@
   {#if error}
     <div class="message">
       <ErrorMessage
-        title="Couldn't load commits"
+        title="Couldn’t load commits"
         description="Make sure you are able to connect to the seed <code>{baseUrlToString(
           api.baseUrl,
         )}</code>"

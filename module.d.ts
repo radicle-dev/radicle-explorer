@@ -1,3 +1,9 @@
+declare module "*.md" {
+  import type { ComponentType } from "svelte";
+  const component: ComponentType;
+  export default component;
+}
+
 declare const buildTimeConfig: {
   nodes: {
     requiredApiVersion: string;
@@ -5,6 +11,7 @@ declare const buildTimeConfig: {
     defaultHttpdPort: number;
     defaultLocalHttpdPort: number;
     defaultHttpdScheme: string;
+    homepage: "node" | "landing";
   };
   source: {
     commitsPerPage: number;

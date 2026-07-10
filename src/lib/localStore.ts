@@ -18,6 +18,32 @@ type Equals<X, Y> =
  * @param disableLocalStorage Skip interaction with localStorage, for example during SSR.
  * @returns A stored writable.
  */
+function safeGetItem(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeSetItem(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // localStorage can throw on write in Safari private mode or when the
+    // quota is exceeded. The in-memory store still works for this session;
+    // the user just won't have persistence across reloads.
+  }
+}
+
+function safeRemoveItem(key: string): void {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // See safeSetItem.
+  }
+}
+
 export default function storedWritable<
   S extends z.infer<T>,
   T extends z.ZodType = z.ZodType<S>,
@@ -29,7 +55,7 @@ export default function storedWritable<
 ): Writable<
   Equals<T, typeof schema> extends true ? S : z.infer<typeof schema>
 > & { clear: () => void } {
-  const stored = !disableLocalStorage ? localStorage.getItem(key) : null;
+  const stored = !disableLocalStorage ? safeGetItem(key) : null;
 
   const parseFromJson = (content: string) => {
     return z
@@ -74,7 +100,7 @@ export default function storedWritable<
    * */
   function set(...args: Parameters<typeof w.set>) {
     w.set(...args);
-    if (!disableLocalStorage) localStorage.setItem(key, JSON.stringify(get(w)));
+    if (!disableLocalStorage) safeSetItem(key, JSON.stringify(get(w)));
   }
 
   /**
@@ -83,7 +109,7 @@ export default function storedWritable<
    * */
   function update(...args: Parameters<typeof w.update>) {
     w.update(...args);
-    if (!disableLocalStorage) localStorage.setItem(key, JSON.stringify(get(w)));
+    if (!disableLocalStorage) safeSetItem(key, JSON.stringify(get(w)));
   }
 
   /**
@@ -91,7 +117,7 @@ export default function storedWritable<
    */
   function clear() {
     w.set(initialValue as S);
-    if (!disableLocalStorage) localStorage.removeItem(key);
+    if (!disableLocalStorage) safeRemoveItem(key);
   }
 
   return {

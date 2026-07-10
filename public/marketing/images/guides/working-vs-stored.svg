@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 584.63792804179 603.7325083107335" width="584.63792804179" height="603.7325083107335">
+  <defs>
+    <style>
+      @import url("/assets/css/fonts.css");
+      svg { font-size: 16px; font-family: "Inter", sans-serif; }
+    </style>
+  </defs>
+  <g stroke-linecap="round" transform="translate(36.21399090243949 89.18033866906654) rotate(0 256.29680448850263 103.6806465444188)">
+    <path d="M0 0 C204.34 -1.17, 408.16 -1.43, 512.59 0 M0 0 C131.47 1.73, 262.99 1.67, 512.59 0 M512.59 0 C513.55 77.88, 514.21 156.58, 512.59 207.36 M512.59 0 C512.53 63.71, 511.33 128.21, 512.59 207.36 M512.59 207.36 C389.22 207.63, 264.67 208.29, 0 207.36 M512.59 207.36 C313.73 206.44, 114.43 206.34, 0 207.36 M0 207.36 C0.02 156.49, 1.63 109.01, 0 0 M0 207.36 C-1.78 162.02, -0.78 117.51, 0 0" stroke="#ff80b3" stroke-width="2" fill="none"/>
+  </g>
+  <g stroke-linecap="round" transform="translate(62.272004343533354 176.8903011012392) rotate(0 102.83593272276357 44.23050862605392)">
+    <path d="M-1.7 -1.63 L206.13 -1.83 L206.5 90.04 L1.03 87.87" stroke="none" stroke-width="0" fill="#ff80b3"/>
+    <path d="M0 0 C72.53 -0.56, 141.01 0.88, 205.67 0 M0 0 C48.91 -1.07, 97.31 -1.43, 205.67 0 M205.67 0 C206.69 24.06, 205.91 46.95, 205.67 88.46 M205.67 0 C205.92 35.26, 205.84 68.07, 205.67 88.46 M205.67 88.46 C134.69 87.73, 68.72 88.63, 0 88.46 M205.67 88.46 C150.02 86.32, 94.52 86.63, 0 88.46 M0 88.46 C1.12 57.81, -1.16 27.91, 0 0 M0 88.46 C1.11 58.16, 0.77 29.8, 0 0" stroke="transparent" stroke-width="2" fill="none"/>
+  </g>
+  <g transform="translate(126.97043630335747 202.7208097272931) rotate(0 38.13750076293945 18.400000000000006)">
+    <text x="38.13750076293945" y="0" fill="#ffffff" text-anchor="middle" style="white-space: pre;" direction="ltr" dominant-baseline="text-before-edge">Repository</text>
+    <text x="38.13750076293945" y="18.4" fill="#ffffff" text-anchor="middle" style="white-space: pre;" direction="ltr" dominant-baseline="text-before-edge"/>
+  </g>
+  <g stroke-linecap="round" transform="translate(284.53031055079737 176.19652498675904) rotate(0 102.83593272276357 43.677627267329584)">
+    <path d="M0.45 -1.83 L206.5 1.58 L206.71 86.77 L-1.89 85.44" stroke="none" stroke-width="0" fill="#ff80b3"/>
+    <path d="M0 0 C54.43 1.47, 109.25 1.63, 205.67 0 M0 0 C82.74 -1.14, 163.84 -1.44, 205.67 0 M205.67 0 C206.23 23.64, 207.88 50.76, 205.67 87.36 M205.67 0 C204.64 24.71, 205.6 51.56, 205.67 87.36 M205.67 87.36 C158.05 89.03, 106.74 88.39, 0 87.36 M205.67 87.36 C157.94 85.08, 111.77 85.07, 0 87.36 M0 87.36 C-1.96 70.14, 0.38 49.06, 0 0 M0 87.36 C-0.22 69.5, -1.7 50.88, 0 0" stroke="transparent" stroke-width="2" fill="none"/>
+  </g>
+  <g transform="translate(349.2287425106215 201.4741522540886) rotate(0 38.13750076293945 18.400000000000006)">
+    <text x="38.13750076293945" y="0" fill="#ffffff" text-anchor="middle" style="white-space: pre;" direction="ltr" dominant-baseline="text-before-edge">Repository</text>
+    <text x="38.13750076293945" y="18.4" fill="#ffffff" text-anchor="middle" style="white-space: pre;" direction="ltr" dominant-baseline="text-before-edge"/>
+  </g>
+  <g transform="translate(62.272003800575476 114.4692318608763) rotate(0 49.23749923706055 9.200000000000003)">
+    <text x="0" y="0" fill="#ff80b3" text-anchor="start" style="white-space: pre;" direction="ltr" dominant-baseline="text-before-edge">Local Storage</text>
+  </g>
+  <g stroke-linecap="round" transform="translate(506.7886165197956 176.19652510123922) rotate(0 21.009491631532455 43.67762726732957)">
+    <path d="M1.03 -0.59 L40.13 -1.91 L41.38 86.18 L1.27 88.1" stroke="none" stroke-width="0" fill="#ff80b3"/>
+    <path d="M0 0 C15.3 1.23, 28.31 1.44, 42.02 0 M0 0 C14.22 0.43, 28.89 0.04, 42.02 0 M42.02 0 C42.68 21.32, 44.31 43.5, 42.02 87.36 M42.02 0 C41.73 17.01, 42.56 36.82, 42.02 87.36 M42.02 87.36 C24.98 86.71, 8.87 86.27, 0 87.36 M42.02 87.36 C31.15 87.38, 22.18 86.24, 0 87.36 M0 87.36 C-2.19 55.31, -2.23 20.62, 0 0 M0 87.36 C0.97 60.43, 1.16 36.13, 0 0" stroke="transparent" stroke-width="2" fill="none"/>
+  </g>
+  <g stroke-linecap="round" transform="translate(62.27200421333055 453.0162762609689) rotate(0 102.83593272276357 49.8366924565654)">
+    <path d="M0 0 C68.53 0.15, 134.87 -1.76, 205.67 0 M0 0 C63.7 -0.79, 126.89 -0.05, 205.67 0 M205.67 0 C207.11 37.21, 203.72 77.52, 205.67 99.67 M205.67 0 C205.28 33.38, 205.78 64.68, 205.67 99.67 M205.67 99.67 C134.96 97.84, 66.54 99.87, 0 99.67 M205.67 99.67 C156.95 99.44, 108.57 100.48, 0 99.67 M0 99.67 C-1 72.54, 0.91 41.16, 0 0 M0 99.67 C0.19 78.66, 0.29 55.78, 0 0" stroke="#ff80b3" stroke-width="2" fill="none"/>
+  </g>
+  <g transform="translate(135.98293693609412 484.4529687175343) rotate(0 29.125 18.399999999999977)">
+    <text x="29.125" y="0" fill="#ff80b3" text-anchor="middle" style="white-space: pre;" direction="ltr" dominant-baseline="text-before-edge">Working</text>
+    <text x="29.125" y="18.4" fill="#ff80b3" text-anchor="middle" style="white-space: pre;" direction="ltr" dominant-baseline="text-before-edge">Copy</text>
+  </g>
+  <g stroke-linecap="round" transform="translate(284.5303112266156 453.01627687035796) rotate(0 102.83593272276357 49.8366922344419)">
+    <path d="M0 0 C76.26 -1.94, 151.15 -1.76, 205.67 0 M0 0 C70.9 0.66, 143.35 -0.19, 205.67 0 M205.67 0 C204.54 25.58, 206.94 48.47, 205.67 99.67 M205.67 0 C206.61 19.98, 206.24 39.87, 205.67 99.67 M205.67 99.67 C151.1 99.47, 97.59 97.07, 0 99.67 M205.67 99.67 C138.86 98.39, 70.32 97.25, 0 99.67 M0 99.67 C0.93 58.34, -0.65 20.86, 0 0 M0 99.67 C0.11 78.62, -1.36 57.2, 0 0" stroke="#ff80b3" stroke-width="2" fill="none"/>
+  </g>
+  <g transform="translate(358.24124394937917 484.4529691047999) rotate(0 29.125 18.399999999999977)">
+    <text x="29.125" y="0" fill="#ff80b3" text-anchor="middle" style="white-space: pre;" direction="ltr" dominant-baseline="text-before-edge">Working</text>
+    <text x="29.125" y="18.4" fill="#ff80b3" text-anchor="middle" style="white-space: pre;" direction="ltr" dominant-baseline="text-before-edge">Copy</text>
+  </g>
+  <g mask="url(#mask-T6BDWh6j4ZmaAEnRs0YZ9)" stroke-linecap="round">
+    <g transform="translate(165.10793678374694 452.0162762609689) rotate(0 0 -91.2237868536044)">
+      <path d="M0 0 C-0.15 -29.73, 0.6 -58.55, 0 -77.8 M0 0 C1.2 -23.99, -0.16 -47.1, 0 -77.8 M0 -77.8 C1.51 -104.24, -0.94 -127.82, 0 -182.45 M0 -77.8 C-0.4 -119.13, -1.15 -160, 0 -182.45" stroke="#ff80b3" stroke-width="1" fill="none"/>
+    </g>
+    <g transform="translate(165.10793678374694 452.0162762609689) rotate(0 0 -91.2237868536044)">
+      <path d="M1.27 -181.7 L6.37 -168.72 L-6.64 -168.16 L1.48 -183.56" stroke="none" stroke-width="0" fill="#ff80b3" fill-rule="evenodd"/>
+      <path d="M0 -182.45 C2.47 -177.53, 5.3 -171.96, 6.02 -168.71 M0 -182.45 C2.43 -178.32, 3.26 -173.49, 6.02 -168.71 M6.02 -168.71 C3.29 -169.5, -1.31 -168.53, -6.66 -169.01 M6.02 -168.71 C1.32 -169.31, -4.08 -169.58, -6.66 -169.01 M-6.66 -169.01 C-5.92 -173.48, -2.97 -175.06, 0 -182.45 M-6.66 -169.01 C-5.46 -172.63, -3.19 -175.53, 0 -182.45 M0 -182.45 C0 -182.45, 0 -182.45, 0 -182.45 M0 -182.45 C0 -182.45, 0 -182.45, 0 -182.45" stroke="#ff80b3" stroke-width="1" fill="none"/>
+    </g>
+  </g>
+  <mask id="mask-T6BDWh6j4ZmaAEnRs0YZ9">
+    <rect x="0" y="0" fill="#fff" width="265.10793678374694" height="734.4638499681777"/>
+    <rect x="147.8079375466864" y="365.0211365577122" fill="#000" width="34.599998474121094" height="18.4" opacity="1"/>
+  </mask>
+  <g transform="translate(147.8079375466864 365.0211365577123) rotate(0 17.245726342613352 -4.228647150347797)">
+    <text x="17.299999237060547" y="0" fill="#ff80b3" text-anchor="middle" style="white-space: pre;" direction="ltr" dominant-baseline="text-before-edge">push</text>
+  </g>
+  <g mask="url(#mask-iq1SBTW31kyu6R1UNUpVo)" stroke-linecap="round">
+    <g transform="translate(387.3662432735605 263.29563731190547) rotate(0 0 92.38023798350207)">
+      <path d="M0 0 C1.04 30.13, 0.26 59.1, 0 110.93 M0 0 C0.44 44.02, 0.36 85.59, 0 110.93 M0 110.93 C-1.74 136.22, 1.96 162.09, 0 184.76 M0 110.93 C-0.14 129.83, -0.35 150.02, 0 184.76" stroke="#ff80b3" stroke-width="1" fill="none"/>
+    </g>
+    <g transform="translate(387.3662432735605 263.29563731190547) rotate(0 0 92.38023798350207)">
+      <path d="M0.35 184.75 L-6.41 172.05 L7.73 170.02 L-1.4 184.87" stroke="none" stroke-width="0" fill="#ff80b3" fill-rule="evenodd"/>
+      <path d="M0 184.76 C-1.05 181.19, -3.38 176.76, -6.43 171.21 M0 184.76 C-3 180.03, -5.57 173.48, -6.43 171.21 M-6.43 171.21 C-3.38 171.53, 3.23 172.14, 6.25 171.12 M-6.43 171.21 C-3.27 170.67, 0 170.87, 6.25 171.12 M6.25 171.12 C4.39 176.26, 0.48 182.02, 0 184.76 M6.25 171.12 C4.89 174.85, 2.56 180.09, 0 184.76 M0 184.76 C0 184.76, 0 184.76, 0 184.76 M0 184.76 C0 184.76, 0 184.76, 0 184.76" stroke="#ff80b3" stroke-width="1" fill="none"/>
+    </g>
+  </g>
+  <mask id="mask-iq1SBTW31kyu6R1UNUpVo">
+    <rect x="0" y="0" fill="#fff" width="487.3662432735605" height="548.0561132789096"/>
+    <rect x="374.9412430828256" y="365.0211365577122" fill="#000" width="24.850000381469727" height="18.4" opacity="1"/>
+  </mask>
+  <g transform="translate(374.9412430828256 365.0211365577123) rotate(0 12.480073795464477 -9.345261262304689)">
+    <text x="12.425000190734863" y="0" fill="#ff80b3" text-anchor="middle" style="white-space: pre;" direction="ltr" dominant-baseline="text-before-edge">pull</text>
+  </g>
+  <g stroke-linecap="round" transform="translate(10 10) rotate(0 282.318964020895 291.86625415536673)">
+    <path d="M0.16 -1.12 C156.52 -2.38, 311.29 -1.06, 564.56 -1.52 M565.17 -1.49 C565.46 155.92, 566.57 308.73, 566.08 584.75 M564.71 585.23 C404.67 580.36, 243.62 580.64, -1.08 582.64 M0.12 585.22 C4.61 406.45, 4.88 228.03, -0.69 -0.38" stroke="#8888ff" stroke-width="2.5" fill="none" stroke-dasharray="8 10"/>
+  </g>
+  <g transform="translate(35.83378166044122 37.655395980126286) rotate(0 19.075000762939453 9.200000000000003)">
+    <text x="0" y="0" fill="#8888ff" text-anchor="start" style="white-space: pre;" direction="ltr" dominant-baseline="text-before-edge">Node</text>
+  </g>
+  <g transform="translate(357.8039885008661 226.8800314407502) rotate(0 29.475000381469727 6.113551541589686)">
+    <text x="0" y="0" font-size="10.63226355059077px" fill="#ffffff" text-anchor="start" style="white-space: pre;" direction="ltr" dominant-baseline="text-before-edge">Stored Copy</text>
+  </g>
+  <g transform="translate(135.54568208088403 226.88003164990215) rotate(0 29.475000381469727 6.113551541589686)">
+    <text x="0" y="0" font-size="10.63226355059077px" fill="#ffffff" text-anchor="start" style="white-space: pre;" direction="ltr" dominant-baseline="text-before-edge">Stored Copy</text>
+  </g>
+</svg>

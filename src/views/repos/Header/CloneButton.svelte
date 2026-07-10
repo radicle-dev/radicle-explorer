@@ -107,7 +107,7 @@
     {:else if activeTab === "git"}
       <div>
         <label for="git-clone-url">
-          If you don't have Radicle installed, you can still clone the
+          If you don’t have Radicle installed, you can still clone the
           repository via Git.
         </label>
         <Command command={gitCloneUrl} />
@@ -123,7 +123,7 @@
         {#if supported}
           <div>
             <label for="git-clone-url">
-              If you don't have Radicle installed, you can still download an
+              If you don’t have Radicle installed, you can still download an
               archive of the repository.
             </label>
             <Command command={archiveUrl} />

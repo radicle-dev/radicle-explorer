@@ -163,7 +163,7 @@
 
   {#if error}
     <ErrorMessage
-      title="Couldn't load issues"
+      title="Couldn’t load issues"
       description="Please make sure you are able to connect to the seed <code>{baseUrlToString(
         api.baseUrl,
       )}</code>"

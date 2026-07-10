@@ -4,7 +4,8 @@
     "requiredApiVersion": "~0.18.0",
     "defaultHttpdPort": 443,
     "defaultLocalHttpdPort": 8080,
-    "defaultHttpdScheme": "https"
+    "defaultHttpdScheme": "https",
+    "homepage": "node"
   },
   "source": {
     "commitsPerPage": 30
@@ -14,11 +15,6 @@
   "preferredSeeds": [
     {
       "hostname": "rosa.radicle.network",
-      "port": 443,
-      "scheme": "https"
-    },
-    {
-      "hostname": "seed.radicle.dev",
       "port": 443,
       "scheme": "https"
     },
