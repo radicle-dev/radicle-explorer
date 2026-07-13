@@ -1,9 +1,4 @@
 import type {
-  ErrorRoute,
-  LoadedRoute,
-  NotFoundRoute,
-} from "@app/lib/router/definitions";
-import type {
   BaseUrl,
   Blob,
   Commit,
@@ -13,7 +8,6 @@ import type {
   DiffBlob,
   Issue,
   IssueState,
-  Node,
   Patch,
   PatchState,
   PeerRefs,
@@ -24,12 +18,14 @@ import type {
   Tree,
 } from "@http-client";
 
+import { error } from "@sveltejs/kit";
+
 import * as Syntax from "@app/lib/syntax";
 import config from "@app/lib/config";
 import { HttpdClient } from "@http-client";
-import { ResponseError, ResponseParseError } from "@http-client/lib/fetcher";
+import { ResponseError } from "@http-client/lib/fetcher";
 import { cached } from "@app/lib/cache";
-import { handleError, unreachableError } from "@app/views/repos/error";
+import { handleError } from "@app/views/repos/error";
 import {
   getBranchesFromRefs,
   getTagsFromRefs,
@@ -304,236 +300,250 @@ function parseRevisionToOid(
   }
 }
 
-export async function loadRepoRoute(
-  route: RepoRoute,
-  previousLoaded: LoadedRoute,
-): Promise<RepoLoadedRoute | ErrorRoute | NotFoundRoute> {
-  const api = new HttpdClient(route.node);
+// Shared per-repo data loaded once by the repo layout load and passed to every
+// repo page load. `seedingPolicy` is lazy so that only the views that render
+// it (source, history) trigger the request.
+export interface RepoContext {
+  baseUrl: BaseUrl;
+  repo: Repo;
+  nodeId: string;
+  nodeAvatarUrl: string | undefined;
+  seedingPolicy: () => Promise<SeedingPolicy>;
+}
 
+export async function loadRepoContext(
+  baseUrl: BaseUrl,
+  rid: string,
+): Promise<RepoContext> {
+  const api = new HttpdClient(baseUrl);
   try {
-    if (route.resource === "repo.source") {
-      return await loadTreeView(route, previousLoaded);
-    } else if (route.resource === "repo.history") {
-      return await loadHistoryView(route, previousLoaded);
-    } else if (route.resource === "repo.commit") {
-      const [repo, commit, node] = await Promise.all([
-        api.repo.getByRid(route.repo),
-        api.repo.getCommitBySha(route.repo, route.commit),
-        api.getNode(),
-      ]);
-
-      return {
-        resource: "repo.commit",
-        params: {
-          baseUrl: route.node,
-          repo,
-          commit,
-          nodeId: node.id,
-          nodeAvatarUrl: node.avatarUrl,
-        },
-      };
-    } else if (route.resource === "repo.issue") {
-      return await loadIssueView(route);
-    } else if (route.resource === "repo.patch") {
-      return await loadPatchView(route, previousLoaded);
-    } else if (route.resource === "repo.issues") {
-      return await loadIssuesView(route);
-    } else if (route.resource === "repo.patches") {
-      return await loadPatchesView(route);
-    } else {
-      return unreachable(route);
-    }
-  } catch (error) {
-    if (
-      error instanceof Error ||
-      error instanceof ResponseError ||
-      error instanceof ResponseParseError
-    ) {
-      return handleError(error, route);
-    } else {
-      return unreachableError();
-    }
+    const [repo, node] = await Promise.all([
+      api.repo.getByRid(rid),
+      api.getNode(),
+    ]);
+    let seedingPolicyPromise: Promise<SeedingPolicy> | undefined;
+    return {
+      baseUrl,
+      repo,
+      nodeId: node.id,
+      nodeAvatarUrl: node.avatarUrl,
+      seedingPolicy: () => (seedingPolicyPromise ??= api.getPolicyByRid(rid)),
+    };
+  } catch (err) {
+    handleError(err, baseUrl, "Repository");
   }
 }
 
-async function loadPatchesView(
-  route: RepoPatchesRoute,
-): Promise<RepoLoadedRoute> {
-  const api = new HttpdClient(route.node);
-  const searchParams = new URLSearchParams(route.search || "");
+function rawPathFn(baseUrl: BaseUrl, rid: string): (commit?: string) => string {
+  return (commit?: string) =>
+    `${baseUrl.scheme}://${baseUrl.hostname}:${baseUrl.port}/raw/${rid}${
+      commit ? `/${commit}` : ""
+    }`;
+}
+
+// Trees are immutable for a given commit, so they can be cached across
+// navigations. This replaces the previous router's reuse of the tree when
+// switching between the source and history views of the same commit.
+const cachedGetTree = cached(
+  async (baseUrl: BaseUrl, rid: string, commit: string) => {
+    const api = new HttpdClient(baseUrl);
+    return await api.repo.getTree(rid, commit);
+  },
+  (...args) => JSON.stringify(args),
+  { max: 10 },
+);
+
+export async function loadPatchesView(
+  ctx: RepoContext,
+  search: string,
+): Promise<RepoLoadedRoute & { resource: "repo.patches" }> {
+  const { baseUrl, repo } = ctx;
+  const api = new HttpdClient(baseUrl);
+  const searchParams = new URLSearchParams(search || "");
   const status = (searchParams.get("status") as PatchState["status"]) || "open";
 
-  const [repo, patches, node] = await Promise.all([
-    api.repo.getByRid(route.repo),
-    api.repo.getAllPatches(route.repo, {
+  try {
+    const patches = await api.repo.getAllPatches(repo.rid, {
       status,
       page: 0,
       perPage: PATCHES_PER_PAGE,
-    }),
-    api.getNode(),
-  ]);
+    });
 
-  return {
-    resource: "repo.patches",
-    params: {
-      baseUrl: route.node,
-      patches,
-      status,
-      repo,
-      nodeId: node.id,
-      nodeAvatarUrl: node.avatarUrl,
-    },
-  };
+    return {
+      resource: "repo.patches",
+      params: {
+        baseUrl,
+        patches,
+        status,
+        repo,
+        nodeId: ctx.nodeId,
+        nodeAvatarUrl: ctx.nodeAvatarUrl,
+      },
+    };
+  } catch (err) {
+    handleError(err, baseUrl, "Repository");
+  }
 }
 
-async function loadIssuesView(
-  route: RepoIssuesRoute,
-): Promise<RepoLoadedRoute> {
-  const api = new HttpdClient(route.node);
-  const status = route.status || "open";
+export async function loadIssuesView(
+  ctx: RepoContext,
+  statusParam: string | null,
+): Promise<RepoLoadedRoute & { resource: "repo.issues" }> {
+  const { baseUrl, repo } = ctx;
+  const api = new HttpdClient(baseUrl);
+  const status: IssueState["status"] =
+    statusParam === "open" || statusParam === "closed" ? statusParam : "open";
 
-  const [repo, issues, node] = await Promise.all([
-    api.repo.getByRid(route.repo),
-    api.repo.getAllIssues(route.repo, {
+  try {
+    const issues = await api.repo.getAllIssues(repo.rid, {
       status,
       page: 0,
       perPage: ISSUES_PER_PAGE,
-    }),
-    api.getNode(),
-  ]);
+    });
 
-  return {
-    resource: "repo.issues",
-    params: {
-      baseUrl: route.node,
-      issues,
-      status,
-      repo,
-      nodeId: node.id,
-      nodeAvatarUrl: node.avatarUrl,
-    },
-  };
+    return {
+      resource: "repo.issues",
+      params: {
+        baseUrl,
+        issues,
+        status,
+        repo,
+        nodeId: ctx.nodeId,
+        nodeAvatarUrl: ctx.nodeAvatarUrl,
+      },
+    };
+  } catch (err) {
+    handleError(err, baseUrl, "Repository");
+  }
 }
 
-async function loadTreeView(
-  route: RepoTreeRoute,
-  previousLoaded: LoadedRoute,
-): Promise<RepoLoadedRoute | NotFoundRoute> {
-  const api = new HttpdClient(route.node);
-  const rawPath = (commit?: string) =>
-    `${route.node.scheme}://${route.node.hostname}:${route.node.port}/raw/${
-      route.repo
-    }${commit ? `/${commit}` : ""}`;
+export async function loadCommitView(
+  ctx: RepoContext,
+  commitId: string,
+): Promise<RepoLoadedRoute & { resource: "repo.commit" }> {
+  const { baseUrl, repo } = ctx;
+  const api = new HttpdClient(baseUrl);
 
-  let repoPromise: Promise<Repo>;
-  let seedingPolicyPromise: Promise<SeedingPolicy>;
-  let nodePromise: Promise<Pick<Node, "id" | "avatarUrl">>;
-  if (
-    (previousLoaded.resource === "repo.source" ||
-      previousLoaded.resource === "repo.history") &&
-    previousLoaded.params.repo.rid === route.repo &&
-    previousLoaded.params.peer === route.peer
-  ) {
-    repoPromise = Promise.resolve(previousLoaded.params.repo);
-    seedingPolicyPromise = Promise.resolve(previousLoaded.params.seedingPolicy);
-    nodePromise = Promise.resolve({
-      id: previousLoaded.params.nodeId,
-      avatarUrl: previousLoaded.params.nodeAvatarUrl,
-    });
-  } else {
-    repoPromise = api.repo.getByRid(route.repo);
-    seedingPolicyPromise = api.getPolicyByRid(route.repo);
-    nodePromise = api.getNode();
+  try {
+    const commit = await api.repo.getCommitBySha(repo.rid, commitId);
+
+    return {
+      resource: "repo.commit",
+      params: {
+        baseUrl,
+        repo,
+        commit,
+        nodeId: ctx.nodeId,
+        nodeAvatarUrl: ctx.nodeAvatarUrl,
+      },
+    };
+  } catch (err) {
+    handleError(err, baseUrl, "Commit");
   }
+}
 
-  const [repo, seedingPolicy, node] = await Promise.all([
-    repoPromise,
-    seedingPolicyPromise,
-    nodePromise,
-  ]);
+export async function loadTreeView(
+  ctx: RepoContext,
+  peer: string | undefined,
+  restRoute: string,
+): Promise<RepoLoadedRoute & { resource: "repo.source" }> {
+  const { baseUrl, repo } = ctx;
+  const api = new HttpdClient(baseUrl);
 
-  const remotes = await api.repo.getAllRemotes(route.repo);
-  const peers: PeerRefs[] = remotes.map(remoteToPeerRefs);
+  try {
+    const [seedingPolicy, remotes] = await Promise.all([
+      ctx.seedingPolicy(),
+      api.repo.getAllRemotes(repo.rid),
+    ]);
+    const peers: PeerRefs[] = remotes.map(remoteToPeerRefs);
 
-  if (!repo["payloads"]["xyz.radicle.project"]) {
-    throw new Error(
-      `Repository ${repo.rid} does not have a xyz.radicle.project payload.`,
-    );
-  }
-
-  const project = repo["payloads"]["xyz.radicle.project"];
-  let branchMap: Record<string, string> = {
-    [project.data.defaultBranch]: project.meta.head,
-  };
-
-  for (const [refName, oid] of canonicalOids(repo.refs)) {
-    const shortName = refName.startsWith("refs/heads/")
-      ? refName.slice("refs/heads/".length)
-      : refName.startsWith("refs/tags/")
-        ? refName.slice("refs/tags/".length)
-        : refName;
-    branchMap[shortName] = oid;
-    branchMap[encodeURIComponent(shortName)] = oid;
-  }
-
-  for (const peer of peers) {
-    const tags = getTagsFromRefs(peer.refs);
-    for (const [tagName, oid] of Object.entries(tags)) {
-      branchMap[tagName] = oid;
-      branchMap[encodeURIComponent(tagName)] = oid;
+    if (!repo["payloads"]["xyz.radicle.project"]) {
+      throw new Error(
+        `Repository ${repo.rid} does not have a xyz.radicle.project payload.`,
+      );
     }
-  }
 
-  if (route.peer) {
-    const peer = peers.find(peer => peer.id === route.peer);
-    if (!peer) {
-      return {
-        resource: "notFound",
-        params: { title: `Peer ${route.peer} could not be found` },
-      };
-    } else {
-      branchMap = { ...getBranchesFromRefs(peer.refs) };
-      for (const [tagName, oid] of Object.entries(getTagsFromRefs(peer.refs))) {
+    const project = repo["payloads"]["xyz.radicle.project"];
+    let branchMap: Record<string, string> = {
+      [project.data.defaultBranch]: project.meta.head,
+    };
+
+    for (const [refName, oid] of canonicalOids(repo.refs)) {
+      const shortName = refName.startsWith("refs/heads/")
+        ? refName.slice("refs/heads/".length)
+        : refName.startsWith("refs/tags/")
+          ? refName.slice("refs/tags/".length)
+          : refName;
+      branchMap[shortName] = oid;
+      branchMap[encodeURIComponent(shortName)] = oid;
+    }
+
+    for (const peerRefs of peers) {
+      const tags = getTagsFromRefs(peerRefs.refs);
+      for (const [tagName, oid] of Object.entries(tags)) {
         branchMap[tagName] = oid;
         branchMap[encodeURIComponent(tagName)] = oid;
       }
     }
-  }
 
-  if (route.route) {
-    const { revision, path } = detectRevision(route.route, branchMap);
-    route.revision = revision;
-    route.path = path;
-  }
+    if (peer) {
+      const peerRefs = peers.find(p => p.id === peer);
+      if (!peerRefs) {
+        error(404, {
+          message: `Peer ${peer} could not be found`,
+          variant: "notFound",
+          title: `Peer ${peer} could not be found`,
+        });
+      } else {
+        branchMap = { ...getBranchesFromRefs(peerRefs.refs) };
+        for (const [tagName, oid] of Object.entries(
+          getTagsFromRefs(peerRefs.refs),
+        )) {
+          branchMap[tagName] = oid;
+          branchMap[encodeURIComponent(tagName)] = oid;
+        }
+      }
+    }
 
-  const commit = parseRevisionToOid(
-    route.revision,
-    project.data.defaultBranch,
-    branchMap,
-  );
-  const path = route.path || "/";
-  const [tree, blobResult] = await Promise.all([
-    api.repo.getTree(route.repo, commit),
-    loadBlob(api, repo.rid, commit, path),
-  ]);
-  return {
-    resource: "repo.source",
-    params: {
-      baseUrl: route.node,
-      seedingPolicy,
-      commit,
-      repo,
-      peers: peers.filter(peerHasBranches),
-      peer: route.peer,
-      rawPath,
-      revision: route.revision,
-      tree,
-      path,
-      blobResult,
-      nodeId: node.id,
-      nodeAvatarUrl: node.avatarUrl,
-    },
-  };
+    let revision: string | undefined;
+    let routePath: string | undefined;
+    if (restRoute) {
+      const detected = detectRevision(restRoute, branchMap);
+      revision = detected.revision;
+      routePath = detected.path;
+    }
+
+    const commit = parseRevisionToOid(
+      revision,
+      project.data.defaultBranch,
+      branchMap,
+    );
+    const path = routePath || "/";
+    const [tree, blobResult] = await Promise.all([
+      cachedGetTree(baseUrl, repo.rid, commit),
+      loadBlob(api, repo.rid, commit, path),
+    ]);
+    return {
+      resource: "repo.source",
+      params: {
+        baseUrl,
+        seedingPolicy,
+        commit,
+        repo,
+        peers: peers.filter(peerHasBranches),
+        peer,
+        rawPath: rawPathFn(baseUrl, repo.rid),
+        revision,
+        tree,
+        path,
+        blobResult,
+        nodeId: ctx.nodeId,
+        nodeAvatarUrl: ctx.nodeAvatarUrl,
+      },
+    };
+  } catch (err) {
+    handleError(err, baseUrl, "Repository");
+  }
 }
 
 async function loadBlob(
@@ -585,239 +595,178 @@ async function loadBlob(
     }
   }
 }
-async function loadHistoryView(
-  route: RepoHistoryRoute,
-  previousLoaded: LoadedRoute,
-): Promise<RepoLoadedRoute> {
-  const api = new HttpdClient(route.node);
+export async function loadHistoryView(
+  ctx: RepoContext,
+  peer: string | undefined,
+  revision: string | undefined,
+): Promise<RepoLoadedRoute & { resource: "repo.history" }> {
+  const { baseUrl, repo } = ctx;
+  const api = new HttpdClient(baseUrl);
 
-  let repoPromise: Promise<Repo>;
-  let seedingPolicyPromise: Promise<SeedingPolicy>;
-  let nodePromise: Promise<Pick<Node, "id" | "avatarUrl">>;
-  if (
-    (previousLoaded.resource === "repo.source" ||
-      previousLoaded.resource === "repo.history") &&
-    previousLoaded.params.repo.rid === route.repo &&
-    previousLoaded.params.peer === route.peer
-  ) {
-    repoPromise = Promise.resolve(previousLoaded.params.repo);
-    seedingPolicyPromise = Promise.resolve(previousLoaded.params.seedingPolicy);
-    nodePromise = Promise.resolve({
-      id: previousLoaded.params.nodeId,
-      avatarUrl: previousLoaded.params.nodeAvatarUrl,
-    });
-  } else {
-    repoPromise = api.repo.getByRid(route.repo);
-    seedingPolicyPromise = api.getPolicyByRid(route.repo);
-    nodePromise = api.getNode();
-  }
+  try {
+    const [seedingPolicy, remotes] = await Promise.all([
+      ctx.seedingPolicy(),
+      api.repo.getAllRemotes(repo.rid),
+    ]);
+    const peers: PeerRefs[] = remotes.map(remoteToPeerRefs);
 
-  const [repo, seedingPolicy, node] = await Promise.all([
-    repoPromise,
-    seedingPolicyPromise,
-    nodePromise,
-  ]);
+    const branchMap = await getPeerBranches(api, repo.rid, peer, repo, peers);
 
-  const remotes = await api.repo.getAllRemotes(route.repo);
-  const peers: PeerRefs[] = remotes.map(remoteToPeerRefs);
-
-  const branchMap = await getPeerBranches(
-    api,
-    route.repo,
-    route.peer,
-    repo,
-    peers,
-  );
-
-  if (!repo["payloads"]["xyz.radicle.project"]) {
-    throw new Error(
-      `Repository ${repo.rid} does not have a xyz.radicle.project payload.`,
-    );
-  }
-
-  const project = repo["payloads"]["xyz.radicle.project"];
-  let commitId;
-  if (route.revision && isOid(route.revision)) {
-    commitId = route.revision;
-  } else if (branchMap) {
-    commitId = branchMap[route.revision || project.data.defaultBranch];
-  }
-
-  if (!commitId) {
-    throw new Error(
-      `Revision ${route.revision} not found for repo ${repo.rid}`,
-    );
-  }
-
-  let treePromise: Promise<Tree>;
-
-  if (
-    (previousLoaded.resource === "repo.source" ||
-      previousLoaded.resource === "repo.history") &&
-    previousLoaded.params.repo.rid === route.repo &&
-    previousLoaded.params.commit === commitId
-  ) {
-    treePromise = Promise.resolve(previousLoaded.params.tree);
-  } else {
-    treePromise = api.repo.getTree(route.repo, commitId);
-  }
-
-  const [tree, commitHeaders] = await Promise.all([
-    treePromise,
-    api.repo.getAllCommits(repo.rid, {
-      parent: commitId,
-      page: 0,
-      perPage: config.source.commitsPerPage,
-    }),
-  ]);
-
-  return {
-    resource: "repo.history",
-    params: {
-      baseUrl: route.node,
-      seedingPolicy,
-      commit: commitId,
-      repo,
-      peers: peers.filter(peerHasBranches),
-      peer: route.peer,
-      revision: route.revision,
-      tree,
-      commitHeaders,
-      nodeId: node.id,
-      nodeAvatarUrl: node.avatarUrl,
-    },
-  };
-}
-
-async function loadIssueView(route: RepoIssueRoute): Promise<RepoLoadedRoute> {
-  const api = new HttpdClient(route.node);
-  const rawPath = (commit?: string) =>
-    `${route.node.scheme}://${route.node.hostname}:${route.node.port}/raw/${
-      route.repo
-    }${commit ? `/${commit}` : ""}`;
-
-  const [repo, issue, node] = await Promise.all([
-    api.repo.getByRid(route.repo),
-    api.repo.getIssueById(route.repo, route.issue),
-    api.getNode(),
-  ]);
-  return {
-    resource: "repo.issue",
-    params: {
-      baseUrl: route.node,
-      repo,
-      rawPath,
-      issue,
-      nodeId: node.id,
-      nodeAvatarUrl: node.avatarUrl,
-    },
-  };
-}
-
-async function loadPatchView(
-  route: RepoPatchRoute,
-  previousLoaded: LoadedRoute,
-): Promise<RepoLoadedRoute> {
-  const api = new HttpdClient(route.node);
-  const rawPath = (commit?: string) =>
-    `${route.node.scheme}://${route.node.hostname}:${route.node.port}/raw/${
-      route.repo
-    }${commit ? `/${commit}` : ""}`;
-
-  let repoPromise: Promise<Repo>;
-  let patchPromise: Promise<Patch>;
-  let nodePromise: Promise<Pick<Node, "id" | "avatarUrl">>;
-
-  if (
-    previousLoaded.resource === "repo.patch" &&
-    previousLoaded.params.repo.rid === route.repo &&
-    previousLoaded.params.patch.id === route.patch
-  ) {
-    repoPromise = Promise.resolve(previousLoaded.params.repo);
-    patchPromise = Promise.resolve(previousLoaded.params.patch);
-    nodePromise = Promise.resolve({
-      id: previousLoaded.params.nodeId,
-      avatarUrl: previousLoaded.params.nodeAvatarUrl,
-    });
-  } else {
-    repoPromise = api.repo.getByRid(route.repo);
-    patchPromise = api.repo.getPatchById(route.repo, route.patch);
-    nodePromise = api.getNode();
-  }
-  const [repo, patch, { id: nodeId, avatarUrl }] = await Promise.all([
-    repoPromise,
-    patchPromise,
-    nodePromise,
-  ]);
-
-  const latestRevision = patch.revisions.at(-1) as Revision;
-  const {
-    diff: { stats },
-  } = await cachedGetDiff(
-    api.baseUrl,
-    route.repo,
-    latestRevision.base,
-    latestRevision.oid,
-  );
-
-  let view: PatchView;
-  switch (route.view?.name) {
-    case "activity":
-    case undefined: {
-      view = { name: "activity", revision: latestRevision.id };
-      break;
+    if (!repo["payloads"]["xyz.radicle.project"]) {
+      throw new Error(
+        `Repository ${repo.rid} does not have a xyz.radicle.project payload.`,
+      );
     }
-    case "changes": {
-      const revisionId = route.view.revision;
-      const revision =
-        patch.revisions.find(r => r.id === revisionId) || latestRevision;
-      if (!revision) {
-        throw new Error(
-          `revision ${revisionId} of patch ${route.patch} not found`,
-        );
+
+    const project = repo["payloads"]["xyz.radicle.project"];
+    let commitId;
+    if (revision && isOid(revision)) {
+      commitId = revision;
+    } else if (branchMap) {
+      commitId = branchMap[revision || project.data.defaultBranch];
+    }
+
+    if (!commitId) {
+      throw new Error(`Revision ${revision} not found for repo ${repo.rid}`);
+    }
+
+    const [tree, commitHeaders] = await Promise.all([
+      cachedGetTree(baseUrl, repo.rid, commitId),
+      api.repo.getAllCommits(repo.rid, {
+        parent: commitId,
+        page: 0,
+        perPage: config.source.commitsPerPage,
+      }),
+    ]);
+
+    return {
+      resource: "repo.history",
+      params: {
+        baseUrl,
+        seedingPolicy,
+        commit: commitId,
+        repo,
+        peers: peers.filter(peerHasBranches),
+        peer,
+        revision,
+        tree,
+        commitHeaders,
+        nodeId: ctx.nodeId,
+        nodeAvatarUrl: ctx.nodeAvatarUrl,
+      },
+    };
+  } catch (err) {
+    handleError(err, baseUrl, "Repository");
+  }
+}
+
+export async function loadIssueView(
+  ctx: RepoContext,
+  issueId: string,
+): Promise<RepoLoadedRoute & { resource: "repo.issue" }> {
+  const { baseUrl, repo } = ctx;
+  const api = new HttpdClient(baseUrl);
+
+  try {
+    const issue = await api.repo.getIssueById(repo.rid, issueId);
+    return {
+      resource: "repo.issue",
+      params: {
+        baseUrl,
+        repo,
+        rawPath: rawPathFn(baseUrl, repo.rid),
+        issue,
+        nodeId: ctx.nodeId,
+        nodeAvatarUrl: ctx.nodeAvatarUrl,
+      },
+    };
+  } catch (err) {
+    handleError(err, baseUrl, "Issue");
+  }
+}
+
+export async function loadPatchView(
+  ctx: RepoContext,
+  patchId: string,
+  requestedView: RepoPatchRoute["view"],
+): Promise<RepoLoadedRoute & { resource: "repo.patch" }> {
+  const { baseUrl, repo } = ctx;
+  const api = new HttpdClient(baseUrl);
+
+  try {
+    const patch = await api.repo.getPatchById(repo.rid, patchId);
+
+    const latestRevision = patch.revisions.at(-1) as Revision;
+    const {
+      diff: { stats },
+    } = await cachedGetDiff(
+      api.baseUrl,
+      repo.rid,
+      latestRevision.base,
+      latestRevision.oid,
+    );
+
+    let view: PatchView;
+    switch (requestedView?.name) {
+      case "activity":
+      case undefined: {
+        view = { name: "activity", revision: latestRevision.id };
+        break;
       }
-      const { diff, commits, files } = await cachedGetDiff(
-        api.baseUrl,
-        route.repo,
-        revision.base,
-        revision.oid,
-      );
-      view = {
-        name: route.view?.name,
-        revision: revision.id,
-        oid: revision.oid,
-        diff,
-        commits,
-        files,
-      };
-      break;
-    }
-    case "diff": {
-      const { fromCommit, toCommit } = route.view;
-      const { diff, files } = await cachedGetDiff(
-        api.baseUrl,
-        route.repo,
-        fromCommit,
-        toCommit,
-      );
+      case "changes": {
+        const revisionId = requestedView.revision;
+        const revision =
+          patch.revisions.find(r => r.id === revisionId) || latestRevision;
+        if (!revision) {
+          throw new Error(
+            `revision ${revisionId} of patch ${patchId} not found`,
+          );
+        }
+        const { diff, commits, files } = await cachedGetDiff(
+          api.baseUrl,
+          repo.rid,
+          revision.base,
+          revision.oid,
+        );
+        view = {
+          name: requestedView?.name,
+          revision: revision.id,
+          oid: revision.oid,
+          diff,
+          commits,
+          files,
+        };
+        break;
+      }
+      case "diff": {
+        const { fromCommit, toCommit } = requestedView;
+        const { diff, files } = await cachedGetDiff(
+          api.baseUrl,
+          repo.rid,
+          fromCommit,
+          toCommit,
+        );
 
-      view = { name: "diff", fromCommit, toCommit, files, diff };
-      break;
+        view = { name: "diff", fromCommit, toCommit, files, diff };
+        break;
+      }
     }
+    return {
+      resource: "repo.patch",
+      params: {
+        baseUrl,
+        repo,
+        rawPath: rawPathFn(baseUrl, repo.rid),
+        patch,
+        stats,
+        view,
+        nodeId: ctx.nodeId,
+        nodeAvatarUrl: ctx.nodeAvatarUrl,
+      },
+    };
+  } catch (err) {
+    handleError(err, baseUrl, "Patch");
   }
-  return {
-    resource: "repo.patch",
-    params: {
-      baseUrl: route.node,
-      repo,
-      rawPath,
-      patch,
-      stats,
-      view,
-      nodeId,
-      nodeAvatarUrl: avatarUrl,
-    },
-  };
 }
 
 async function getPeerBranches(
@@ -899,128 +848,27 @@ function detectRevision(
   }
 }
 
-function sanitizeQueryString(queryString: string): string {
-  return queryString.startsWith("?") ? queryString.substring(1) : queryString;
-}
-
-export function resolveRepoRoute(
-  node: BaseUrl,
-  repo: string,
-  segments: string[],
-  urlSearch: string,
-): RepoRoute | null {
-  let content = segments.shift();
-  let peer;
-  if (content === "remotes") {
-    peer = segments.shift();
-    content = segments.shift();
+// Derive the requested patch sub-view from the `?tab=` / `?diff=` search
+// params and the optional revision path segment.
+export function parsePatchView(
+  searchParams: URLSearchParams,
+  revision: string | undefined,
+): RepoPatchRoute["view"] {
+  const diff = searchParams.get("diff");
+  if (diff) {
+    const [fromCommit, toCommit] = diff.split("..");
+    if (isOid(fromCommit) && isOid(toCommit)) {
+      return { name: "diff", fromCommit, toCommit };
+    }
   }
 
-  if (!content || content === "tree") {
-    return {
-      resource: "repo.source",
-      node,
-      repo,
-      peer,
-      path: undefined,
-      revision: undefined,
-      route: segments.join("/"),
-    };
-  } else if (content === "history") {
-    return {
-      resource: "repo.history",
-      node,
-      repo,
-      peer,
-      revision: segments.join("/"),
-    };
-  } else if (content === "commits") {
-    return {
-      resource: "repo.commit",
-      node,
-      repo,
-      commit: segments[0],
-    };
-  } else if (content === "issues") {
-    const issueOrAction = segments.shift();
-    if (issueOrAction) {
-      return {
-        resource: "repo.issue",
-        node,
-        repo,
-        issue: issueOrAction,
-      };
-    } else {
-      const rawStatus = new URLSearchParams(sanitizeQueryString(urlSearch)).get(
-        "status",
-      );
-      let status: "open" | "closed" | undefined;
-      if (rawStatus === "open" || rawStatus === "closed") {
-        status = rawStatus;
-      }
-      return {
-        resource: "repo.issues",
-        node,
-        repo,
-        status,
-      };
-    }
-  } else if (content === "patches") {
-    return resolvePatchesRoute(node, repo, segments, urlSearch);
-  } else {
-    return null;
+  const tab = searchParams.get("tab");
+  if (tab === "changes") {
+    return { name: tab, revision };
+  } else if (tab === "activity") {
+    return { name: tab };
   }
-}
-
-function resolvePatchesRoute(
-  node: BaseUrl,
-  repo: string,
-  segments: string[],
-  urlSearch: string,
-): RepoPatchRoute | RepoPatchesRoute {
-  const patch = segments.shift();
-  const revision = segments.shift();
-  if (patch) {
-    const searchParams = new URLSearchParams(sanitizeQueryString(urlSearch));
-    const tab = searchParams.get("tab");
-    const base = {
-      resource: "repo.patch",
-      node,
-      repo,
-      patch,
-    } as const;
-    const diff = searchParams.get("diff");
-    if (diff) {
-      const [fromCommit, toCommit] = diff.split("..");
-      if (isOid(fromCommit) && isOid(toCommit)) {
-        return {
-          ...base,
-          view: { name: "diff", fromCommit, toCommit },
-        };
-      }
-    }
-
-    if (tab === "changes") {
-      return {
-        ...base,
-        view: { name: tab, revision },
-      };
-    } else if (tab === "activity") {
-      return {
-        ...base,
-        view: { name: tab },
-      };
-    } else {
-      return base;
-    }
-  } else {
-    return {
-      resource: "repo.patches",
-      node,
-      repo,
-      search: sanitizeQueryString(urlSearch),
-    };
-  }
+  return undefined;
 }
 
 export function repoRouteToPath(route: RepoRoute): string {

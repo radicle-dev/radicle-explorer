@@ -13,13 +13,13 @@
     getTagsFromRefs,
     gravatarURL,
   } from "@app/lib/utils";
+  import { href } from "@app/lib/routes";
 
   import Badge from "@app/components/Badge.svelte";
   import Button from "@app/components/Button.svelte";
   import DropdownListItem from "@app/components/DropdownList/DropdownListItem.svelte";
   import HoverPopover from "@app/components/HoverPopover.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import Link from "@app/components/Link.svelte";
   import Peer from "./PeerBranchSelector/Peer.svelte";
   import Popover from "@app/components/Popover.svelte";
   import TextInput from "@app/components/TextInput.svelte";
@@ -401,15 +401,15 @@
         {#if searchInput}
           {#each searchResults as result}
             {@const { revision, peer, head, type } = result.obj}
-            <Link
+            <a
               style={subgridStyle}
-              route={{
+              href={href({
                 ...baseRoute,
                 peer: type === "branch" ? peer?.id : undefined,
                 revision:
                   type === "tag" ? encodeURIComponent(revision) : revision,
-              }}
-              on:afterNavigate={() => {
+              })}
+              on:click={() => {
                 searchInput = "";
                 toggle();
               }}>
@@ -469,7 +469,7 @@
                   {formatCommit(head)}
                 </div>
               </DropdownListItem>
-            </Link>
+            </a>
           {:else}
             <div
               style="padding: 0.5rem 0.375rem;"
@@ -479,10 +479,10 @@
             </div>
           {/each}
         {:else if selectedTab === "branches"}
-          <Link
+          <a
             style={subgridStyle}
-            route={{ ...baseRoute, revision: undefined }}
-            on:afterNavigate={() => {
+            href={href({ ...baseRoute, revision: undefined })}
+            on:click={() => {
               searchInput = "";
               toggle();
             }}>
@@ -498,16 +498,16 @@
                 {formatCommit(repo.payloads["xyz.radicle.project"].meta.head)}
               </div>
             </DropdownListItem>
-          </Link>
+          </a>
           {#each canonicalBranches as [branchName, branchHead]}
-            <Link
+            <a
               style={subgridStyle}
-              route={{
+              href={href({
                 ...baseRoute,
                 peer: undefined,
                 revision: encodeURIComponent(branchName),
-              }}
-              on:afterNavigate={() => {
+              })}
+              on:click={() => {
                 searchInput = "";
                 toggle();
               }}>
@@ -529,7 +529,7 @@
                   {formatCommit(branchHead)}
                 </div>
               </DropdownListItem>
-            </Link>
+            </a>
           {/each}
           {#each orderBy(peers, ["delegate", o => o.alias?.toLowerCase()], ["desc", "asc"]) as peer}
             <Peer
@@ -541,14 +541,14 @@
           {#if canonicalTags.length > 0}
             {#each canonicalTags as [tagName, info]}
               {@const annotated = info.tagger || info.message}
-              <Link
+              <a
                 style={subgridStyle}
-                route={{
+                href={href({
                   ...baseRoute,
                   peer: undefined,
                   revision: encodeURIComponent(tagName),
-                }}
-                on:afterNavigate={() => {
+                })}
+                on:click={() => {
                   searchInput = "";
                   toggle();
                 }}>
@@ -602,7 +602,7 @@
                     {formatCommit(info.commit)}
                   </div>
                 </DropdownListItem>
-              </Link>
+              </a>
             {/each}
           {/if}
           {#each orderBy(peers, ["delegate", o => o.alias?.toLowerCase()], ["desc", "asc"]).filter(p => Object.keys(getTagsFromRefs(p.refs)).length > 0) as peer}

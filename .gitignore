@@ -1,4 +1,5 @@
 /build/
+/.svelte-kit/
 node_modules/
 NOTES
 config/local*

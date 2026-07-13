@@ -13,7 +13,8 @@
 </script>
 
 <script lang="ts">
-  import { activeRouteStore, homeRoute } from "@app/lib/router";
+  import { page } from "$app/stores";
+
   import config from "@app/lib/config";
   import { isMobile } from "@app/lib/media";
   import { determineSeed, selectedSeed } from "@app/views/nodes/SeedSelector";
@@ -23,7 +24,6 @@
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
   import IconButton from "@app/components/IconButton.svelte";
-  import Link from "@app/components/Link.svelte";
   import Logo from "@app/components/Logo.svelte";
   import Popover from "@app/components/Popover.svelte";
   import HeaderSearch from "@app/views/explore/HeaderSearch.svelte";
@@ -31,50 +31,44 @@
   import RepoSearch from "@app/views/explore/RepoSearch.svelte";
   import SeedPicker from "@app/views/explore/SeedPicker.svelte";
 
+  // The explore and marketing shells use the narrow, centered header layout
+  // (fixed, constrained width, inline search) instead of the full-width
+  // header used on repo and node views. The rendering layout picks the
+  // variant, since the header itself no longer observes the active route.
+  export let variant: "default" | "marketing" | "explore" = "default";
+
   const isNodeHomepage = config.nodes.homepage === "node";
   const isLandingDeployment = config.nodes.homepage === "landing";
   $: hideLogo =
-    isNodeHomepage && $activeRouteStore.resource.startsWith("repo.");
-  $: isExplore =
-    $activeRouteStore.resource === "explore" ||
-    $activeRouteStore.resource === "explore.repos";
+    isNodeHomepage &&
+    Boolean($page.route.id?.startsWith("/nodes/[host]/[rid]"));
   // The marketing pages carry their own calls to action, so the header's
   // "Get started" button is hidden there.
-  $: isMarketingRoute =
-    $activeRouteStore.resource === "landing" ||
-    $activeRouteStore.resource === "learn" ||
-    $activeRouteStore.resource === "install" ||
-    $activeRouteStore.resource === "guides" ||
-    $activeRouteStore.resource === "desktop" ||
-    $activeRouteStore.resource === "cli" ||
-    $activeRouteStore.resource === "principles" ||
-    $activeRouteStore.resource === "docs";
-  // The explore and marketing routes both use the narrow, centered header
-  // layout (fixed, constrained width, inline search) instead of the full-width
-  // header used on repo and node views.
-  $: isConstrainedHeader = isExplore || isMarketingRoute;
+  $: isMarketingRoute = variant === "marketing";
+  $: isConstrainedHeader = variant !== "default";
 
   // Seed selection lives in Settings now, so the header no longer shows a
-  // general seed picker. It's kept only on error routes as an escape hatch to
-  // a working seed, using the route's seed when known and otherwise falling
+  // general seed picker. It's kept only on error pages as an escape hatch to
+  // a working seed, using the page's seed when known and otherwise falling
   // back to the currently selected one. (The notFound view renders its own
   // inline picker, so it's excluded here.)
   $: seedPickerBaseUrl =
-    $activeRouteStore.resource === "error"
-      ? ($activeRouteStore.params.baseUrl ?? determineSeed())
+    $page.error?.variant === "error"
+      ? ($page.error.baseUrl ?? determineSeed())
       : undefined;
 
   // Search always queries the selected explore seed, regardless of which seed
   // the current page (e.g. a repo view) was served from.
   $: searchSeed = $selectedSeed ?? determineSeed();
 
-  // The explore routes already resolved /info during load; reuse it, but only
+  // The explore pages already resolved /info during load; reuse it, but only
   // when it describes the same seed we're about to search.
   $: routeSearchAvailable =
-    ($activeRouteStore.resource === "explore" ||
-      $activeRouteStore.resource === "explore.repos") &&
-    seedKey($activeRouteStore.params.baseUrl) === seedKey(searchSeed)
-      ? $activeRouteStore.params.searchAvailable
+    variant === "explore" &&
+    $page.data.searchAvailable !== undefined &&
+    $page.data.baseUrl !== undefined &&
+    seedKey($page.data.baseUrl) === seedKey(searchSeed)
+      ? ($page.data.searchAvailable as boolean)
       : undefined;
 
   let searchAvailable = false;
@@ -218,12 +212,12 @@
   <div class="header-inner" class:constrained={isConstrainedHeader}>
     <div class="left-section">
       {#if !hideLogo}
-        <Link
-          ariaLabel="Radicle"
-          route={homeRoute()}
+        <a
+          aria-label="Radicle"
+          href="/"
           style="height: 1rem; display: flex; align-items: center;">
           <span class="header-logo"><Logo /></span>
-        </Link>
+        </a>
       {/if}
       {#if $$slots.breadcrumbs && !hideLogo}
         <div class="left-divider"></div>
@@ -245,17 +239,13 @@
         <SeedPicker baseUrl={seedPickerBaseUrl} />
       {/if}
       {#if isMarketingRoute}
-        <span class="get-started">
-          <Link route={{ resource: "install", params: undefined }}>
-            <Button variant="foreground">Get started</Button>
-          </Link>
-        </span>
+        <a class="get-started" href="/install">
+          <Button variant="foreground">Get started</Button>
+        </a>
       {:else if isLandingDeployment}
-        <span class="get-started">
-          <Link route={{ resource: "install", params: undefined }}>
-            <Button variant="outline">Get started</Button>
-          </Link>
-        </span>
+        <a class="get-started" href="/install">
+          <Button variant="outline">Get started</Button>
+        </a>
       {:else}
         <a
           class="get-started"

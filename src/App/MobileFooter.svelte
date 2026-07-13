@@ -1,7 +1,5 @@
 <script lang="ts">
   import Icon from "@app/components/Icon.svelte";
-  import Link from "@app/components/Link.svelte";
-  import { homeRoute } from "@app/lib/router";
 </script>
 
 <style>
@@ -18,11 +16,11 @@
 </style>
 
 <div class="mobile-footer">
-  <Link
+  <a
     style="width: 100%; display: flex; align-items: center; justify-content: center;"
-    route={homeRoute()}>
+    href="/">
     <Icon name="seed" />
-  </Link>
+  </a>
 
   <slot />
 </div>

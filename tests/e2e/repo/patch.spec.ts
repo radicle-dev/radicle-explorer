@@ -143,6 +143,9 @@ test("commit listing ordering keeping stable on browser navigation", async ({
 
   await expectCorrectCommitListing();
   await page.getByRole("link", { name: "Rewrite subtitle to README" }).click();
+  // Wait for the forward navigation to complete before navigating back; the
+  // router only creates the history entry once the target page has loaded.
+  await page.waitForURL(/\/commits\//);
   await page.goBack();
   await page.waitForLoadState("networkidle");
   await page

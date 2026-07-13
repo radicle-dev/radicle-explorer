@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { handleDelegatedLinkClick } from "@app/views/marketing/link";
-
   function addCopyButtons(node: HTMLElement) {
     const pres = node.querySelectorAll("pre");
 
@@ -43,12 +41,6 @@
   }
 </script>
 
-<!-- Delegated link handling: keyboard users still activate the anchors
-     directly, which dispatches the click this handler relies on. -->
-<!-- svelte-ignore a11y_no_noninteractive_element_interactions a11y_click_events_have_key_events -->
-<main
-  class="page-container markdown-content"
-  use:addCopyButtons
-  on:click={handleDelegatedLinkClick}>
+<main class="page-container markdown-content" use:addCopyButtons>
   <slot />
 </main>

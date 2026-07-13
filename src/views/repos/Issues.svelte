@@ -4,13 +4,13 @@
   import { HttpdClient } from "@http-client";
   import { ISSUES_PER_PAGE } from "./router";
   import { baseUrlToString } from "@app/lib/utils";
+  import { href } from "@app/lib/routes";
 
   import Button from "@app/components/Button.svelte";
   import ErrorMessage from "@app/components/ErrorMessage.svelte";
   import Icon from "@app/components/Icon.svelte";
   import IssueTeaser from "@app/views/repos/Issue/IssueTeaser.svelte";
   import Layout from "./Layout.svelte";
-  import Link from "@app/components/Link.svelte";
   import List from "@app/components/List.svelte";
   import Loading from "@app/components/Loading.svelte";
   import Placeholder from "@app/components/Placeholder.svelte";
@@ -106,23 +106,23 @@
 <Layout {nodeId} {nodeAvatarUrl} {baseUrl} {repo} activeTab="issues">
   <svelte:fragment slot="breadcrumb">
     <Separator />
-    <Link
-      route={{
+    <a
+      href={href({
         resource: "repo.issues",
         repo: repo.rid,
         node: baseUrl,
-      }}>
+      })}>
       Issues
-    </Link>
+    </a>
   </svelte:fragment>
   <div slot="header" class="header">
-    <Link
-      route={{
+    <a
+      href={href({
         resource: "repo.issues",
         repo: repo.rid,
         node: baseUrl,
         status: "open",
-      }}>
+      })}>
       <Button variant={status === "open" ? "gray" : "background"}>
         <Icon name="issue" />
         <div class="title-counter">
@@ -132,14 +132,14 @@
           </span>
         </div>
       </Button>
-    </Link>
-    <Link
-      route={{
+    </a>
+    <a
+      href={href({
         resource: "repo.issues",
         repo: repo.rid,
         node: baseUrl,
         status: "closed",
-      }}>
+      })}>
       <Button variant={status === "closed" ? "gray" : "background"}>
         <Icon name="issue-closed" />
         <div class="title-counter">
@@ -149,7 +149,7 @@
           </span>
         </div>
       </Button>
-    </Link>
+    </a>
   </div>
 
   <List items={allIssues}>

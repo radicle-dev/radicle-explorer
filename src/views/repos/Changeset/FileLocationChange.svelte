@@ -1,10 +1,11 @@
 <script lang="ts">
   import type { BaseUrl, ChangesetWithoutDiff } from "@http-client";
 
+  import { href } from "@app/lib/routes";
+
   import Badge from "@app/components/Badge.svelte";
   import IconButton from "@app/components/IconButton.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import Link from "@app/components/Link.svelte";
   import FilePath from "@app/components/FilePath.svelte";
 
   export let headerBadgeCaption: ChangesetWithoutDiff["status"];
@@ -52,18 +53,18 @@
       {/if}
     </div>
     <div style:margin-left="auto">
-      <Link
-        route={{
+      <a
+        href={href({
           resource: "repo.source",
           repo: repoId,
           node: baseUrl,
           path: newPath,
           revision,
-        }}>
+        })}>
         <IconButton title="View file at this commit">
           <Icon name="chevron-left-right" />
         </IconButton>
-      </Link>
+      </a>
     </div>
   </header>
 </div>

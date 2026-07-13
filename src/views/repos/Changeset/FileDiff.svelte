@@ -9,6 +9,7 @@
   import { onDestroy, onMount } from "svelte";
   import { toHtml } from "hast-util-to-html";
 
+  import { href } from "@app/lib/routes";
   import * as Syntax from "@app/lib/syntax";
   import { isImagePath, isSvgPath } from "@app/lib/utils";
 
@@ -17,7 +18,6 @@
   import FilePath from "@app/components/FilePath.svelte";
   import IconButton from "@app/components/IconButton.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import Link from "@app/components/Link.svelte";
   import Loading from "@app/components/Loading.svelte";
   import Placeholder from "@app/components/Placeholder.svelte";
   import Radio from "@app/components/Radio.svelte";
@@ -437,18 +437,18 @@
             </Button>
           </Radio>
         {/if}
-        <Link
-          route={{
+        <a
+          href={href({
             resource: "repo.source",
             repo: repoId,
             node: baseUrl,
             path: filePath,
             revision,
-          }}>
+          })}>
           <IconButton title="View file at this commit">
             <Icon name="chevron-left-right" />
           </IconButton>
-        </Link>
+        </a>
       </div>
     {/if}
   </svelte:fragment>

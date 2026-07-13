@@ -1,11 +1,19 @@
 {
-  "extends": "@tsconfig/svelte/tsconfig.json",
-  "include": ["src", "tests", "http-client", "./*.js", "./*.ts"],
+  "extends": "./.svelte-kit/tsconfig.json",
+  "include": [
+    "src",
+    "tests",
+    "http-client",
+    "./*.js",
+    "./*.ts",
+    ".svelte-kit/ambient.d.ts",
+    ".svelte-kit/non-ambient.d.ts",
+    ".svelte-kit/types/**/$types.d.ts"
+  ],
   "exclude": ["node_modules/*", "radicle-httpd/*"],
   "compilerOptions": {
     "noEmit": true,
     "target": "es2023",
-    "module": "es2022",
     "types": ["vite/client"],
     "sourceMap": true,
     "moduleResolution": "bundler",
@@ -16,13 +24,6 @@
     "useDefineForClassFields": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "skipLibCheck": true,
-    "paths": {
-      "@app/*": ["./src/*"],
-      "@http-client": ["./http-client/index.ts"],
-      "@http-client/*": ["./http-client/*"],
-      "@public/*": ["./public/*"],
-      "@tests/*": ["./tests/*"]
-    }
+    "skipLibCheck": true
   }
 }

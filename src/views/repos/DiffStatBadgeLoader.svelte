@@ -3,9 +3,9 @@
 
   import { cachedGetDiff } from "@app/views/repos/router";
   import { formatCommit } from "@app/lib/utils";
+  import { href } from "@app/lib/routes";
 
   import DiffStatBadge from "@app/components/DiffStatBadge.svelte";
-  import Link from "@app/components/Link.svelte";
   import Loading from "@app/components/Loading.svelte";
 
   export let repoId: string;
@@ -17,11 +17,11 @@
 {#await cachedGetDiff(baseUrl, repoId, latestRevision.base, latestRevision.oid)}
   <Loading small />
 {:then { diff }}
-  <Link
+  <a
     title="Compare {formatCommit(latestRevision.base)}..{formatCommit(
       latestRevision.oid,
     )}"
-    route={{
+    href={href({
       resource: "repo.patch",
       repo: repoId,
       node: baseUrl,
@@ -31,10 +31,10 @@
         fromCommit: latestRevision.base,
         toCommit: latestRevision.oid,
       },
-    }}>
+    })}>
     <DiffStatBadge
       hoverable
       insertions={diff.stats.insertions}
       deletions={diff.stats.deletions} />
-  </Link>
+  </a>
 {/await}

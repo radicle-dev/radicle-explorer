@@ -2,6 +2,7 @@
   import type { BaseUrl, NodeIdentity, NodeStats } from "@http-client";
 
   import * as utils from "@app/lib/utils";
+  import { href } from "@app/lib/routes";
 
   import Button from "@app/components/Button.svelte";
   import Command from "@app/components/Command.svelte";
@@ -9,7 +10,6 @@
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
   import Layout from "@app/components/Layout.svelte";
-  import Link from "@app/components/Link.svelte";
   import Popover from "@app/components/Popover.svelte";
   import Separator from "@app/views/repos/Separator.svelte";
   import UserAddress from "@app/views/users/UserAddress.svelte";
@@ -87,15 +87,14 @@
   <svelte:fragment slot="breadcrumbs">
     <div class="breadcrumbs">
       <span class="breadcrumb">
-        <Link
+        <a
           style="display: flex; align-items: center; gap: 0.5rem;"
-          route={{
+          href={href({
             resource: "nodes",
             params: {
               baseUrl,
-              repoPageIndex: 0,
             },
-          }}>
+          })}>
           {#if nodeAvatarUrl}
             <img
               width="24"
@@ -107,21 +106,21 @@
             <UserAvatar {nodeId} styleWidth="1.5rem" />
           {/if}
           {baseUrl.hostname}
-        </Link>
+        </a>
       </span>
 
       <Separator />
 
       <span class="breadcrumb">
-        <Link
-          ariaLabel="Home"
-          route={{
+        <a
+          aria-label="Home"
+          href={href({
             resource: "users",
             baseUrl: baseUrl,
             did: utils.formatDid(did),
-          }}>
+          })}>
           {node.alias || utils.formatNodeId(did.pubkey)}
-        </Link>
+        </a>
       </span>
     </div>
   </svelte:fragment>

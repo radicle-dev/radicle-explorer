@@ -24,12 +24,12 @@
 <script lang="ts">
   import dompurify from "dompurify";
   import { afterUpdate } from "svelte";
+  import { page } from "$app/stores";
   import { toDom } from "hast-util-to-dom";
 
-  import * as router from "@app/lib/router";
   import * as modal from "@app/lib/modal";
   import ErrorModal from "@app/modals/ErrorModal.svelte";
-  import { activeUnloadedRouteStore } from "@app/lib/router";
+  import { extractBaseUrl } from "@app/lib/routes";
   import { highlight } from "@app/lib/syntax";
   import { mimes } from "@app/lib/file";
   import {
@@ -79,36 +79,26 @@
     }
   }
 
-  /**
-   * Do internal navigation for clicks on anchor elements if possible
-   */
-  function navigateInternalOnAnchor(event: MouseEvent) {
-    if (router.useDefaultNavigation(event)) {
-      return;
-    }
+  // Repo-relative links in rendered markdown resolve against the current
+  // repo source page — including the revision the page was resolved at —
+  // matching the previous router, which only rewrote links on source pages.
+  $: isSourcePage =
+    $page.route.id === "/nodes/[host]/[rid]" ||
+    $page.route.id === "/nodes/[host]/[rid]/remotes/[peer]" ||
+    Boolean($page.route.id?.includes("/tree/[...rest]"));
+  $: markdownRoute =
+    isSourcePage && $page.params.host && $page.params.rid
+      ? ({
+          resource: "repo.source",
+          node: extractBaseUrl($page.params.host),
+          repo: $page.params.rid,
+          peer: $page.params.peer,
+          revision: $page.data.revision as string | undefined,
+          path,
+        } as const)
+      : undefined;
 
-    let url: URL;
-    if (!(event.target instanceof HTMLAnchorElement)) {
-      return;
-    }
-    const href = event.target?.getAttribute("href");
-    if (href === null || href.startsWith("#")) {
-      return;
-    }
-
-    try {
-      url = new URL(href, window.location.href);
-    } catch {
-      return;
-    }
-
-    if (url.origin === window.origin) {
-      event.preventDefault();
-      void router.navigateToUrl("push", url);
-    }
-  }
-
-  function render(content: string): string {
+  function render(content: string, renderer: Renderer): string {
     return dompurify.sanitize(
       markdown({
         katex: true,
@@ -116,7 +106,7 @@
         footnotes: true,
         linkify: true,
       }).parse(content, {
-        renderer: new Renderer($activeUnloadedRouteStore),
+        renderer,
         breaks,
       }) as string,
       sanitizeConfig,
@@ -597,13 +587,6 @@
   </div>
 {/if}
 
-<!-- The click handler only handles bubbling events from anchor tags -->
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-<!-- svelte-ignore a11y-no-static-element-interactions -->
-<div
-  class="markdown"
-  bind:this={container}
-  use:twemoji={{ exclude: ["21a9"] }}
-  on:click={navigateInternalOnAnchor}>
-  {@html render(content)}
+<div class="markdown" bind:this={container} use:twemoji={{ exclude: ["21a9"] }}>
+  {@html render(content, new Renderer(markdownRoute))}
 </div>

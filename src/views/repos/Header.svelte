@@ -7,12 +7,11 @@
 
   import config from "@app/lib/config";
   import debounce from "lodash/debounce";
-  import { routeToPath } from "@app/lib/router";
+  import { href } from "@app/lib/routes";
   import { toClipboard } from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import Link from "@app/components/Link.svelte";
   import SeedButton from "@app/views/repos/Header/SeedButton.svelte";
 
   export let baseUrl: BaseUrl;
@@ -27,19 +26,19 @@
 
   function tabRoute(): string {
     if (activeTab === "issues") {
-      return routeToPath({
+      return href({
         resource: "repo.issues",
         repo: repo.rid,
         node: baseUrl,
       });
     } else if (activeTab === "patches") {
-      return routeToPath({
+      return href({
         resource: "repo.patches",
         repo: repo.rid,
         node: baseUrl,
       });
     } else {
-      return routeToPath({
+      return href({
         resource: "repo.source",
         repo: repo.rid,
         node: baseUrl,
@@ -100,24 +99,24 @@
 </style>
 
 <div class="container">
-  <Link
-    route={{
+  <a
+    href={href({
       resource: "repo.source",
       repo: repo.rid,
       node: baseUrl,
       path: "/",
-    }}>
+    })}>
     <Button variant={activeTab === "source" ? "gray" : "background"}>
       <Icon name="chevron-left-right" />
       Source
     </Button>
-  </Link>
-  <Link
-    route={{
+  </a>
+  <a
+    href={href({
       resource: "repo.issues",
       repo: repo.rid,
       node: baseUrl,
-    }}>
+    })}>
     <Button let:hover variant={activeTab === "issues" ? "gray" : "background"}>
       <Icon name="issue" />
       <div class="title-counter">
@@ -130,14 +129,14 @@
         </span>
       </div>
     </Button>
-  </Link>
+  </a>
 
-  <Link
-    route={{
+  <a
+    href={href({
       resource: "repo.patches",
       repo: repo.rid,
       node: baseUrl,
-    }}>
+    })}>
     <Button let:hover variant={activeTab === "patches" ? "gray" : "background"}>
       <Icon name="patch" />
       <div class="title-counter">
@@ -150,7 +149,7 @@
         </span>
       </div>
     </Button>
-  </Link>
+  </a>
 
   <div class="spacer"></div>
 

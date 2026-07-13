@@ -2,10 +2,11 @@
   import type { ActiveTab } from "./Header.svelte";
   import type { BaseUrl, Repo } from "@http-client";
 
+  import { href } from "@app/lib/routes";
+
   import Button from "@app/components/Button.svelte";
   import Header from "@app/components/Header.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import Link from "@app/components/Link.svelte";
   import MobileFooter from "@app/App/MobileFooter.svelte";
   import RepoHeader from "./Header.svelte";
   import Separator from "./Separator.svelte";
@@ -83,16 +84,15 @@
       <svelte:fragment slot="breadcrumbs">
         <nav class="breadcrumbs" aria-label="Breadcrumb">
           <span class="breadcrumb">
-            <Link
-              ariaLabel="Home"
+            <a
+              aria-label="Home"
               style="display: flex; align-items: center; gap: 0.5rem;"
-              route={{
+              href={href({
                 resource: "nodes",
                 params: {
                   baseUrl,
-                  repoPageIndex: 0,
                 },
-              }}>
+              })}>
               {#if nodeAvatarUrl}
                 <img
                   width="24"
@@ -104,22 +104,22 @@
                 <UserAvatar {nodeId} styleWidth="1.5rem" />
               {/if}
               {baseUrl.hostname}
-            </Link>
+            </a>
           </span>
 
           <Separator />
 
           <span class="breadcrumb" title={repo.rid}>
-            <Link
-              route={{
+            <a
+              href={href({
                 resource: "repo.source",
                 repo: repo.rid,
                 node: baseUrl,
-              }}>
+              })}>
               <div class="breadcrumb">
                 {repo.payloads["xyz.radicle.project"].data.name}
               </div>
-            </Link>
+            </a>
           </span>
 
           <div class="breadcrumb">
@@ -147,52 +147,52 @@
   <div class="mobile-footer">
     <MobileFooter>
       <div style:width="100%">
-        <Link
+        <a
           title="Home"
-          route={{
+          href={href({
             resource: "repo.source",
             repo: repo.rid,
             node: baseUrl,
             path: "/",
-          }}>
+          })}>
           <Button
             variant={activeTab === "source" ? "secondary" : "secondary-mobile"}
             styleWidth="100%">
             <Icon name="chevron-left-right" />
           </Button>
-        </Link>
+        </a>
       </div>
 
       <div style:width="100%">
-        <Link
+        <a
           title={`${repo.payloads["xyz.radicle.project"].meta.issues.open} Issues`}
-          route={{
+          href={href({
             resource: "repo.issues",
             repo: repo.rid,
             node: baseUrl,
-          }}>
+          })}>
           <Button
             variant={activeTab === "issues" ? "secondary" : "secondary-mobile"}
             styleWidth="100%">
             <Icon name="issue" />
           </Button>
-        </Link>
+        </a>
       </div>
 
       <div style:width="100%">
-        <Link
+        <a
           title={`${repo.payloads["xyz.radicle.project"].meta.patches.open} Patches`}
-          route={{
+          href={href({
             resource: "repo.patches",
             repo: repo.rid,
             node: baseUrl,
-          }}>
+          })}>
           <Button
             variant={activeTab === "patches" ? "secondary" : "secondary-mobile"}
             styleWidth="100%">
             <Icon name="patch" />
           </Button>
-        </Link>
+        </a>
       </div>
     </MobileFooter>
   </div>

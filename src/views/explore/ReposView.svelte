@@ -2,15 +2,19 @@
   import type { BaseUrl, NodeStats } from "@http-client";
   import type { ExploreReposSort } from "./router";
 
-  import * as router from "@app/lib/router";
+  import type { ErrorParam } from "@app/lib/error";
+
+  import { goto } from "$app/navigation";
+
+  import { exploreReposPath } from "./router";
   import { fetchRepoInfos } from "@app/components/RepoCard";
-  import { handleError } from "@app/views/nodes/error";
+  import { toNodeAppError } from "@app/views/nodes/error";
 
   import DropdownList from "@app/components/DropdownList.svelte";
   import DropdownListItem from "@app/components/DropdownList/DropdownListItem.svelte";
+  import ErrorMessage from "@app/components/ErrorMessage.svelte";
   import Header from "@app/components/Header.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import Link from "@app/components/Link.svelte";
   import Loading from "@app/components/Loading.svelte";
   import Placeholder from "@app/components/Placeholder.svelte";
   import Popover, { closeFocused } from "@app/components/Popover.svelte";
@@ -62,19 +66,13 @@
   }
 
   function goToPage(target: number) {
-    void router.push({
-      resource: "explore.repos",
-      params: { page: target, sort },
-    });
+    void goto(exploreReposPath(target, sort));
   }
 
   function selectSort(value: ExploreReposSort) {
     closeFocused();
     if (value === sort) return;
-    void router.push({
-      resource: "explore.repos",
-      params: { page: 0, sort: value },
-    });
+    void goto(exploreReposPath(0, value));
   }
 </script>
 
@@ -197,16 +195,14 @@
   }
 </style>
 
-<Header />
+<Header variant="explore" />
 
 <div class="page">
   <div class="container">
     <div class="toolbar">
       <nav class="breadcrumbs" aria-label="Breadcrumb">
         <span class="breadcrumb">
-          <Link route={{ resource: "explore", params: undefined }}>
-            Explore
-          </Link>
+          <a href="/explore">Explore</a>
         </span>
         <Separator />
         <span class="breadcrumb breadcrumb-current">{subtitle}</span>
@@ -291,8 +287,12 @@
           <Placeholder iconName="desert" caption="No repositories to show." />
         </div>
       {/if}
-    {:catch error}
-      {router.push(handleError(error, baseUrl))}
+    {:catch err}
+      {@const appError = toNodeAppError(err, baseUrl)}
+      <ErrorMessage
+        title={appError.title ?? "Could not load repositories"}
+        description={appError.description ?? ""}
+        error={appError.cause as ErrorParam} />
     {/await}
   </div>
 </div>

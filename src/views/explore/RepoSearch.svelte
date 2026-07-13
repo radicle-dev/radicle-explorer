@@ -4,13 +4,14 @@
   import debounce from "lodash/debounce";
   import { createEventDispatcher, onDestroy, onMount, tick } from "svelte";
 
+  import { goto } from "$app/navigation";
+
   import { HttpdClient } from "@http-client";
-  import { push } from "@app/lib/router";
   import { formatRepositoryId, twemoji } from "@app/lib/utils";
+  import { href } from "@app/lib/routes";
 
   import Icon from "@app/components/Icon.svelte";
   import IconButton from "@app/components/IconButton.svelte";
-  import Link from "@app/components/Link.svelte";
   import Loading from "@app/components/Loading.svelte";
   import RepoAvatar from "@app/components/RepoAvatar.svelte";
 
@@ -128,7 +129,9 @@
   }
 
   function selectResult(result: SearchResult) {
-    void push({ resource: "repo.source", repo: result.rid, node: baseUrl });
+    void goto(
+      href({ resource: "repo.source", repo: result.rid, node: baseUrl }),
+    );
     open = false;
     dispatch("close");
   }
@@ -304,13 +307,13 @@
         {#each results as result, i (result.rid)}
           {@const project = result.payloads["xyz.radicle.project"]}
           {#if project}
-            <Link
-              route={{
+            <a
+              href={href({
                 resource: "repo.source",
                 repo: result.rid,
                 node: baseUrl,
-              }}
-              on:afterNavigate={() => {
+              })}
+              on:click={() => {
                 open = false;
                 dispatch("close");
               }}>
@@ -345,7 +348,7 @@
                   {result.seeds}
                 </div>
               </div>
-            </Link>
+            </a>
           {/if}
         {/each}
       {:else if loading}

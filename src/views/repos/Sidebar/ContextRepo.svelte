@@ -2,8 +2,9 @@
   import type { BaseUrl, Repo, SeedingPolicy } from "@http-client";
 
   import capitalize from "lodash/capitalize";
+  import { href } from "@app/lib/routes";
+
   import HoverPopover from "@app/components/HoverPopover.svelte";
-  import Link from "@app/components/Link.svelte";
   import NodeId from "@app/components/NodeId.svelte";
   import UserAvatar from "@app/components/UserAvatar.svelte";
 
@@ -60,12 +61,12 @@
     <div class="avatars">
       {#each repoDelegates as delegate}
         <HoverPopover>
-          <Link
+          <a
             slot="toggle"
             style="display: flex"
-            route={{ resource: "users", did: delegate.id, baseUrl }}>
+            href={href({ resource: "users", did: delegate.id, baseUrl })}>
             <UserAvatar nodeId={delegate.id} styleWidth="1rem" />
-          </Link>
+          </a>
           <div slot="popover" class="avatar-popover">
             <NodeId {baseUrl} nodeId={delegate.id} alias={delegate.alias} />
           </div>

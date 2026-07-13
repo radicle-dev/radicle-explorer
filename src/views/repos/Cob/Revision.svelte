@@ -11,6 +11,7 @@
   import type { Timeline } from "@app/views/repos/Patch.svelte";
 
   import * as utils from "@app/lib/utils";
+  import { href } from "@app/lib/routes";
   import { HttpdClient } from "@http-client";
   import { cachedGetDiff } from "@app/views/repos/router";
   import { onMount } from "svelte";
@@ -25,7 +26,6 @@
   import IconButton from "@app/components/IconButton.svelte";
   import Icon from "@app/components/Icon.svelte";
   import JobCob from "@app/components/JobCob.svelte";
-  import Link from "@app/components/Link.svelte";
   import Loading from "@app/components/Loading.svelte";
   import Markdown from "@app/components/Markdown.svelte";
   import NodeId from "@app/components/NodeId.svelte";
@@ -287,20 +287,20 @@
           <Loading small />
         {/if}
         {#if response?.diff.stats}
-          <Link
+          {@const { insertions, deletions } = response.diff.stats}
+          <a
             title="Compare {utils.formatCommit(
               fromCommit,
             )}..{utils.formatCommit(revisionOid)}"
-            route={{
+            href={href({
               resource: "repo.patch",
               repo: repoId,
               node: baseUrl,
               patch: patchId,
               view: { name: "diff", fromCommit, toCommit: revisionOid },
-            }}>
-            {@const { insertions, deletions } = response.diff.stats}
+            })}>
             <DiffStatBadge hoverable {insertions} {deletions} />
-          </Link>
+          </a>
         {/if}
         <Popover
           popoverPadding="0"
@@ -319,24 +319,25 @@
             items={previousRevOid && previousRevId
               ? [revisionBase, previousRevOid]
               : [revisionBase]}>
-            <Link
+            <a
               let:item
-              disabled={item !== revisionBase && baseMismatch}
               slot="item"
               title="Compare {utils.formatCommit(item)}..{utils.formatCommit(
                 revisionOid,
               )}"
-              route={{
-                resource: "repo.patch",
-                repo: repoId,
-                node: baseUrl,
-                patch: patchId,
-                view: {
-                  name: "diff",
-                  fromCommit: item,
-                  toCommit: revisionOid,
-                },
-              }}>
+              href={item !== revisionBase && baseMismatch
+                ? undefined
+                : href({
+                    resource: "repo.patch",
+                    repo: repoId,
+                    node: baseUrl,
+                    patch: patchId,
+                    view: {
+                      name: "diff",
+                      fromCommit: item,
+                      toCommit: revisionOid,
+                    },
+                  })}>
               {#if item === revisionBase}
                 <DropdownListItem selected={false}>
                   <span class="compare-dropdown-item">
@@ -364,7 +365,7 @@
                   </span>
                 </DropdownListItem>
               {/if}
-            </Link>
+            </a>
           </DropdownList>
         </Popover>
       </div>

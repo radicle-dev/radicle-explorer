@@ -2,13 +2,13 @@
   import type { BaseUrl, Issue } from "@http-client";
 
   import { absoluteTimestamp, formatTimestamp } from "@app/lib/utils";
+  import { href } from "@app/lib/routes";
 
   import CommentCounter from "../CommentCounter.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
   import InlineLabels from "../Cob/InlineLabels.svelte";
   import InlineTitle from "@app/views/repos/components/InlineTitle.svelte";
-  import Link from "@app/components/Link.svelte";
   import NodeId from "@app/components/NodeId.svelte";
 
   export let baseUrl: BaseUrl;
@@ -85,20 +85,20 @@
   <div class="content">
     <div class="summary">
       <span class="issue-title">
-        <Link
-          styleHoverState
-          route={{
+        <a
+          class="hover-underline"
+          href={href({
             resource: "repo.issue",
             repo: repoId,
             node: baseUrl,
             issue: issue.id,
-          }}>
+          })}>
           {#if !issue.title}
             <span style:color="var(--color-text-tertiary)">No title</span>
           {:else}
             <InlineTitle fontSize="body-m-regular" content={issue.title} />
           {/if}
-        </Link>
+        </a>
       </span>
       {#if issue.labels.length > 0}
         <span

@@ -4,15 +4,14 @@
   import isEqual from "lodash/isEqual";
   import { get } from "svelte/store";
 
+  import { goto, invalidateAll } from "$app/navigation";
+  import { page } from "$app/stores";
+
   import config from "@app/lib/config";
   import { HttpdClient, ResponseError } from "@http-client";
-  import {
-    activeRouteStore,
-    activeUnloadedRouteStore,
-    push,
-    withBaseUrl,
-  } from "@app/lib/router";
+  import { hrefWithBaseUrl } from "@app/lib/routes";
   import { isLocal, isOnion } from "@app/lib/utils";
+  import { nodePath } from "@app/views/nodes/router";
   import {
     addBookmark,
     bookmarkedSeeds,
@@ -131,21 +130,18 @@
     }
     closeFocused();
     if (navigateOnApply) {
-      // Rewrite the route's baseUrl-bearing field so we retry the same
-      // logical page (repo, user, node) on the new seed — important for
-      // pages opened via a hardcoded seed URL such as the "node
-      // unreachable" error view. Routes without a baseUrl field
-      // (explore) pass through unchanged and rely on the updated
-      // `selectedSeed` store; transient routes (notFound, error,
-      // booting) fall back to the new seed's node view.
-      const route = withBaseUrl(get(activeUnloadedRouteStore), seed);
-      await push(route);
+      // Rewrite the URL's host segment so we retry the same logical page
+      // (repo, user, node) on the new seed — important for pages opened via
+      // a hardcoded seed URL such as the "node unreachable" error view.
+      // URLs without a host segment (explore) pass through unchanged and
+      // rely on the updated `selectedSeed` store; `invalidateAll` forces the
+      // page load to rerun even when the URL doesn't change.
+      await goto(hrefWithBaseUrl(get(page), seed), { invalidateAll: true });
     } else {
       // Settings context: don't move the current page onto the new seed;
       // just reload the explore listing when that's what's on screen.
-      const resource = get(activeRouteStore).resource;
-      if (resource === "explore" || resource === "explore.repos") {
-        await push(get(activeUnloadedRouteStore));
+      if (get(page).route.id?.startsWith("/explore")) {
+        await invalidateAll();
       }
     }
   }
@@ -188,10 +184,7 @@
 
   function openNodeView(seed: BaseUrl) {
     closeFocused();
-    void push({
-      resource: "nodes",
-      params: { baseUrl: seed, repoPageIndex: 0 },
-    });
+    void goto(nodePath(seed));
   }
 
   function isSeedFailed(seed: BaseUrl, failed: BaseUrl[]) {

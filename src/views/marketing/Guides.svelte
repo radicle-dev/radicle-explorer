@@ -1,7 +1,6 @@
 <script lang="ts">
   import Meta from "@app/views/marketing/Meta.svelte";
   import { guides } from "@app/views/marketing/guides";
-  import { link } from "@app/views/marketing/link";
 </script>
 
 <style>
@@ -109,8 +108,7 @@
           class="guide-card"
           href={guide.href}
           target={guide.external ? "_blank" : undefined}
-          rel={guide.external ? "noopener noreferrer" : undefined}
-          use:link>
+          rel={guide.external ? "noopener noreferrer" : undefined}>
           <span class="guide-thumb">
             {#if guide.image}
               <img src={guide.image} alt="" />

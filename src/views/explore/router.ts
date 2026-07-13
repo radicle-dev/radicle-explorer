@@ -1,7 +1,7 @@
 import type { BaseUrl, NodeStats } from "@http-client";
-import type { ErrorRoute, NotFoundRoute } from "@app/lib/router/definitions";
 
 import isEqual from "lodash/isEqual";
+import { error } from "@sveltejs/kit";
 import { get } from "svelte/store";
 
 import { HttpdClient, ResponseError } from "@http-client";
@@ -35,47 +35,38 @@ async function tryWithFailover<T>(
       clearTimeout(timer);
       clearSeedFailure(seed);
       return { baseUrl: seed, result };
-    } catch (error) {
+    } catch (err) {
       clearTimeout(timer);
       markSeedFailed(seed);
-      console.warn(`Seed ${seed.hostname} unreachable:`, error);
+      console.warn(`Seed ${seed.hostname} unreachable:`, err);
     }
   }
   return undefined;
 }
 
-export interface ExploreRoute {
-  resource: "explore";
-  params: undefined;
-}
-
-export interface ExploreLoadedRoute {
-  resource: "explore";
-  params: {
-    baseUrl: BaseUrl;
-    searchAvailable: boolean;
-  };
+function noReachableSeed(): never {
+  error(503, {
+    message: "Unable to reach any seed",
+    variant: "error",
+    title: "Unable to reach any seed",
+    description:
+      "We tried every configured seed node and none of them responded. Please try again later.",
+  });
 }
 
 export type ExploreReposSort = "rid" | "activity" | "seeding";
 
-export interface ExploreReposRoute {
-  resource: "explore.repos";
-  params: {
-    page: number;
-    sort: ExploreReposSort;
-  };
+export interface ExploreViewParams {
+  baseUrl: BaseUrl;
+  searchAvailable: boolean;
 }
 
-export interface ExploreReposLoadedRoute {
-  resource: "explore.repos";
-  params: {
-    baseUrl: BaseUrl;
-    stats: NodeStats;
-    page: number;
-    sort: ExploreReposSort;
-    searchAvailable: boolean;
-  };
+export interface ExploreReposViewParams {
+  baseUrl: BaseUrl;
+  stats: NodeStats;
+  page: number;
+  sort: ExploreReposSort;
+  searchAvailable: boolean;
 }
 
 export function explorePath(): string {
@@ -97,24 +88,40 @@ export function exploreReposPath(
   return qs ? `/explore/repos?${qs}` : "/explore/repos";
 }
 
-export function exploreTitle(
-  route: ExploreLoadedRoute | ExploreReposLoadedRoute,
-): string[] {
-  if (route.resource === "explore.repos") {
-    const heading =
-      route.params.sort === "activity"
-        ? "Recently active"
-        : route.params.sort === "seeding"
-          ? "Most seeded"
-          : "All repos";
-    return [heading, "Explore", "Radicle"];
-  }
+// Parse the `?page=` and `?sort=` search params of the explore repos view.
+export function parseExploreReposParams(searchParams: URLSearchParams): {
+  page: number;
+  sort: ExploreReposSort;
+} {
+  const page = Number(searchParams.get("page") ?? "0");
+  const sortParam = searchParams.get("sort");
+  const sort =
+    sortParam === "activity"
+      ? "activity"
+      : sortParam === "rid"
+        ? "rid"
+        : "seeding";
+  return {
+    page: Number.isFinite(page) && page > 0 ? page : 0,
+    sort,
+  };
+}
+
+export function exploreTitle(): string[] {
   return ["Explore", "Radicle"];
 }
 
-export async function loadExploreRoute(): Promise<
-  ExploreLoadedRoute | NotFoundRoute | ErrorRoute
-> {
+export function exploreReposTitle(sort: ExploreReposSort): string[] {
+  const heading =
+    sort === "activity"
+      ? "Recently active"
+      : sort === "seeding"
+        ? "Most seeded"
+        : "All repos";
+  return [heading, "Explore", "Radicle"];
+}
+
+export async function loadExploreView(): Promise<ExploreViewParams> {
   const attempt = await tryWithFailover(async (seed, signal) => {
     const api = new HttpdClient(seed);
     // Prefer /info — it tells us whether the seed has a search backend
@@ -125,41 +132,32 @@ export async function loadExploreRoute(): Promise<
     try {
       const info = await api.getInfo({ abort: signal });
       return { searchAvailable: info.httpd.searchAvailable };
-    } catch (error) {
+    } catch (err) {
       if (
-        error instanceof ResponseError &&
-        (error.status === 404 || error.status === 405)
+        err instanceof ResponseError &&
+        (err.status === 404 || err.status === 405)
       ) {
         await api.getNode({ abort: signal });
         return { searchAvailable: false };
       }
-      throw error;
+      throw err;
     }
   });
 
   if (!attempt) {
-    return {
-      resource: "error",
-      params: {
-        title: "Unable to reach any seed",
-        description:
-          "We tried every configured seed node and none of them responded. Please try again later.",
-      },
-    };
+    noReachableSeed();
   }
 
   return {
-    resource: "explore",
-    params: {
-      baseUrl: attempt.baseUrl,
-      searchAvailable: attempt.result.searchAvailable,
-    },
+    baseUrl: attempt.baseUrl,
+    searchAvailable: attempt.result.searchAvailable,
   };
 }
 
-export async function loadExploreReposRoute(
-  params: ExploreReposRoute["params"],
-): Promise<ExploreReposLoadedRoute | NotFoundRoute | ErrorRoute> {
+export async function loadExploreReposView(params: {
+  page: number;
+  sort: ExploreReposSort;
+}): Promise<ExploreReposViewParams> {
   const attempt = await tryWithFailover(async (seed, signal) => {
     const api = new HttpdClient(seed);
     const stats = await api.getStats({ abort: signal });
@@ -169,36 +167,26 @@ export async function loadExploreReposRoute(
     try {
       const info = await api.getInfo({ abort: signal });
       return { stats, searchAvailable: info.httpd.searchAvailable };
-    } catch (error) {
+    } catch (err) {
       if (
-        error instanceof ResponseError &&
-        (error.status === 404 || error.status === 405)
+        err instanceof ResponseError &&
+        (err.status === 404 || err.status === 405)
       ) {
         return { stats, searchAvailable: false };
       }
-      throw error;
+      throw err;
     }
   });
 
   if (!attempt) {
-    return {
-      resource: "error",
-      params: {
-        title: "Unable to reach any seed",
-        description:
-          "We tried every configured seed node and none of them responded. Please try again later.",
-      },
-    };
+    noReachableSeed();
   }
 
   return {
-    resource: "explore.repos",
-    params: {
-      baseUrl: attempt.baseUrl,
-      stats: attempt.result.stats,
-      page: params.page,
-      sort: params.sort,
-      searchAvailable: attempt.result.searchAvailable,
-    },
+    baseUrl: attempt.baseUrl,
+    stats: attempt.result.stats,
+    page: params.page,
+    sort: params.sort,
+    searchAvailable: attempt.result.searchAvailable,
   };
 }

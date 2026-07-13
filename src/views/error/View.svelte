@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { ComponentProps } from "svelte";
   import type IconLarge from "@app/components/IconLarge.svelte";
-  import type { ErrorParam } from "@app/lib/router/definitions";
+  import type { ErrorParam } from "@app/lib/error";
 
   import Layout from "@app/App/Layout.svelte";
   import ErrorMessage from "@app/components/ErrorMessage.svelte";

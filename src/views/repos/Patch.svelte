@@ -46,10 +46,11 @@
 <script lang="ts">
   import type { BaseUrl, Patch } from "@http-client";
   import type { PatchView } from "./router";
-  import type { Route } from "@app/lib/router";
+  import type { Route } from "@app/lib/routes";
   import type { ComponentProps } from "svelte";
 
   import * as utils from "@app/lib/utils";
+  import { href } from "@app/lib/routes";
   import capitalize from "lodash/capitalize";
   import uniqBy from "lodash/uniqBy";
 
@@ -66,7 +67,6 @@
   import InlineTitle from "@app/views/repos/components/InlineTitle.svelte";
   import Labels from "@app/views/repos/Cob/Labels.svelte";
   import Layout from "@app/views/repos/Layout.svelte";
-  import Link from "@app/components/Link.svelte";
   import Markdown from "@app/components/Markdown.svelte";
   import NodeId from "@app/components/NodeId.svelte";
   import Placeholder from "@app/components/Placeholder.svelte";
@@ -310,15 +310,15 @@
   stylePaddingBottom="0">
   <svelte:fragment slot="breadcrumb">
     <Separator />
-    <Link
-      route={{
+    <a
+      href={href({
         resource: "repo.patches",
         repo: repo.rid,
         node: baseUrl,
         search: `status=${patch.state.status}`,
-      }}>
+      })}>
       {patchStatusLabel[patch.state.status]}
-    </Link>
+    </a>
     <Separator />
     <span class="txt-id">
       <div class="global-hide-on-small-desktop-down">
@@ -359,19 +359,19 @@
                     : "patch"} />
             {capitalize(patch.state.status)}
           </Badge>
-          <Link
-            route={{
+          <a
+            href={href({
               resource: "repo.patch",
               repo: repo.rid,
               node: baseUrl,
               patch: patch.id,
               view: { name: "changes", revision: latestRevision.id },
-            }}>
+            })}>
             <DiffStatBadge
               hoverable
               insertions={stats.insertions}
               deletions={stats.deletions} />
-          </Link>
+          </a>
           <NodeId
             {baseUrl}
             nodeId={patch.author.id}
@@ -422,7 +422,7 @@
 
       <div class="tabs">
         {#each Object.entries(tabs) as [name, { route, icon }]}
-          <Link {route}>
+          <a href={href(route)}>
             <Button
               variant={name === view.name ||
               (view.name === "diff" && name === "changes")
@@ -431,7 +431,7 @@
               <Icon name={icon} />
               {capitalize(name)}
             </Button>
-          </Link>
+          </a>
         {/each}
 
         {#if view.name === "changes"}

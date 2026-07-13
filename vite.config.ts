@@ -1,59 +1,12 @@
 import config from "config";
-import path from "node:path";
-import { defineConfig } from "vitest/config";
-import { svelte } from "@sveltejs/vite-plugin-svelte";
+import { defineConfig } from "vite";
+import { sveltekit } from "@sveltejs/kit/vite";
 
 export default defineConfig({
   define: {
     buildTimeConfig: JSON.stringify(config.util.toObject()),
   },
-  test: {
-    environment: "happy-dom",
-    include: ["tests/unit/**/*.test.ts"],
-    reporters: "verbose",
-  },
-  plugins: [
-    svelte({
-      extensions: [".svelte", ".md"],
-      // Reference: https://github.com/sveltejs/vite-plugin-svelte/issues/270#issuecomment-1033190138
-      dynamicCompileOptions({ filename }) {
-        if (
-          path.basename(filename) === "Clipboard.svelte" ||
-          path.basename(filename) === "ExternalLink.svelte" ||
-          path.basename(filename) === "Icon.svelte"
-        ) {
-          return { customElement: true };
-        }
-      },
-      compilerOptions: { dev: process.env.NODE_ENV !== "production" },
-    }),
-    {
-      name: "inject-config-loader",
-      transformIndexHtml() {
-        if (process.env.VITE_RUNTIME_CONFIG === "true") {
-          return [
-            {
-              tag: "script",
-              attrs: {
-                type: "text/javascript",
-              },
-              children: `
-      try {
-        const xhr = new XMLHttpRequest();
-        xhr.open("GET", "/config.json", false);
-        xhr.send(null);
-        window.__CONFIG__ = JSON.parse(xhr.responseText);
-      } catch {
-        console.warn("Couldn't load config.json from the server, using built-in fallback config.");
-      }
-    `,
-              injectTo: "head-prepend",
-            },
-          ];
-        }
-      },
-    },
-  ],
+  plugins: [sveltekit()],
   optimizeDeps: {
     include: [
       "@wooorm/starry-night",
@@ -94,16 +47,5 @@ export default defineConfig({
       // reference: https://stackoverflow.com/a/75238360
       useFsEvents: false,
     },
-  },
-  resolve: {
-    alias: {
-      "@app": path.resolve("./src"),
-      "@public": path.resolve("./public"),
-      "@http-client": path.resolve("./http-client"),
-      "@tests": path.resolve("./tests"),
-    },
-  },
-  build: {
-    outDir: "build",
   },
 });

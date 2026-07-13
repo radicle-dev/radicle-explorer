@@ -2,9 +2,9 @@
   import type { BaseUrl, Tree } from "@http-client";
 
   import { createEventDispatcher } from "svelte";
+  import { href } from "@app/lib/routes";
 
   import Loading from "@app/components/Loading.svelte";
-  import Link from "@app/components/Link.svelte";
 
   import File from "./File.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -114,18 +114,18 @@
           {:else if entry.kind === "submodule"}
             <Submodule name={entry.name} oid={entry.oid} />
           {:else}
-            <Link
-              route={{
+            <a
+              href={href({
                 resource: "repo.source",
                 repo: repoId,
                 node: baseUrl,
                 path: entry.path,
                 peer,
                 revision,
-              }}
-              on:afterNavigate={() => onSelectFile({ detail: entry.path })}>
+              })}
+              on:click={() => onSelectFile({ detail: entry.path })}>
               <File active={entry.path === currentPath} name={entry.name} />
-            </Link>
+            </a>
           {/if}
         {/each}
       {/if}

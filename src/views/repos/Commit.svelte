@@ -6,6 +6,7 @@
     archiveUnsupportedMessage,
   } from "@app/lib/archive";
   import { baseUrlToString, formatObjectId } from "@app/lib/utils";
+  import { href } from "@app/lib/routes";
   import { renderCommitDescription } from "@app/lib/commit";
 
   import Button from "@app/components/Button.svelte";
@@ -16,7 +17,6 @@
   import InlineTitle from "@app/views/repos/components/InlineTitle.svelte";
   import JobCob from "@app/components/JobCob.svelte";
   import Layout from "./Layout.svelte";
-  import Link from "@app/components/Link.svelte";
   import Popover from "@app/components/Popover.svelte";
   import Separator from "./Separator.svelte";
 
@@ -77,14 +77,14 @@
 <Layout {nodeId} {nodeAvatarUrl} {baseUrl} {repo}>
   <svelte:fragment slot="breadcrumb">
     <Separator />
-    <Link
-      route={{
+    <a
+      href={href({
         resource: "repo.history",
         repo: repo.rid,
         node: baseUrl,
-      }}>
+      })}>
       Commits
-    </Link>
+    </a>
     <Separator />
     <span class="txt-id">
       <div class="global-hide-on-small-desktop-down">
@@ -109,18 +109,18 @@
             <InlineTitle fontSize="heading-l" content={header.summary} />
           {/if}
           <div class="button-container">
-            <Link
-              route={{
+            <a
+              href={href({
                 resource: "repo.source",
                 repo: repo.rid,
                 node: baseUrl,
                 path: "/",
                 revision: commit.commit.id,
-              }}>
+              })}>
               <Button variant="outline" title="Browse repo at this commit">
                 <Icon name="chevron-left-right" />
               </Button>
-            </Link>
+            </a>
             <Popover popoverPositionTop="2.5rem" popoverPositionRight="0">
               <Button
                 slot="toggle"
@@ -159,16 +159,16 @@
           {header.parents.length === 1 ? "Parent" : "Parents"}:
           {#each header.parents as parent, i}
             {i > 0 ? " + " : ""}
-            <Link
-              styleHoverState
-              route={{
+            <a
+              class="hover-underline"
+              href={href({
                 resource: "repo.commit",
                 repo: repo.rid,
                 node: baseUrl,
                 commit: parent,
-              }}>
+              })}>
               <span class="txt-id">{formatObjectId(parent)}</span>
-            </Link>
+            </a>
           {/each}
         </span>
       </div>

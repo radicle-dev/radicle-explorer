@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { link } from "@app/views/marketing/link";
 </script>
 
 <style>
@@ -73,12 +72,10 @@
   <div class="footer-links">
     <div class="link-column">
       <span class="column-header txt-medium-14">Learn</span>
-      <a href="/guides/getting-started" class="txt-medium-14" use:link>
-        Get started
-      </a>
-      <a href="/learn#guides" class="txt-medium-14" use:link>Guides</a>
-      <a href="/faq" class="txt-medium-14" use:link>FAQ</a>
-      <a href="/glossary" class="txt-medium-14" use:link>Glossary</a>
+      <a href="/guides/getting-started" class="txt-medium-14">Get started</a>
+      <a href="/learn#guides" class="txt-medium-14">Guides</a>
+      <a href="/faq" class="txt-medium-14">FAQ</a>
+      <a href="/glossary" class="txt-medium-14">Glossary</a>
     </div>
 
     <div class="link-column">

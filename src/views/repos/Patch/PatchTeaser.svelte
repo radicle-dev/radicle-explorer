@@ -3,6 +3,7 @@
   import type { Patch } from "@http-client";
 
   import { absoluteTimestamp, formatTimestamp } from "@app/lib/utils";
+  import { href } from "@app/lib/routes";
 
   import CommentCounter from "../CommentCounter.svelte";
   import DiffStatBadgeLoader from "../DiffStatBadgeLoader.svelte";
@@ -10,7 +11,6 @@
   import Id from "@app/components/Id.svelte";
   import InlineLabels from "@app/views/repos/Cob/InlineLabels.svelte";
   import InlineTitle from "@app/views/repos/components/InlineTitle.svelte";
-  import Link from "@app/components/Link.svelte";
   import NodeId from "@app/components/NodeId.svelte";
 
   export let repoId: string;
@@ -108,16 +108,16 @@
   </div>
   <div class="content">
     <div class="summary">
-      <Link
-        styleHoverState
-        route={{
+      <a
+        class="hover-underline"
+        href={href({
           resource: "repo.patch",
           repo: repoId,
           node: baseUrl,
           patch: patch.id,
-        }}>
+        })}>
         <InlineTitle fontSize="body-m-regular" content={patch.title} />
-      </Link>
+      </a>
       {#if patch.labels.length > 0}
         <span
           class="global-hide-on-small-desktop-down"

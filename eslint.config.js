@@ -131,6 +131,9 @@ export default [
     rules: {
       "svelte/no-at-html-tags": "off",
       "svelte/require-each-key": "off",
+      // The app is never served under a base path, so plain absolute hrefs
+      // are correct and `resolve()` would be pure noise.
+      "svelte/no-navigation-without-resolve": "off",
       "@typescript-eslint/no-explicit-any": "error",
     },
   },
@@ -162,6 +165,7 @@ export default [
     ignores: [
       "node_modules/**/*",
       "build/**/*",
+      ".svelte-kit/**/*",
       "public/**/*",
       "radicle-httpd/**/*",
       "radicle-search/**/*",

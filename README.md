@@ -87,15 +87,16 @@ JS/HTML bundle, such as when installed via a package manager.
 You can build the app in a mode that loads configuration dynamically from the
 server it's deployed to, instead of bundling it at build time.
 
-To enable this behavior, set the environment variable `VITE_RUNTIME_CONFIG=true`
-during the build:
+To enable this behavior, set the environment variable
+`PUBLIC_RUNTIME_CONFIG=true` during the build:
 
 ```bash
-VITE_RUNTIME_CONFIG=true npm run build
+PUBLIC_RUNTIME_CONFIG=true npm run build
 ```
 
-This will inject a blocking script into the `index.html` that attempts to load
-the configuration from a pre-defined location (`/config.json`) on the server.
+This will enable a blocking script in the built `index.html` that attempts to
+load the configuration from a pre-defined location (`/config.json`) on the
+server.
 
 The config file must be served as static content and must be publicly accessible.
 The structure of the runtime `config.json` must match the shape of the

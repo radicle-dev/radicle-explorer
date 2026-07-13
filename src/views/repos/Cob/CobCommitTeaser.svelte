@@ -2,6 +2,7 @@
   import type { BaseUrl, CommitHeader } from "@http-client";
   import type { Snippet } from "svelte";
 
+  import { href } from "@app/lib/routes";
   import { twemoji } from "@app/lib/utils";
   import { renderCommitDescription } from "@app/lib/commit";
 
@@ -11,7 +12,6 @@
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
   import InlineTitle from "@app/views/repos/components/InlineTitle.svelte";
-  import Link from "@app/components/Link.svelte";
 
   export let baseUrl: BaseUrl;
   export let commit: CommitHeader;
@@ -68,13 +68,13 @@
 <div class="teaser" aria-label="commit-teaser">
   <div class="left">
     <div class="message">
-      <Link
-        route={{
+      <a
+        href={href({
           resource: "repo.commit",
           repo: repoId,
           node: baseUrl,
           commit: commit.id,
-        }}>
+        })}>
         <div class="summary" use:twemoji>
           {#if !commit.summary}
             <span style:color="var(--color-text-tertiary)">
@@ -84,7 +84,7 @@
             <InlineTitle fontSize="body-m-regular" content={commit.summary} />
           {/if}
         </div>
-      </Link>
+      </a>
       {#if commit.description}
         <div style="height: 21px; display: flex; align-items: center;">
           <ExpandButton
@@ -120,15 +120,15 @@
         </CompactCommitAuthorship>
       </div>
       <IconButton title="Browse repo at this commit">
-        <Link
-          route={{
+        <a
+          href={href({
             resource: "repo.source",
             repo: repoId,
             node: baseUrl,
             revision: commit.id,
-          }}>
+          })}>
           <Icon name="chevron-left-right" />
-        </Link>
+        </a>
       </IconButton>
     </div>
   </div>

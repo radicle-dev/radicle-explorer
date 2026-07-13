@@ -1,0 +1,75 @@
+#!/usr/bin/env node
+
+// Serve the static production bundle from `build/` with an unconditional
+// SPA fallback to `build/index.html`, mirroring the production deployment
+// (Cloudflare's `not_found_handling = "single-page-application"`). Unlike
+// `vite preview`, files are read from disk on every request, so the bundle
+// can be rebuilt while the server is running — the e2e global setup relies
+// on that.
+
+import { createServer } from "node:http";
+import { readFile, stat } from "node:fs/promises";
+import { extname, join, normalize, resolve, sep } from "node:path";
+
+const args = process.argv.slice(2);
+function flag(name, fallback) {
+  const index = args.indexOf(name);
+  return index !== -1 && args[index + 1] ? args[index + 1] : fallback;
+}
+
+const port = Number(flag("--port", "4173"));
+const host = flag("--host", "localhost");
+const root = resolve("build");
+const fallbackPage = join(root, "index.html");
+
+const mimes = {
+  ".css": "text/css",
+  ".html": "text/html",
+  ".ico": "image/x-icon",
+  ".js": "text/javascript",
+  ".json": "application/json",
+  ".map": "application/json",
+  ".mjs": "text/javascript",
+  ".png": "image/png",
+  ".svg": "image/svg+xml",
+  ".ttf": "font/ttf",
+  ".txt": "text/plain",
+  ".wasm": "application/wasm",
+  ".webmanifest": "application/manifest+json",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
+};
+
+createServer(async (req, res) => {
+  try {
+    const url = new URL(req.url ?? "/", `http://${host}`);
+    let filePath = normalize(join(root, decodeURIComponent(url.pathname)));
+    if (filePath !== root && !filePath.startsWith(root + sep)) {
+      res.writeHead(403);
+      res.end();
+      return;
+    }
+
+    let body;
+    try {
+      const stats = await stat(filePath);
+      if (stats.isDirectory()) {
+        throw new Error("is a directory");
+      }
+      body = await readFile(filePath);
+    } catch {
+      filePath = fallbackPage;
+      body = await readFile(fallbackPage);
+    }
+
+    res.writeHead(200, {
+      "content-type": mimes[extname(filePath)] ?? "application/octet-stream",
+    });
+    res.end(body);
+  } catch {
+    res.writeHead(500);
+    res.end();
+  }
+}).listen(port, host, () => {
+  console.log(`Serving ${root} on http://${host}:${port}`);
+});

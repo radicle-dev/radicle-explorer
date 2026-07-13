@@ -4,13 +4,14 @@
 
   import { onDestroy } from "svelte";
 
-  import * as router from "@app/lib/router";
   import {
     fetchRepoInfos,
     sortRepoInfosByActivity,
   } from "@app/components/RepoCard";
-  import { handleError } from "@app/views/nodes/error";
+  import type { ErrorParam } from "@app/lib/error";
+  import { toNodeAppError } from "@app/views/nodes/error";
 
+  import ErrorMessage from "@app/components/ErrorMessage.svelte";
   import Loading from "@app/components/Loading.svelte";
   import Placeholder from "@app/components/Placeholder.svelte";
   import RepoCard from "@app/components/RepoCard.svelte";
@@ -245,7 +246,11 @@
         {/if}
       </div>
     {/if}
-  {:catch error}
-    {router.push(handleError(error, baseUrl))}
+  {:catch err}
+    {@const appError = toNodeAppError(err, baseUrl)}
+    <ErrorMessage
+      title={appError.title ?? "Could not load repositories"}
+      description={appError.description ?? ""}
+      error={appError.cause as ErrorParam} />
   {/await}
 </div>

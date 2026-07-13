@@ -4,12 +4,12 @@
   import dompurify from "dompurify";
   import { markdown, sanitizeConfig } from "@app/lib/markdown";
   import { formatRepositoryId, twemoji } from "@app/lib/utils";
+  import { href } from "@app/lib/routes";
 
   import Badge from "@app/components/Badge.svelte";
   import ContextRepo from "@app/views/repos/Sidebar/ContextRepo.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
-  import Link from "@app/components/Link.svelte";
   import RepoAvatar from "@app/components/RepoAvatar.svelte";
 
   export let repo: Repo;
@@ -111,16 +111,16 @@
   <div class="meta">
     <div class="title">
       <span class="txt-overflow">
-        <Link
-          route={{
+        <a
+          href={href({
             resource: "repo.source",
             repo: repo.rid,
             node: baseUrl,
-          }}>
+          })}>
           <span class="repo-name">
             {project.data.name}
           </span>
-        </Link>
+        </a>
       </span>
       {#if repo.visibility.type === "private"}
         <Badge variant="private" size="tiny">

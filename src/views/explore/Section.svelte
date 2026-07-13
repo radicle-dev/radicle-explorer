@@ -3,14 +3,16 @@
   import type { RepoInfo } from "@app/components/RepoCard";
   import type { ExploreSection } from "./sections";
 
+  import type { ErrorParam } from "@app/lib/error";
+
   import { HttpdClient } from "@http-client";
   import { fetchRepoInfos } from "@app/components/RepoCard";
+  import { href } from "@app/lib/routes";
   import { loadRepoActivity } from "@app/lib/commit";
-  import * as router from "@app/lib/router";
-  import { handleError } from "@app/views/nodes/error";
+  import { toNodeAppError } from "@app/views/nodes/error";
 
+  import ErrorMessage from "@app/components/ErrorMessage.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import Link from "@app/components/Link.svelte";
   import RepoCard from "@app/components/RepoCard.svelte";
   import RepoCardSkeleton from "@app/components/RepoCardSkeleton.svelte";
 
@@ -159,24 +161,24 @@
       {section.title}
     </div>
     {#if section.kind === "pinned"}
-      <Link
-        route={{
+      <a
+        href={href({
           resource: "explore.repos",
           params: { page: 0, sort: "rid" },
-        }}>
+        })}>
         <span class="view-all">View all repositories →</span>
-      </Link>
+      </a>
     {:else}
-      <Link
-        route={{
+      <a
+        href={href({
           resource: "explore.repos",
           params: {
             page: 0,
             sort: section.kind === "recentlyActive" ? "activity" : "seeding",
           },
-        }}>
+        })}>
         <span class="view-all">View all →</span>
-      </Link>
+      </a>
     {/if}
   </div>
 
@@ -198,7 +200,11 @@
     {:else}
       <div class="empty">No repos to show.</div>
     {/if}
-  {:catch error}
-    {router.push(handleError(error, baseUrl))}
+  {:catch err}
+    {@const appError = toNodeAppError(err, baseUrl)}
+    <ErrorMessage
+      title={appError.title ?? "Could not load this section"}
+      description={appError.description ?? ""}
+      error={appError.cause as ErrorParam} />
   {/await}
 </div>

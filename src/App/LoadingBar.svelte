@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { isLoading } from "@app/lib/router";
+  import { navigating } from "$app/stores";
 </script>
 
 <style>
@@ -23,5 +23,5 @@
   role="progressbar"
   aria-label="Page loading"
   class="loading-bar"
-  class:visible={$isLoading}>
+  class:visible={$navigating !== null}>
 </div>

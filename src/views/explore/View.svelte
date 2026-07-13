@@ -34,7 +34,7 @@
   }
 </style>
 
-<Header />
+<Header variant="explore" />
 
 <div class="page">
   <div class="container">

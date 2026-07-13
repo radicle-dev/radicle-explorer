@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { BaseUrl, CommitHeader } from "@http-client";
 
+  import { href } from "@app/lib/routes";
   import { twemoji } from "@app/lib/utils";
   import { renderCommitDescription } from "@app/lib/commit";
 
@@ -9,7 +10,6 @@
   import IconButton from "@app/components/IconButton.svelte";
   import Icon from "@app/components/Icon.svelte";
   import InlineTitle from "@app/views/repos/components/InlineTitle.svelte";
-  import Link from "@app/components/Link.svelte";
   import Id from "@app/components/Id.svelte";
 
   export let baseUrl: BaseUrl;
@@ -78,13 +78,13 @@
 <div class="teaser">
   <div class="left">
     <div class="message">
-      <Link
-        route={{
+      <a
+        href={href({
           resource: "repo.commit",
           repo: repoId,
           node: baseUrl,
           commit: commit.id,
-        }}>
+        })}>
         <div style="position: relative;">
           <div class="summary" use:twemoji>
             {#if !commit.summary}
@@ -96,7 +96,7 @@
             {/if}
           </div>
         </div>
-      </Link>
+      </a>
       {#if commit.description}
         <ExpandButton
           variant="inline"
@@ -117,15 +117,15 @@
   <div class="right">
     <div style:display="flex" style:gap="1rem" style:height="1.5rem">
       <IconButton title="Browse repo at this commit">
-        <Link
-          route={{
+        <a
+          href={href({
             resource: "repo.source",
             repo: repoId,
             node: baseUrl,
             revision: commit.id,
-          }}>
+          })}>
           <Icon name="chevron-left-right" />
-        </Link>
+        </a>
       </IconButton>
     </div>
   </div>

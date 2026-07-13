@@ -1,5 +1,3 @@
-import type { ComponentType } from "svelte";
-
 export interface LandingRoute {
   resource: "landing";
   params: undefined;
@@ -61,9 +59,4 @@ export function isDocsPage(page: string): page is DocsPage {
 export interface DocsRoute {
   resource: "docs";
   params: { page: DocsPage };
-}
-
-export interface DocsLoadedRoute {
-  resource: "docs";
-  params: { page: DocsPage; component: ComponentType };
 }

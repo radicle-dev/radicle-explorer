@@ -2,8 +2,8 @@
   import type { BaseUrl, Commit } from "@http-client";
 
   import Button from "@app/components/Button.svelte";
-  import Link from "@app/components/Link.svelte";
   import { formatCommit, unreachable } from "@app/lib/utils";
+  import { href } from "@app/lib/routes";
 
   export let variant: "standalone" | "right" | "center" | "left" = "standalone";
   export let styleMinWidth: string | undefined = undefined;
@@ -42,14 +42,14 @@
   }
 </style>
 
-<Link
-  styleTextOverflow
-  route={{
+<a
+  class="txt-overflow"
+  href={href({
     resource: "repo.commit",
     repo: repoId,
     node: baseUrl,
     commit: commit.id,
-  }}>
+  })}>
   <Button
     title="Current HEAD"
     variant="not-selected"
@@ -67,4 +67,4 @@
       </span>
     </div>
   </Button>
-</Link>
+</a>

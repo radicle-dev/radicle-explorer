@@ -1,5 +1,7 @@
+import path from "node:path";
 import rehypeSlug from "rehype-slug";
 import remarkUnwrapImages from "remark-unwrap-images";
+import adapter from "@sveltejs/adapter-static";
 import { getSingletonHighlighter } from "shiki";
 import { mdsvex, escapeSvelte } from "mdsvex";
 import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
@@ -138,4 +140,32 @@ const mdsvexOptions = {
 export default {
   extensions: [".svelte", ".md"],
   preprocess: [vitePreprocess(), mdsvex(mdsvexOptions)],
+  kit: {
+    adapter: adapter({
+      pages: "build",
+      assets: "build",
+      fallback: "index.html",
+    }),
+    files: {
+      assets: "public",
+    },
+    alias: {
+      "@app": "./src",
+      "@public": "./public",
+      "@http-client": "./http-client",
+      "@tests": "./tests",
+    },
+  },
+  vitePlugin: {
+    // Reference: https://github.com/sveltejs/vite-plugin-svelte/issues/270#issuecomment-1033190138
+    dynamicCompileOptions({ filename }) {
+      if (
+        path.basename(filename) === "Clipboard.svelte" ||
+        path.basename(filename) === "ExternalLink.svelte" ||
+        path.basename(filename) === "Icon.svelte"
+      ) {
+        return { customElement: true };
+      }
+    },
+  },
 };

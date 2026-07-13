@@ -1,6 +1,6 @@
 import type { Config } from "dompurify";
 import type { MarkedExtension, Tokens } from "marked";
-import type { Route } from "@app/lib/router";
+import type { Route } from "@app/lib/routes";
 
 import escape from "lodash/escape";
 import footnoteMarkedExtension from "marked-footnote";
@@ -11,7 +11,7 @@ import { markedEmoji } from "marked-emoji";
 
 import emojis from "@app/lib/emojis";
 import { canonicalize, isUrl } from "@app/lib/utils";
-import { routeToPath } from "@app/lib/router";
+import { href as routeHref } from "@app/lib/routes";
 
 /**
  * DOMPurify configuration for sanitizing markdown-derived HTML. Pass this as
@@ -79,15 +79,15 @@ export const sanitizeConfig: Config = {
 };
 
 export class Renderer extends BaseRenderer {
-  #route: Route;
+  #route: Route | undefined;
 
   /**
    * If `baseUrl` is provided, all hrefs attributes in anchor tags, except those
    * starting with `#`, are resolved with respect to `baseUrl`
    */
-  constructor(activeUnloadedRoute: Route) {
+  constructor(activeRoute: Route | undefined) {
     super();
-    this.#route = activeUnloadedRoute;
+    this.#route = activeRoute;
   }
   // Overwrites the rendering of heading tokens.
   // Since there are possible non ASCII characters in headings,
@@ -109,8 +109,8 @@ export class Renderer extends BaseRenderer {
     if (href.startsWith("#")) {
       // By lowercasing we avoid casing mismatches, between headings and links.
       href = href.toLowerCase();
-    } else if (this.#route.resource === "repo.source" && !isUrl(href)) {
-      href = routeToPath({
+    } else if (this.#route?.resource === "repo.source" && !isUrl(href)) {
+      href = routeHref({
         ...this.#route,
         path: canonicalize(href, this.#route.path || "README.md"),
         route: undefined,

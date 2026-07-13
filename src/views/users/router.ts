@@ -1,12 +1,11 @@
 import type { BaseUrl, NodeIdentity, NodeStats } from "@http-client";
-import type { ErrorRoute, NotFoundRoute } from "@app/lib/router/definitions";
+
+import { error } from "@sveltejs/kit";
 
 import * as utils from "@app/lib/utils";
 import { HttpdClient } from "@http-client";
-import { ResponseError, ResponseParseError } from "@http-client/lib/fetcher";
 import { handleError } from "@app/views/nodes/error";
 import { nodePath } from "@app/views/nodes/router";
-import { unreachableError } from "@app/views/repos/error";
 
 export interface UserRoute {
   resource: "users";
@@ -14,33 +13,29 @@ export interface UserRoute {
   did: string;
 }
 
-export interface UserLoadedRoute {
-  resource: "users";
-  params: {
-    did: { prefix: string; pubkey: string };
-    baseUrl: BaseUrl;
-    node: NodeIdentity;
-    nodeId: string;
-    nodeAvatarUrl: string | undefined;
-    stats: NodeStats;
-  };
+export interface UserViewParams {
+  did: { prefix: string; pubkey: string };
+  baseUrl: BaseUrl;
+  node: NodeIdentity;
+  nodeId: string;
+  nodeAvatarUrl: string | undefined;
+  stats: NodeStats;
 }
 
-export async function loadUserRoute({
-  did,
-  baseUrl,
-}: UserRoute): Promise<UserLoadedRoute | NotFoundRoute | ErrorRoute> {
+export async function loadUserView(
+  baseUrl: BaseUrl,
+  did: string,
+): Promise<UserViewParams> {
   const parsedDid = utils.parseNodeId(decodeURIComponent(did));
   if (!parsedDid) {
-    return {
-      resource: "error",
-      params: {
-        title: "Invalid user DID provided",
-        description:
-          "The provided DID is invalid. Please review the identifier for any errors and try again.",
-        error: new Error(`invalid user DID provided: ${did}`),
-      },
-    };
+    error(400, {
+      message: "Invalid user DID provided",
+      variant: "error",
+      title: "Invalid user DID provided",
+      description:
+        "The provided DID is invalid. Please review the identifier for any errors and try again.",
+      cause: new Error(`invalid user DID provided: ${did}`),
+    });
   }
 
   const api = new HttpdClient(baseUrl);
@@ -52,27 +47,16 @@ export async function loadUserRoute({
     ]);
 
     return {
-      resource: "users",
-      params: {
-        did: parsedDid,
-        baseUrl,
-        node: user,
-        nodeId: node.id,
-        nodeAvatarUrl: node.avatarUrl,
-        stats,
-      },
+      did: parsedDid,
+      baseUrl,
+      node: user,
+      nodeId: node.id,
+      nodeAvatarUrl: node.avatarUrl,
+      stats,
     };
-  } catch (error) {
-    console.error(error);
-    if (
-      error instanceof Error ||
-      error instanceof ResponseError ||
-      error instanceof ResponseParseError
-    ) {
-      return handleError(error, api.baseUrl);
-    } else {
-      return unreachableError();
-    }
+  } catch (err) {
+    console.error(err);
+    handleError(err, api.baseUrl);
   }
 }
 
@@ -80,9 +64,9 @@ export function userRouteToPath(route: UserRoute): string {
   return [nodePath(route.baseUrl), "users", route.did].join("/");
 }
 
-export function userTitle(route: UserLoadedRoute): string[] {
-  if (route.params.node.alias) {
-    return [route.params.node.alias, utils.formatDid(route.params.did)];
+export function userTitle(params: UserViewParams): string[] {
+  if (params.node.alias) {
+    return [params.node.alias, utils.formatDid(params.did)];
   }
-  return [utils.formatDid(route.params.did)];
+  return [utils.formatDid(params.did)];
 }

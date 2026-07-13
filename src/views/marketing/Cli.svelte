@@ -3,7 +3,6 @@
   import CopyCommand from "@app/views/marketing/CopyCommand.svelte";
   import Meta from "@app/views/marketing/Meta.svelte";
   import PlatformBadges from "@app/views/marketing/PlatformBadges.svelte";
-  import { link } from "@app/views/marketing/link";
 
   const features = [
     {
@@ -125,7 +124,7 @@
     <h2 class="txt-bold-22 get-started-heading">Get started</h2>
     <CopyCommand />
     <PlatformBadges />
-    <a href="/guides/user" class="product-link arrow-link" use:link>
+    <a href="/guides/user" class="product-link arrow-link">
       Read the user guide <span class="link-arrow link-arrow-right">→</span>
     </a>
   </section>

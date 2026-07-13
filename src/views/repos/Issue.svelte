@@ -5,6 +5,7 @@
   import uniqBy from "lodash/uniqBy";
 
   import * as utils from "@app/lib/utils";
+  import { href } from "@app/lib/routes";
 
   import Assignees from "@app/views/repos/Cob/Assignees.svelte";
   import Badge from "@app/components/Badge.svelte";
@@ -15,7 +16,6 @@
   import InlineTitle from "@app/views/repos/components/InlineTitle.svelte";
   import Labels from "@app/views/repos/Cob/Labels.svelte";
   import Layout from "./Layout.svelte";
-  import Link from "@app/components/Link.svelte";
   import Markdown from "@app/components/Markdown.svelte";
   import NodeId from "@app/components/NodeId.svelte";
   import Reactions from "@app/components/Reactions.svelte";
@@ -132,15 +132,15 @@
   stylePaddingBottom="0">
   <svelte:fragment slot="breadcrumb">
     <Separator />
-    <Link
-      route={{
+    <a
+      href={href({
         resource: "repo.issues",
         repo: repo.rid,
         node: baseUrl,
         status: issue.state.status,
-      }}>
+      })}>
       {issueStatusLabel[issue.state.status]}
-    </Link>
+    </a>
     <Separator />
     <span class="txt-id">
       <div class="global-hide-on-small-desktop-down">

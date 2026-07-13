@@ -1,9 +1,9 @@
 <script lang="ts">
-  import type { Route } from "@app/lib/router/definitions";
+  import type { Route } from "@app/lib/routes";
   import type { BaseUrl, RepoListQuery } from "@http-client";
 
   import { HttpdClient } from "@http-client";
-  import { push, routeToPath, useDefaultNavigation } from "@app/lib/router";
+  import { href } from "@app/lib/routes";
   import { determineSeed, selectedSeed } from "@app/views/nodes/SeedSelector";
 
   import CopyCommand from "@app/views/marketing/CopyCommand.svelte";
@@ -98,14 +98,6 @@
   }
 
   $: void loadCarousel($selectedSeed);
-
-  function onRepoClick(event: MouseEvent, route: Route) {
-    if (useDefaultNavigation(event)) {
-      return;
-    }
-    event.preventDefault();
-    void push(route);
-  }
 
   function shortenRid(rid: string): string {
     // "rad:z6cFWeWpnZNHh9rUW8phgA3b5yGt" → "rad:z6cF..yGt"
@@ -589,10 +581,7 @@
         {/each}
       {:else}
         {#each repos as repo}
-          <a
-            href={routeToPath(repo.route)}
-            on:click={e => onRepoClick(e, repo.route)}
-            class="repo-card">
+          <a href={href(repo.route)} class="repo-card">
             <div class="repo-image">
               {#if repo.avatar}
                 <img src={repo.avatar} alt={repo.name} class="repo-avatar" />
@@ -619,10 +608,7 @@
       {/if}
     </div>
 
-    <a
-      href={routeToPath(exploreRoute)}
-      on:click={e => onRepoClick(e, exploreRoute)}
-      class="all-repos txt-bold-18 arrow-link">
+    <a href={href(exploreRoute)} class="all-repos txt-bold-18 arrow-link">
       Explore <span class="link-arrow link-arrow-right">→</span>
     </a>
   </section>

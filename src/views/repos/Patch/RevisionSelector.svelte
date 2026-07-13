@@ -2,12 +2,12 @@
   import type { PatchView } from "../router";
   import type { BaseUrl, Patch, Repo } from "@http-client";
   import * as utils from "@app/lib/utils";
+  import { href } from "@app/lib/routes";
 
   import Button from "@app/components/Button.svelte";
   import DropdownList from "@app/components/DropdownList.svelte";
   import DropdownListItem from "@app/components/DropdownList/DropdownListItem.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import Link from "@app/components/Link.svelte";
   import Popover from "@app/components/Popover.svelte";
   import { closeFocused } from "@app/components/Popover.svelte";
 
@@ -45,9 +45,9 @@
   </Button>
   <DropdownList slot="popover" items={patch.revisions}>
     <svelte:fragment slot="item" let:item>
-      <Link
-        on:afterNavigate={closeFocused}
-        route={{
+      <a
+        on:click={closeFocused}
+        href={href({
           resource: "repo.patch",
           repo: repo.rid,
           node: baseUrl,
@@ -56,7 +56,7 @@
             name: view.name,
             revision: item.id,
           },
-        }}>
+        })}>
         <DropdownListItem selected={item.id === view.revision}>
           <span
             style:color={item.id === view.revision
@@ -70,7 +70,7 @@
             {utils.formatObjectId(item.id)}
           </span>
         </DropdownListItem>
-      </Link>
+      </a>
     </svelte:fragment>
   </DropdownList>
 </Popover>

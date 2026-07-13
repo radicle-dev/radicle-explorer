@@ -3,10 +3,11 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "start": "vite",
-    "serve": "vite preview",
-    "build": "vite build && scripts/copy-katex-assets && scripts/install-twemoji-assets",
+    "start": "vite dev",
+    "serve": "scripts/serve",
+    "build": "scripts/copy-katex-assets && scripts/install-twemoji-assets && vite build",
     "postinstall": "scripts/copy-katex-assets && scripts/install-twemoji-assets",
+    "prepare": "svelte-kit sync || echo ''",
     "check": "scripts/check",
     "check:radicle-httpd": "cargo clippy --all --tests && cargo fmt --all --check",
     "format": "npx prettier '**/*.@(ts|js|svelte|json|css|html|yml)' --write",
@@ -27,6 +28,8 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.60.0",
+    "@sveltejs/adapter-static": "^3.0.10",
+    "@sveltejs/kit": "^2.69.2",
     "@sveltejs/vite-plugin-svelte": "^7.1.2",
     "@tsconfig/svelte": "^5.0.8",
     "@types/js-yaml": "^4.0.9",

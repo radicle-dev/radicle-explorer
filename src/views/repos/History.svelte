@@ -13,6 +13,7 @@
   import { HttpdClient } from "@http-client";
   import { baseUrlToString, formatQualifiedRefname } from "@app/lib/utils";
   import { groupCommits } from "@app/lib/commit";
+  import { href } from "@app/lib/routes";
 
   import Button from "@app/components/Button.svelte";
   import CloneButton from "@app/views/repos/Header/CloneButton.svelte";
@@ -20,7 +21,6 @@
   import ErrorMessage from "@app/components/ErrorMessage.svelte";
   import Header from "./Source/Header.svelte";
   import Layout from "./Layout.svelte";
-  import Link from "@app/components/Link.svelte";
   import List from "@app/components/List.svelte";
   import Loading from "@app/components/Loading.svelte";
   import RepoNameHeader from "./Source/RepoNameHeader.svelte";
@@ -105,14 +105,14 @@
 <Layout {nodeId} {nodeAvatarUrl} {baseUrl} {repo} activeTab="source">
   <svelte:fragment slot="breadcrumb">
     <Separator />
-    <Link
-      route={{
+    <a
+      href={href({
         resource: "repo.history",
         repo: repo.rid,
         node: baseUrl,
-      }}>
+      })}>
       Commits
-    </Link>
+    </a>
   </svelte:fragment>
   <svelte:fragment slot="actions">
     <CloneButton

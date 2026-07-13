@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { BaseUrl } from "@http-client";
   import { formatNodeId, parseNodeId, truncateId } from "@app/lib/utils";
+  import { href } from "@app/lib/routes";
 
   import UserAvatar from "./UserAvatar.svelte";
-  import Link from "./Link.svelte";
 
   export let baseUrl: BaseUrl;
   export let nodeId: string;
@@ -36,10 +36,10 @@
 </style>
 
 <div class="avatar-alias">
-  <Link
-    styleHoverState
+  <a
+    class="hover-underline"
     style="display: flex; gap: 0.375rem; align-items: center;"
-    route={{ resource: "users", did: nodeId, baseUrl }}>
+    href={href({ resource: "users", did: nodeId, baseUrl })}>
     <div class="avatar-container">
       <UserAvatar {nodeId} styleWidth="1rem" />
     </div>
@@ -55,5 +55,5 @@
         {truncateId(parseNodeId(nodeId)?.pubkey || "")}
       </span>
     {/if}
-  </Link>
+  </a>
 </div>

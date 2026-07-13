@@ -10,11 +10,11 @@
     formatRepositoryId,
     twemoji,
   } from "@app/lib/utils";
+  import { href } from "@app/lib/routes";
 
   import ActivityDiagram from "@app/components/ActivityDiagram.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
-  import Link from "@app/components/Link.svelte";
   import RepoAvatar from "@app/components/RepoAvatar.svelte";
 
   export let compact = false;
@@ -151,12 +151,12 @@
   }
 </style>
 
-<Link
-  route={{
+<a
+  href={href({
     resource: "repo.source",
     repo: repo.rid,
     node: baseUrl,
-  }}>
+  })}>
   <div class="repo-card" class:compact>
     <div class="headline-and-badges txt-overflow">
       <div class="icon">
@@ -224,4 +224,4 @@
       </div>
     </div>
   </div>
-</Link>
+</a>

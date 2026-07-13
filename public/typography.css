@@ -189,3 +189,9 @@ html {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.hover-underline:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}

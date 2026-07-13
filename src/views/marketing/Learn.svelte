@@ -3,7 +3,6 @@
   import Button from "@app/views/marketing/Button.svelte";
 
   import { guides } from "@app/views/marketing/guides";
-  import { link } from "@app/views/marketing/link";
 
   const learnGuides = [guides[0], guides[2], guides[3]];
 </script>
@@ -337,10 +336,7 @@
             The core ideas behind Radicle.
           </p>
         </div>
-        <a
-          href="/principles"
-          class="section-all product-link arrow-link"
-          use:link>
+        <a href="/principles" class="section-all product-link arrow-link">
           Learn the basics <span class="link-arrow link-arrow-right">→</span>
         </a>
       </div>
@@ -361,8 +357,7 @@
           class="guide-thumb"
           href={guide.href}
           target={guide.external ? "_blank" : undefined}
-          rel={guide.external ? "noopener noreferrer" : undefined}
-          use:link>
+          rel={guide.external ? "noopener noreferrer" : undefined}>
           <img class="guide-thumb-image" src={guide.image} alt="" />
           <span class="guide-thumb-title txt-bold-16">
             {guide.title}
@@ -378,7 +373,7 @@
         </a>
       {/each}
     </div>
-    <a href="/guides" class="section-all product-link arrow-link" use:link>
+    <a href="/guides" class="section-all product-link arrow-link">
       View all guides <span class="link-arrow link-arrow-right">→</span>
     </a>
   </section>
@@ -399,10 +394,7 @@
             What is Radicle and how is it different from GitHub? Who’s building
             it, how many people use it, and what’s the project’s history.
           </span>
-          <a
-            href="/faq#general-questions"
-            class="product-link arrow-link"
-            use:link>
+          <a href="/faq#general-questions" class="product-link arrow-link">
             Read general FAQ <span class="link-arrow link-arrow-right">→</span>
           </a>
         </div>
@@ -415,10 +407,7 @@
             directly? How does identity work without accounts? The technical
             reasoning explained.
           </span>
-          <a
-            href="/faq#technical-questions"
-            class="product-link arrow-link"
-            use:link>
+          <a href="/faq#technical-questions" class="product-link arrow-link">
             Read technical FAQ <span class="link-arrow link-arrow-right">
               →
             </span>
@@ -426,7 +415,7 @@
         </div>
       </article>
     </div>
-    <a href="/faq" class="section-all product-link arrow-link" use:link>
+    <a href="/faq" class="section-all product-link arrow-link">
       All FAQ <span class="link-arrow link-arrow-right">→</span>
     </a>
   </section>
