@@ -120,6 +120,13 @@ The `nodes.homepage` key controls what is rendered at the root URL (`/`):
 The cross-seed Explore page is always available at `/explore`, regardless of
 the `homepage` setting.
 
+#### radicle.network deployment
+
+`default.json` keeps `homepage` set to `"node"`, so self-hosted deployments
+are unaffected. The canonical radicle.network deployment opts into the
+marketing site at **build time** without changing that default. To deploy
+radicle.network, run `npm run deploy`.
+
 #### Node-homepage deployment
 
 If you operate your own seed node and want the explorer to act as a
