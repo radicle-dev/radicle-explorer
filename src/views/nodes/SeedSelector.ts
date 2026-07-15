@@ -15,7 +15,7 @@ const seedSchema = z.object({
 
 const HARDCODED_FALLBACK: BaseUrl = {
   scheme: "https",
-  hostname: "iris.radicle.xyz",
+  hostname: "iris.radicle.network",
   port: 443,
 };
 

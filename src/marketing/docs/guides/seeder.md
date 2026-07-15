@@ -177,7 +177,7 @@ Broadly, there are two options for the default policy.
 
 A _permissive_ or “open” policy is said to be _fully-replicating_, meaning your seed will try to have a full copy of all repository data available on the network.
 
-An example of a node with this policy is `iris.radicle.xyz`, a node operated by the Radicle team, for the Radicle community.
+An example of a node with this policy is `iris.radicle.network`, a node operated by the Radicle team, for the Radicle community.
 
 This is a good default for seeders who want to support the network without having to think about it too much.
 

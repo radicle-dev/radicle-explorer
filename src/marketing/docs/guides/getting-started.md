@@ -183,7 +183,7 @@ $ rad node stop
 >
 > Your node configuration lives in `~/.radicle/config.json` — see the [User Guide](/guides/user) for details on customizing your setup.
 
-[systemd-service]: https://radicle.network/nodes/iris.radicle.xyz/rad:z3gqcJUoA1n9HaHKufZs5FCSGazv5/tree/systemd/user/radicle-node.service
+[systemd-service]: https://radicle.network/nodes/iris.radicle.network/rad:z3gqcJUoA1n9HaHKufZs5FCSGazv5/tree/systemd/user/radicle-node.service
 
 ## Your First Repository
 

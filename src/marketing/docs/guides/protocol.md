@@ -190,7 +190,7 @@ href="https://en.wikipedia.org/wiki/Multiplexing">multiplexing</a>. </aside>
 
 A node joining the network for the first time will not know any peers. Hence, it’s useful to pre-configure network clients with addresses of well-known nodes that can be used to initiate or _bootstrap_ the peer discovery process and build an address book.
 
-Radicle’s reference implementation is pre-configured with two bootstrap nodes that are connected to if the address book is empty: `iris.radicle.xyz` and `rosa.radicle.xyz`. These are nodes run by the Radicle team and have large address books that are shared with connecting peers.
+Radicle’s reference implementation is pre-configured with two bootstrap nodes that are connected to if the address book is empty: `iris.radicle.network` and `rosa.radicle.network`. These are nodes run by the Radicle team and have large address books that are shared with connecting peers.
 
 In the bootstrapping process, nodes connect to an initial set of bootstrap nodes and once they establish a connection, use the regular peer discovery mechanism to find more peers.
 

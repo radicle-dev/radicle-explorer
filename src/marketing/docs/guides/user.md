@@ -350,12 +350,12 @@ When you initialize a repository you are the sole maintainer or _delegate_, the 
 >
 > Commit signing is a purely optional step; Radicle internally signs everything you publish anyway, so don’t worry if you don’t set this up!
 
-Note that your new repository will only be replicated by nodes that you are connected to and either have an open seeding policy, or follow you. Seeding involves both hosting the repository and synchronizing changes with other nodes. In the early stages of the Radicle network, all public repositories are automatically seeded by `iris.radicle.xyz` and `rosa.radicle.xyz` which are _public seed nodes_ run by the core team.
+Note that your new repository will only be replicated by nodes that you are connected to and either have an open seeding policy, or follow you. Seeding involves both hosting the repository and synchronizing changes with other nodes. In the early stages of the Radicle network, all public repositories are automatically seeded by `iris.radicle.network` and `rosa.radicle.network` which are _public seed nodes_ run by the core team.
 
 <aside class="span-2"> <strong>Seed nodes</strong> are always-on machines that
 significantly enhance the network’s capacity to provide continuous access to
 repositories. They can vary in their seeding policies, from public seed nodes
-like <code>iris.radicle.xyz</code> and <code>rosa.radicle.xyz</code> that
+like <code>iris.radicle.network</code> and <code>rosa.radicle.network</code> that
 openly seed all repositories, to community seed nodes that selectively seed
 repositories based on rules established by their operators. </aside>
 
