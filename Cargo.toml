@@ -10,7 +10,11 @@ homepage = "https://radicle.dev"
 anyhow = "1"
 chrono = { version = "0.4.41", default-features = false, features = ["clock"] }
 lexopt = "0.3.1"
-meilisearch-sdk = "0.33.0"
+# Use the pure-Rust JWT backend (`jwt_rust_crypto`) instead of the default
+# `jwt_aws_lc_rs`. The latter pulls in `aws-lc-sys`, whose C/asm does not
+# cross-compile to the Apple release targets under cargo-zigbuild. TLS still
+# uses `reqwest/rustls-tls`, which is backed by `ring` and cross-compiles fine.
+meilisearch-sdk = { version = "0.33.0", default-features = false, features = ["reqwest", "tls", "jwt_rust_crypto"] }
 radicle = "0.24.0"
 radicle-surf = { version = "0.27.1", default-features = false }
 serde = { version = "1", features = ["derive"] }

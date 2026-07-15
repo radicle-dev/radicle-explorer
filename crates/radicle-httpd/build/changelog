@@ -60,9 +60,9 @@ if [ -n "$from" ] && ! git rev-parse --verify "$previous^{tag}" >/dev/null 2>&1;
   exit 1
 fi
 
-echo "# radicle-httpd $version"
+echo "# radicle-httpd + radicle-search $version"
 echo
-echo "radicle-httpd $version ($(git rev-parse --short HEAD)) is released."
+echo "radicle-httpd and radicle-search $version ($(git rev-parse --short HEAD)) are released."
 echo
 echo "## Changelog"
 
