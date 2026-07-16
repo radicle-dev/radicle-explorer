@@ -672,3 +672,67 @@
 ::view-transition-old(sidebar-dot):only-child {
   animation: sidebar-dot-out 0.2s ease both;
 }
+
+/* Marketing sidebar sub-nav unfurl (see Sidebar.svelte). Each nav section is a
+   view-transition group. As one section grows/shrinks, the sections below tween
+   their boxes to the new positions (smooth reflow, no jump), and clipping the
+   growing/shrinking box turns the height change into a top-to-bottom unfurl.
+   These always run, but on a same-section navigation the boxes don't change
+   size so it's a no-op. */
+::view-transition-group(install-section),
+::view-transition-group(learn-section),
+::view-transition-group(sidebar-external) {
+  animation-duration: 0.25s;
+  animation-timing-function: ease-out;
+}
+
+::view-transition-group(install-section),
+::view-transition-group(learn-section) {
+  overflow: clip;
+}
+
+/* Anchor the section snapshots to the top at natural height, so a growing/
+   shrinking group reveals/hides content by clipping rather than scaling it. */
+::view-transition-old(install-section),
+::view-transition-new(install-section),
+::view-transition-old(learn-section),
+::view-transition-new(learn-section) {
+  height: auto;
+  inset-block-start: 0;
+}
+
+/* Animatable soft-edge distance for the reveal, registered so it can tween. */
+@property --subnav-fade {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+@keyframes subnav-fade-edge {
+  /* Hold the soft edge at full through the 0.25s reveal (0-78% of this 0.32s),
+     then dissolve it over the short tail so the last item keeps its soft edge
+     while revealing and the gradient is gone before the pseudo is removed (no
+     pop, no hard cut). */
+  0%,
+  78% {
+    --subnav-fade: 2rem;
+  }
+  100% {
+    --subnav-fade: 0rem;
+  }
+}
+
+/* The soft-edge gradient only applies when a section actually opens or closes:
+   the sidebar adds `.sidebar-unfurling` to the document element for exactly
+   those navigations (see Sidebar.svelte), so moving *within* a section shows no
+   gradient. `max()` floors the opaque region to the header height so a
+   collapsing section never fades its own header text. */
+:root.sidebar-unfurling::view-transition-image-pair(install-section),
+:root.sidebar-unfurling::view-transition-image-pair(learn-section) {
+  mask-image: linear-gradient(
+    to bottom,
+    #000 max(1.75rem, calc(100% - var(--subnav-fade))),
+    transparent
+  );
+  animation: subnav-fade-edge 0.32s ease-out both;
+}

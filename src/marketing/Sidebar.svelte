@@ -34,6 +34,27 @@
     ["/learn", "/principles", "/faq", "/glossary"].includes(pathname) ||
     pathname.startsWith("/guides");
 
+  // Flag the document element only when a section actually opens or closes, so
+  // the sub-nav unfurl gradient (see marketing.css) fires on expand/collapse
+  // but not when navigating within an already-open section.
+  let sidebarStateInitialised = false;
+  let unfurlTimeout: ReturnType<typeof setTimeout>;
+  $: flagSectionChange(installOpen, learnOpen);
+  function flagSectionChange(_installOpen: boolean, _learnOpen: boolean) {
+    if (!sidebarStateInitialised) {
+      sidebarStateInitialised = true;
+      return;
+    }
+    if (typeof document === "undefined") {
+      return;
+    }
+    document.documentElement.classList.add("sidebar-unfurling");
+    clearTimeout(unfurlTimeout);
+    unfurlTimeout = setTimeout(() => {
+      document.documentElement.classList.remove("sidebar-unfurling");
+    }, 500);
+  }
+
   function onNav(event: MouseEvent, route: Route) {
     if (useDefaultNavigation(event)) {
       return;
@@ -150,7 +171,7 @@
 
 <aside class="sidebar">
   <nav class="top-section">
-    <div class="nav-section">
+    <div class="nav-section" style="view-transition-name: install-section;">
       <a
         href={routeToPath(installRoute)}
         class="section-header"
@@ -201,7 +222,7 @@
       {/if}
     </div>
 
-    <div class="nav-section">
+    <div class="nav-section" style="view-transition-name: learn-section;">
       <a
         href={routeToPath(learnRoute)}
         class="section-header"
@@ -258,7 +279,7 @@
       {/if}
     </div>
 
-    <div class="external-links">
+    <div class="external-links" style="view-transition-name: sidebar-external;">
       <a
         href={routeToPath(exploreRoute)}
         class="external-link arrow-link"
