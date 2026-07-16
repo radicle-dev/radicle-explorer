@@ -209,6 +209,21 @@ impl Context {
     }
 }
 
+/// Run a blocking closure on the blocking thread pool.
+///
+/// Repository reads go through libgit2 and the COB cache, which are
+/// synchronous and can take seconds on large repositories. Running them
+/// directly in a handler would pin a runtime worker for the call's full
+/// duration and let a slow read stall every other request. [`Context`] is
+/// cheaply cloneable (it holds only `Arc`s), so callers move a clone into `f`.
+pub(crate) async fn blocking<T, F>(f: F) -> Result<T, Error>
+where
+    F: FnOnce() -> Result<T, Error> + Send + 'static,
+    T: Send + 'static,
+{
+    tokio::task::spawn_blocking(f).await?
+}
+
 pub trait ReadCanonicalRefs {
     fn find_by_pattern(
         &self,

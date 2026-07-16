@@ -12,6 +12,10 @@ pub enum Error {
     #[error("entity not found")]
     NotFound,
 
+    /// A blocking task failed to complete.
+    #[error(transparent)]
+    Task(#[from] tokio::task::JoinError),
+
     /// An error occurred with env variables.
     #[error(transparent)]
     Env(#[from] std::env::VarError),
