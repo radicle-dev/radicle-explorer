@@ -126,8 +126,11 @@ pub async fn handler(
     State(ctx): State<Context>,
     Path((rid, sha)): Path<(RepoId, Oid)>,
 ) -> impl IntoResponse {
-    let aliases = ctx.profile.aliases();
-    let jobs = JobsSource { ctx: &ctx, rid }.jobs_by_commit(sha, &aliases)?;
+    let jobs = crate::api::blocking(move || {
+        let aliases = ctx.profile.aliases();
+        JobsSource { ctx: &ctx, rid }.jobs_by_commit(sha, &aliases)
+    })
+    .await?;
 
     Ok::<_, ApiError>(Json(jobs))
 }

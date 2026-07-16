@@ -197,20 +197,27 @@ mod storage {
     ) -> Result<axum::response::Response, Error> {
         use axum::response::IntoResponse;
 
-        let storage = &ctx.profile.storage;
-        let aliases = &ctx.profile.aliases();
-        let db = &ctx.profile.database()?;
-        let found_repos = storage
-            .repositories()?
-            .into_iter()
-            .filter_map(|info| SearchResult::new(q, info, db, aliases))
-            .collect::<BTreeSet<SearchResult>>();
+        let ctx = ctx.clone();
+        let q = q.to_owned();
+        let found_repos = crate::api::blocking(move || {
+            let storage = &ctx.profile.storage;
+            let aliases = &ctx.profile.aliases();
+            let db = &ctx.profile.database()?;
+            let found_repos = storage
+                .repositories()?
+                .into_iter()
+                .filter_map(|info| SearchResult::new(&q, info, db, aliases))
+                .collect::<BTreeSet<SearchResult>>();
 
-        let found_repos = found_repos
-            .into_iter()
-            .skip(page * per_page)
-            .take(per_page)
-            .collect::<Vec<_>>();
+            Ok::<_, Error>(
+                found_repos
+                    .into_iter()
+                    .skip(page * per_page)
+                    .take(per_page)
+                    .collect::<Vec<_>>(),
+            )
+        })
+        .await?;
 
         Ok(cached_response(found_repos, 600).into_response())
     }
@@ -257,7 +264,12 @@ mod listing {
                 }
             }
         }
-        super::storage::list_repos(ctx, show, sort, page, per_page, web_config)
+        let ctx = ctx.clone();
+        let web_config = web_config.clone();
+        crate::api::blocking(move || {
+            super::storage::list_repos(&ctx, show, sort, page, per_page, &web_config)
+        })
+        .await
     }
 
     #[allow(clippy::result_large_err)]
@@ -386,8 +398,11 @@ async fn repo_search_handler(
 /// Get repo metadata.
 /// `GET /repos/:rid`
 async fn repo_handler(State(ctx): State<Context>, Path(rid): Path<RepoId>) -> impl IntoResponse {
-    let (repo, doc) = ctx.repo(rid)?;
-    let info = ctx.repo_info(&repo, doc)?;
+    let info = api::blocking(move || {
+        let (repo, doc) = ctx.repo(rid)?;
+        ctx.repo_info(&repo, doc)
+    })
+    .await?;
 
     Ok::<_, Error>(Json(info))
 }
@@ -409,8 +424,6 @@ async fn history_handler(
     Path(rid): Path<RepoId>,
     Query(qs): Query<CommitsQueryString>,
 ) -> impl IntoResponse {
-    let (repo, _) = ctx.repo(rid)?;
-    let (_, head) = repo.head()?;
     let CommitsQueryString {
         since,
         until,
@@ -424,37 +437,43 @@ async fn history_handler(
     // the caches to treat the response as immutable.
     let is_immutable = parent.is_some();
 
-    let sha = match parent {
-        Some(commit) => commit,
-        None => head.to_string(),
-    };
-    let repo = Repository::open(repo.path())?;
+    let commits = api::blocking(move || {
+        let (repo, _) = ctx.repo(rid)?;
+        let (_, head) = repo.head()?;
+        let sha = match parent {
+            Some(commit) => commit,
+            None => head.to_string(),
+        };
+        let repo = Repository::open(repo.path())?;
 
-    // If a pagination is defined, we do not want to paginate the commits, and we return all of them on the first page.
-    let page = page.unwrap_or(0);
-    let per_page = if per_page.is_none() && (since.is_some() || until.is_some()) {
-        usize::MAX
-    } else {
-        per_page.unwrap_or(30)
-    };
+        // If a pagination is defined, we do not want to paginate the commits, and we return all of them on the first page.
+        let page = page.unwrap_or(0);
+        let per_page = if per_page.is_none() && (since.is_some() || until.is_some()) {
+            usize::MAX
+        } else {
+            per_page.unwrap_or(30)
+        };
 
-    let commits = repo
-        .history(&sha)?
-        .filter_map(|commit| {
-            let commit = commit.ok()?;
-            let time = commit.committer.time.seconds();
-            let commit = api::json::commit::Commit::new(&commit).as_json();
-            match (since, until) {
-                (Some(since), Some(until)) if time >= since && time < until => Some(commit),
-                (Some(since), None) if time >= since => Some(commit),
-                (None, Some(until)) if time < until => Some(commit),
-                (None, None) => Some(commit),
-                _ => None,
-            }
-        })
-        .skip(page * per_page)
-        .take(per_page)
-        .collect::<Vec<_>>();
+        let commits = repo
+            .history(&sha)?
+            .filter_map(|commit| {
+                let commit = commit.ok()?;
+                let time = commit.committer.time.seconds();
+                let commit = api::json::commit::Commit::new(&commit).as_json();
+                match (since, until) {
+                    (Some(since), Some(until)) if time >= since && time < until => Some(commit),
+                    (Some(since), None) if time >= since => Some(commit),
+                    (None, Some(until)) if time < until => Some(commit),
+                    (None, None) => Some(commit),
+                    _ => None,
+                }
+            })
+            .skip(page * per_page)
+            .take(per_page)
+            .collect::<Vec<_>>();
+        Ok::<_, Error>(commits)
+    })
+    .await?;
 
     if is_immutable {
         Ok::<_, Error>(immutable_response(commits).into_response())
@@ -469,63 +488,66 @@ async fn commit_handler(
     State(ctx): State<Context>,
     Path((rid, sha)): Path<(RepoId, Oid)>,
 ) -> impl IntoResponse {
-    let (repo, _) = ctx.repo(rid)?;
-    let repo = Repository::open(repo.path())?;
-    let commit = repo.commit(sha)?;
+    let response = api::blocking(move || {
+        let (repo, _) = ctx.repo(rid)?;
+        let repo = Repository::open(repo.path())?;
+        let commit = repo.commit(sha)?;
 
-    let diff = repo.diff_commit(commit.id)?;
-    let glob = Glob::all_heads().branches().and(Glob::all_remotes());
-    let branches: Vec<String> = repo
-        .revision_branches(commit.id, glob)?
-        .iter()
-        .map(|b| b.refname().to_string())
-        .collect();
+        let diff = repo.diff_commit(commit.id)?;
+        let glob = Glob::all_heads().branches().and(Glob::all_remotes());
+        let branches: Vec<String> = repo
+            .revision_branches(commit.id, glob)?
+            .iter()
+            .map(|b| b.refname().to_string())
+            .collect();
 
-    let mut files: HashMap<Oid, BlobRef<'_>> = HashMap::new();
-    diff.files().for_each(|file_diff| match file_diff {
-        diff::FileDiff::Added(added) => {
-            if let Ok(blob) = repo.blob_ref(added.new.oid) {
-                files.insert(blob.id(), blob);
+        let mut files: HashMap<Oid, BlobRef<'_>> = HashMap::new();
+        diff.files().for_each(|file_diff| match file_diff {
+            diff::FileDiff::Added(added) => {
+                if let Ok(blob) = repo.blob_ref(added.new.oid) {
+                    files.insert(blob.id(), blob);
+                }
             }
-        }
-        diff::FileDiff::Deleted(deleted) => {
-            if let Ok(old_blob) = repo.blob_ref(deleted.old.oid) {
-                files.insert(old_blob.id(), old_blob);
+            diff::FileDiff::Deleted(deleted) => {
+                if let Ok(old_blob) = repo.blob_ref(deleted.old.oid) {
+                    files.insert(old_blob.id(), old_blob);
+                }
             }
-        }
-        diff::FileDiff::Modified(modified) => {
-            if let (Ok(old_blob), Ok(new_blob)) = (
-                repo.blob_ref(modified.old.oid),
-                repo.blob_ref(modified.new.oid),
-            ) {
-                files.insert(old_blob.id(), old_blob);
-                files.insert(new_blob.id(), new_blob);
+            diff::FileDiff::Modified(modified) => {
+                if let (Ok(old_blob), Ok(new_blob)) = (
+                    repo.blob_ref(modified.old.oid),
+                    repo.blob_ref(modified.new.oid),
+                ) {
+                    files.insert(old_blob.id(), old_blob);
+                    files.insert(new_blob.id(), new_blob);
+                }
             }
-        }
-        diff::FileDiff::Moved(moved) => {
-            if let (Ok(old_blob), Ok(new_blob)) =
-                (repo.blob_ref(moved.old.oid), repo.blob_ref(moved.new.oid))
-            {
-                files.insert(old_blob.id(), old_blob);
-                files.insert(new_blob.id(), new_blob);
+            diff::FileDiff::Moved(moved) => {
+                if let (Ok(old_blob), Ok(new_blob)) =
+                    (repo.blob_ref(moved.old.oid), repo.blob_ref(moved.new.oid))
+                {
+                    files.insert(old_blob.id(), old_blob);
+                    files.insert(new_blob.id(), new_blob);
+                }
             }
-        }
-        diff::FileDiff::Copied(copied) => {
-            if let (Ok(old_blob), Ok(new_blob)) =
-                (repo.blob_ref(copied.old.oid), repo.blob_ref(copied.new.oid))
-            {
-                files.insert(old_blob.id(), old_blob);
-                files.insert(new_blob.id(), new_blob);
+            diff::FileDiff::Copied(copied) => {
+                if let (Ok(old_blob), Ok(new_blob)) =
+                    (repo.blob_ref(copied.old.oid), repo.blob_ref(copied.new.oid))
+                {
+                    files.insert(old_blob.id(), old_blob);
+                    files.insert(new_blob.id(), new_blob);
+                }
             }
-        }
-    });
+        });
 
-    let response: serde_json::Value = json!({
-      "commit": api::json::commit::Commit::new(&commit).as_json(),
-      "diff": api::json::diff::Diff::new(&diff).as_json(),
-      "files": files,
-      "branches": branches
-    });
+        Ok::<_, Error>(json!({
+          "commit": api::json::commit::Commit::new(&commit).as_json(),
+          "diff": api::json::diff::Diff::new(&diff).as_json(),
+          "files": files,
+          "branches": branches
+        }))
+    })
+    .await?;
     Ok::<_, Error>(immutable_response(response))
 }
 
@@ -535,63 +557,66 @@ async fn diff_handler(
     State(ctx): State<Context>,
     Path((rid, base, oid)): Path<(RepoId, Oid, Oid)>,
 ) -> impl IntoResponse {
-    let (repo, _) = ctx.repo(rid)?;
-    let repo = Repository::open(repo.path())?;
-    let base = repo.commit(base)?;
-    let commit = repo.commit(oid)?;
-    let diff = repo.diff(base.id, commit.id)?;
-    let mut files: HashMap<Oid, BlobRef<'_>> = HashMap::new();
-    diff.files().for_each(|file_diff| match file_diff {
-        diff::FileDiff::Added(added) => {
-            if let Ok(new_blob) = repo.blob_ref(added.new.oid) {
-                files.insert(new_blob.id(), new_blob);
+    let response = api::blocking(move || {
+        let (repo, _) = ctx.repo(rid)?;
+        let repo = Repository::open(repo.path())?;
+        let base = repo.commit(base)?;
+        let commit = repo.commit(oid)?;
+        let diff = repo.diff(base.id, commit.id)?;
+        let mut files: HashMap<Oid, BlobRef<'_>> = HashMap::new();
+        diff.files().for_each(|file_diff| match file_diff {
+            diff::FileDiff::Added(added) => {
+                if let Ok(new_blob) = repo.blob_ref(added.new.oid) {
+                    files.insert(new_blob.id(), new_blob);
+                }
             }
-        }
-        diff::FileDiff::Deleted(deleted) => {
-            if let Ok(old_blob) = repo.blob_ref(deleted.old.oid) {
-                files.insert(old_blob.id(), old_blob);
+            diff::FileDiff::Deleted(deleted) => {
+                if let Ok(old_blob) = repo.blob_ref(deleted.old.oid) {
+                    files.insert(old_blob.id(), old_blob);
+                }
             }
-        }
-        diff::FileDiff::Modified(modified) => {
-            if let (Ok(new_blob), Ok(old_blob)) = (
-                repo.blob_ref(modified.old.oid),
-                repo.blob_ref(modified.new.oid),
-            ) {
-                files.insert(new_blob.id(), new_blob);
-                files.insert(old_blob.id(), old_blob);
+            diff::FileDiff::Modified(modified) => {
+                if let (Ok(new_blob), Ok(old_blob)) = (
+                    repo.blob_ref(modified.old.oid),
+                    repo.blob_ref(modified.new.oid),
+                ) {
+                    files.insert(new_blob.id(), new_blob);
+                    files.insert(old_blob.id(), old_blob);
+                }
             }
-        }
-        diff::FileDiff::Moved(moved) => {
-            if let (Ok(new_blob), Ok(old_blob)) =
-                (repo.blob_ref(moved.new.oid), repo.blob_ref(moved.old.oid))
-            {
-                files.insert(new_blob.id(), new_blob);
-                files.insert(old_blob.id(), old_blob);
+            diff::FileDiff::Moved(moved) => {
+                if let (Ok(new_blob), Ok(old_blob)) =
+                    (repo.blob_ref(moved.new.oid), repo.blob_ref(moved.old.oid))
+                {
+                    files.insert(new_blob.id(), new_blob);
+                    files.insert(old_blob.id(), old_blob);
+                }
             }
-        }
-        diff::FileDiff::Copied(copied) => {
-            if let (Ok(new_blob), Ok(old_blob)) =
-                (repo.blob_ref(copied.new.oid), repo.blob_ref(copied.old.oid))
-            {
-                files.insert(new_blob.id(), new_blob);
-                files.insert(old_blob.id(), old_blob);
+            diff::FileDiff::Copied(copied) => {
+                if let (Ok(new_blob), Ok(old_blob)) =
+                    (repo.blob_ref(copied.new.oid), repo.blob_ref(copied.old.oid))
+                {
+                    files.insert(new_blob.id(), new_blob);
+                    files.insert(old_blob.id(), old_blob);
+                }
             }
-        }
-    });
+        });
 
-    let commits = repo
-        .history(commit.id)?
-        .take_while(|c| {
-            if let Ok(c) = c {
-                c.id != base.id
-            } else {
-                false
-            }
-        })
-        .map(|r| r.map(|c| api::json::commit::Commit::new(&c).as_json()))
-        .collect::<Result<Vec<_>, _>>()?;
+        let commits = repo
+            .history(commit.id)?
+            .take_while(|c| {
+                if let Ok(c) = c {
+                    c.id != base.id
+                } else {
+                    false
+                }
+            })
+            .map(|r| r.map(|c| api::json::commit::Commit::new(&c).as_json()))
+            .collect::<Result<Vec<_>, _>>()?;
 
-    let response = json!({ "diff": diff, "files": files, "commits": commits });
+        Ok::<_, Error>(json!({ "diff": diff, "files": files, "commits": commits }))
+    })
+    .await?;
 
     Ok::<_, Error>(immutable_response(response))
 }
@@ -602,25 +627,29 @@ async fn activity_handler(
     State(ctx): State<Context>,
     Path(rid): Path<RepoId>,
 ) -> impl IntoResponse {
-    let (repo, _) = ctx.repo(rid)?;
-    let current_date = chrono::Utc::now().timestamp();
-    // SAFETY: The number of weeks is static and not out of bounds.
-    #[allow(clippy::unwrap_used)]
-    let one_year_ago = chrono::Duration::try_weeks(52).unwrap();
-    let repo = Repository::open(repo.path())?;
-    let head = repo.head()?;
-    let timestamps = repo
-        .history(head)?
-        .filter_map(|a| {
-            if let Ok(a) = a {
-                let seconds = a.committer.time.seconds();
-                if seconds > current_date - one_year_ago.num_seconds() {
-                    return Some(seconds);
+    let timestamps = api::blocking(move || {
+        let (repo, _) = ctx.repo(rid)?;
+        let current_date = chrono::Utc::now().timestamp();
+        // SAFETY: The number of weeks is static and not out of bounds.
+        #[allow(clippy::unwrap_used)]
+        let one_year_ago = chrono::Duration::try_weeks(52).unwrap();
+        let repo = Repository::open(repo.path())?;
+        let head = repo.head()?;
+        let timestamps = repo
+            .history(head)?
+            .filter_map(|a| {
+                if let Ok(a) = a {
+                    let seconds = a.committer.time.seconds();
+                    if seconds > current_date - one_year_ago.num_seconds() {
+                        return Some(seconds);
+                    }
                 }
-            }
-            None
-        })
-        .collect::<Vec<i64>>();
+                None
+            })
+            .collect::<Vec<i64>>();
+        Ok::<_, Error>(timestamps)
+    })
+    .await?;
 
     Ok::<_, Error>(cached_response(json!({ "activity": timestamps }), 3600))
 }
@@ -640,18 +669,30 @@ async fn tree_handler(
     State(ctx): State<Context>,
     Path((rid, sha, path)): Path<(RepoId, Oid, String)>,
 ) -> impl IntoResponse {
-    let (repo, _) = ctx.repo(rid)?;
-
     if let Some(ref cache) = ctx.cache {
-        let cache = &mut cache.tree.lock().await;
-        if let Some(response) = cache.get(&(rid, sha, path.clone())) {
-            return Ok::<_, Error>(immutable_response(response.clone()));
+        let hit = {
+            let mut cache = cache.tree.lock().await;
+            cache.get(&(rid, sha, path.clone())).cloned()
+        };
+        if let Some(response) = hit {
+            // Enforce repository visibility even on cache hits.
+            let ctx = ctx.clone();
+            api::blocking(move || ctx.repo(rid).map(|_| ())).await?;
+            return Ok::<_, Error>(immutable_response(response));
         }
     }
 
-    let repo = Repository::open(repo.path())?;
-    let tree = repo.tree(sha, &path)?;
-    let response = api::json::commit::Tree::new(&tree).as_json(&path);
+    let response = {
+        let ctx = ctx.clone();
+        let path = path.clone();
+        api::blocking(move || {
+            let (repo, _) = ctx.repo(rid)?;
+            let repo = Repository::open(repo.path())?;
+            let tree = repo.tree(sha, &path)?;
+            Ok::<_, Error>(api::json::commit::Tree::new(&tree).as_json(&path))
+        })
+        .await?
+    };
 
     if let Some(cache) = &ctx.cache {
         let cache = &mut cache.tree.lock().await;
@@ -667,9 +708,12 @@ async fn stats_tree_handler(
     State(ctx): State<Context>,
     Path((rid, sha)): Path<(RepoId, Oid)>,
 ) -> impl IntoResponse {
-    let (repo, _) = ctx.repo(rid)?;
-    let repo = Repository::open(repo.path())?;
-    let stats = repo.stats_from(&sha)?;
+    let stats = api::blocking(move || {
+        let (repo, _) = ctx.repo(rid)?;
+        let repo = Repository::open(repo.path())?;
+        Ok::<_, Error>(repo.stats_from(&sha)?)
+    })
+    .await?;
 
     Ok::<_, Error>(immutable_response(stats))
 }
@@ -677,15 +721,19 @@ async fn stats_tree_handler(
 /// Get all repo remotes.
 /// `GET /repos/:rid/remotes`
 async fn remotes_handler(State(ctx): State<Context>, Path(rid): Path<RepoId>) -> impl IntoResponse {
-    let (repo, doc) = ctx.repo(rid)?;
-    let delegates = doc.delegates();
-    let aliases = &ctx.profile.aliases();
+    let remotes = api::blocking(move || {
+        let (repo, doc) = ctx.repo(rid)?;
+        let delegates = doc.delegates();
+        let aliases = &ctx.profile.aliases();
 
-    let remotes = repo
-        .remotes()?
-        .filter_map(|r| r.map(|r| r.1).ok())
-        .map(|remote| remote_info(&repo, &remote, delegates, aliases))
-        .collect::<Vec<_>>();
+        let remotes = repo
+            .remotes()?
+            .filter_map(|r| r.map(|r| r.1).ok())
+            .map(|remote| remote_info(&repo, &remote, delegates, aliases))
+            .collect::<Vec<_>>();
+        Ok::<_, Error>(remotes)
+    })
+    .await?;
 
     Ok::<_, Error>(Json(remotes))
 }
@@ -696,12 +744,17 @@ async fn remote_handler(
     State(ctx): State<Context>,
     Path((rid, node_id)): Path<(RepoId, NodeId)>,
 ) -> impl IntoResponse {
-    let (repo, doc) = ctx.repo(rid)?;
-    let delegates = doc.delegates();
-    let aliases = &ctx.profile.aliases();
-    let remote = repo.remote(&node_id)?;
+    let info = api::blocking(move || {
+        let (repo, doc) = ctx.repo(rid)?;
+        let delegates = doc.delegates();
+        let aliases = &ctx.profile.aliases();
+        let remote = repo.remote(&node_id)?;
 
-    Ok::<_, Error>(Json(remote_info(&repo, &remote, delegates, aliases)))
+        Ok::<_, Error>(remote_info(&repo, &remote, delegates, aliases))
+    })
+    .await?;
+
+    Ok::<_, Error>(Json(info))
 }
 
 /// Information tracked per remote peer in Radicle storage.
@@ -825,6 +878,12 @@ fn remote_info(
         .set_delegate(delegates.contains(&id.into()))
 }
 
+/// A serialized blob response, or a marker that the blob exceeds the size limit.
+enum BlobOutcome {
+    Json(serde_json::Value),
+    TooLarge,
+}
+
 /// A blob read from the repository, or a marker that it exceeds the size limit.
 enum BlobData {
     Blob {
@@ -913,11 +972,28 @@ async fn blob_handler(
     State(ctx): State<Context>,
     Path((rid, sha, path)): Path<(RepoId, Oid, String)>,
 ) -> impl IntoResponse {
-    let (repo, _) = ctx.repo(rid)?;
-    let surf_repo = Repository::open(repo.path())?;
+    let outcome = api::blocking(move || {
+        let (repo, _) = ctx.repo(rid)?;
+        let surf_repo = Repository::open(repo.path())?;
 
-    match read_blob(&repo, &surf_repo, sha, &path)? {
-        BlobData::TooLarge => Ok::<_, Error>(
+        Ok::<_, Error>(match read_blob(&repo, &surf_repo, sha, &path)? {
+            BlobData::TooLarge => BlobOutcome::TooLarge,
+            BlobData::Blob {
+                is_binary,
+                content,
+                last_commit,
+            } => BlobOutcome::Json(api::json::commit::blob_json(
+                is_binary,
+                &content,
+                &path,
+                &last_commit,
+            )),
+        })
+    })
+    .await?;
+
+    match outcome {
+        BlobOutcome::TooLarge => Ok::<_, Error>(
             (
                 StatusCode::PAYLOAD_TOO_LARGE,
                 [(header::CACHE_CONTROL, "no-cache")],
@@ -925,19 +1001,7 @@ async fn blob_handler(
             )
                 .into_response(),
         ),
-        BlobData::Blob {
-            is_binary,
-            content,
-            last_commit,
-        } => Ok::<_, Error>(
-            immutable_response(api::json::commit::blob_json(
-                is_binary,
-                &content,
-                &path,
-                &last_commit,
-            ))
-            .into_response(),
-        ),
+        BlobOutcome::Json(value) => Ok::<_, Error>(immutable_response(value).into_response()),
     }
 }
 
@@ -947,54 +1011,57 @@ async fn readme_handler(
     State(ctx): State<Context>,
     Path((rid, sha)): Path<(RepoId, Oid)>,
 ) -> impl IntoResponse {
-    let (repo, _) = ctx.repo(rid)?;
-    let surf_repo = Repository::open(repo.path())?;
-    let paths = [
-        "README",
-        "README.md",
-        "README.markdown",
-        "README.txt",
-        "README.rst",
-        "README.org",
-        "Readme.md",
-    ];
+    let outcome = api::blocking(move || {
+        let (repo, _) = ctx.repo(rid)?;
+        let surf_repo = Repository::open(repo.path())?;
+        let paths = [
+            "README",
+            "README.md",
+            "README.markdown",
+            "README.txt",
+            "README.rst",
+            "README.org",
+            "Readme.md",
+        ];
 
-    for path in paths
-        .iter()
-        .map(ToString::to_string)
-        .chain(paths.iter().map(|p| p.to_lowercase()))
-    {
-        match read_blob(&repo, &surf_repo, sha, &path) {
-            Ok(BlobData::TooLarge) => {
-                return Ok::<_, Error>(
-                    (
-                        StatusCode::PAYLOAD_TOO_LARGE,
-                        [(header::CACHE_CONTROL, "no-cache")],
-                        Json(json!([])),
-                    )
-                        .into_response(),
-                );
-            }
-            Ok(BlobData::Blob {
-                is_binary,
-                content,
-                last_commit,
-            }) => {
-                return Ok::<_, Error>(
-                    immutable_response(api::json::commit::blob_json(
+        for path in paths
+            .iter()
+            .map(ToString::to_string)
+            .chain(paths.iter().map(|p| p.to_lowercase()))
+        {
+            match read_blob(&repo, &surf_repo, sha, &path) {
+                Ok(BlobData::TooLarge) => return Ok::<_, Error>(BlobOutcome::TooLarge),
+                Ok(BlobData::Blob {
+                    is_binary,
+                    content,
+                    last_commit,
+                }) => {
+                    return Ok::<_, Error>(BlobOutcome::Json(api::json::commit::blob_json(
                         is_binary,
                         &content,
                         &path,
                         &last_commit,
-                    ))
-                    .into_response(),
-                );
+                    )))
+                }
+                Err(_) => continue,
             }
-            Err(_) => continue,
         }
-    }
 
-    Err(Error::NotFound)
+        Err(Error::NotFound)
+    })
+    .await?;
+
+    match outcome {
+        BlobOutcome::TooLarge => Ok::<_, Error>(
+            (
+                StatusCode::PAYLOAD_TOO_LARGE,
+                [(header::CACHE_CONTROL, "no-cache")],
+                Json(json!([])),
+            )
+                .into_response(),
+        ),
+        BlobOutcome::Json(value) => Ok::<_, Error>(immutable_response(value).into_response()),
+    }
 }
 
 /// Get repo issues list.
@@ -1004,32 +1071,37 @@ async fn issues_handler(
     Path(rid): Path<RepoId>,
     Query(qs): Query<CobsQuery<api::query::IssueStatus>>,
 ) -> impl IntoResponse {
-    let (repo, _) = ctx.repo(rid)?;
-    let CobsQuery {
-        page,
-        per_page,
-        status,
-    } = qs;
-    let page = page.unwrap_or(0);
-    let per_page = per_page.unwrap_or(10);
-    let status = status.unwrap_or_default();
-    let issues = ctx.profile.issues(&repo)?;
-    let mut issues: Vec<_> = issues
-        .list()?
-        .filter_map(|r| {
-            let (id, issue) = r.ok()?;
-            (status.matches(issue.state())).then_some((id, issue))
-        })
-        .collect::<Vec<_>>();
+    let issues = api::blocking(move || {
+        let (repo, _) = ctx.repo(rid)?;
+        let CobsQuery {
+            page,
+            per_page,
+            status,
+        } = qs;
+        let page = page.unwrap_or(0);
+        let per_page = per_page.unwrap_or(10);
+        let status = status.unwrap_or_default();
+        let issues = ctx.profile.issues(&repo)?;
+        let mut issues: Vec<_> = issues
+            .list()?
+            .filter_map(|r| {
+                let (id, issue) = r.ok()?;
+                (status.matches(issue.state())).then_some((id, issue))
+            })
+            .collect::<Vec<_>>();
 
-    issues.sort_by_key(|(_, b)| std::cmp::Reverse(b.timestamp()));
-    let aliases = &ctx.profile.aliases();
-    let issues = issues
-        .into_iter()
-        .map(|(id, issue)| api::json::cobs::Issue::new(&issue).as_json(id, aliases))
-        .skip(page * per_page)
-        .take(per_page)
-        .collect::<Vec<_>>();
+        issues.sort_by_key(|(_, b)| std::cmp::Reverse(b.timestamp()));
+        let aliases = &ctx.profile.aliases();
+        Ok::<_, Error>(
+            issues
+                .into_iter()
+                .map(|(id, issue)| api::json::cobs::Issue::new(&issue).as_json(id, aliases))
+                .skip(page * per_page)
+                .take(per_page)
+                .collect::<Vec<_>>(),
+        )
+    })
+    .await?;
 
     Ok::<_, Error>(Json(issues))
 }
@@ -1040,17 +1112,20 @@ async fn issue_handler(
     State(ctx): State<Context>,
     Path((rid, issue_id)): Path<(RepoId, Oid)>,
 ) -> impl IntoResponse {
-    let (repo, _) = ctx.repo(rid)?;
-    let issue = ctx
-        .profile
-        .issues(&repo)?
-        .get(&(&*issue_id).into())?
-        .ok_or(Error::NotFound)?;
-    let aliases = ctx.profile.aliases();
+    let value = api::blocking(move || {
+        let (repo, _) = ctx.repo(rid)?;
+        let issue = ctx
+            .profile
+            .issues(&repo)?
+            .get(&(&*issue_id).into())?
+            .ok_or(Error::NotFound)?;
+        let aliases = ctx.profile.aliases();
 
-    Ok::<_, Error>(Json(
-        api::json::cobs::Issue::new(&issue).as_json((&*issue_id).into(), &aliases),
-    ))
+        Ok::<_, Error>(api::json::cobs::Issue::new(&issue).as_json((&*issue_id).into(), &aliases))
+    })
+    .await?;
+
+    Ok::<_, Error>(Json(value))
 }
 
 /// Get repo patches list.
@@ -1060,31 +1135,36 @@ async fn patches_handler(
     Path(rid): Path<RepoId>,
     Query(qs): Query<CobsQuery<api::query::PatchStatus>>,
 ) -> impl IntoResponse {
-    let (repo, _) = ctx.repo(rid)?;
-    let CobsQuery {
-        page,
-        per_page,
-        status,
-    } = qs;
-    let page = page.unwrap_or(0);
-    let per_page = per_page.unwrap_or(10);
-    let status = status.unwrap_or_default();
-    let patches = ctx.profile.patches(&repo)?;
-    let mut patches = patches
-        .list()?
-        .filter_map(|r| {
-            let (id, patch) = r.ok()?;
-            (status.matches(patch.state())).then_some((id, patch))
-        })
-        .collect::<Vec<_>>();
-    patches.sort_by_key(|(_, b)| std::cmp::Reverse(b.timestamp()));
-    let aliases = ctx.profile.aliases();
-    let patches = patches
-        .into_iter()
-        .map(|(id, patch)| api::json::cobs::Patch::new(&patch).as_json(id, &repo, &aliases))
-        .skip(page * per_page)
-        .take(per_page)
-        .collect::<Vec<_>>();
+    let patches = api::blocking(move || {
+        let (repo, _) = ctx.repo(rid)?;
+        let CobsQuery {
+            page,
+            per_page,
+            status,
+        } = qs;
+        let page = page.unwrap_or(0);
+        let per_page = per_page.unwrap_or(10);
+        let status = status.unwrap_or_default();
+        let patches = ctx.profile.patches(&repo)?;
+        let mut patches = patches
+            .list()?
+            .filter_map(|r| {
+                let (id, patch) = r.ok()?;
+                (status.matches(patch.state())).then_some((id, patch))
+            })
+            .collect::<Vec<_>>();
+        patches.sort_by_key(|(_, b)| std::cmp::Reverse(b.timestamp()));
+        let aliases = ctx.profile.aliases();
+        Ok::<_, Error>(
+            patches
+                .into_iter()
+                .map(|(id, patch)| api::json::cobs::Patch::new(&patch).as_json(id, &repo, &aliases))
+                .skip(page * per_page)
+                .take(per_page)
+                .collect::<Vec<_>>(),
+        )
+    })
+    .await?;
 
     Ok::<_, Error>(Json(patches))
 }
@@ -1095,16 +1175,21 @@ async fn patch_handler(
     State(ctx): State<Context>,
     Path((rid, patch_id)): Path<(RepoId, Oid)>,
 ) -> impl IntoResponse {
-    let (repo, _) = ctx.repo(rid)?;
-    let patches = ctx.profile.patches(&repo)?;
-    let patch = patches.get(&(&*patch_id).into())?.ok_or(Error::NotFound)?;
-    let aliases = ctx.profile.aliases();
+    let value = api::blocking(move || {
+        let (repo, _) = ctx.repo(rid)?;
+        let patches = ctx.profile.patches(&repo)?;
+        let patch = patches.get(&(&*patch_id).into())?.ok_or(Error::NotFound)?;
+        let aliases = ctx.profile.aliases();
 
-    Ok::<_, Error>(Json(api::json::cobs::Patch::new(&patch).as_json(
-        (&*patch_id).into(),
-        &repo,
-        &aliases,
-    )))
+        Ok::<_, Error>(api::json::cobs::Patch::new(&patch).as_json(
+            (&*patch_id).into(),
+            &repo,
+            &aliases,
+        ))
+    })
+    .await?;
+
+    Ok::<_, Error>(Json(value))
 }
 
 #[cfg(test)]

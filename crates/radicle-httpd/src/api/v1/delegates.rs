@@ -32,46 +32,50 @@ async fn delegates_repos_handler(
     } = qs;
     let page = page.unwrap_or(0);
     let per_page = per_page.unwrap_or(10).min(MAX_PER_PAGE);
-    let storage = &ctx.profile.storage;
-    let web_config = ctx.web_config().read().await;
-    let pinned = &web_config.pinned;
-    let mut repos = match show {
-        RepoQuery::All => storage
-            .repositories()?
+    let pinned = ctx.web_config().read().await.pinned.repositories.clone();
+
+    let infos = crate::api::blocking(move || {
+        let storage = &ctx.profile.storage;
+        let mut repos = match show {
+            RepoQuery::All => storage
+                .repositories()?
+                .into_iter()
+                .filter(|repo| repo.doc.visibility().is_public())
+                .filter(|repo| repo.doc.delegates().iter().any(|d| *d == did))
+                .collect::<Vec<_>>(),
+            RepoQuery::Pinned => storage
+                .repositories_by_id(pinned.iter())
+                .filter_map(|result| match result {
+                    Ok(repo) => Some(repo),
+                    Err(e) => {
+                        tracing::warn!("Failed to load pinned repository: {}", e);
+                        None
+                    }
+                })
+                .filter(|repo| repo.doc.visibility().is_public())
+                .filter(|repo| repo.doc.delegates().iter().any(|d| *d == did))
+                .collect::<Vec<_>>(),
+        };
+        repos.sort_by_key(|p| p.rid);
+
+        let infos = repos
             .into_iter()
-            .filter(|repo| repo.doc.visibility().is_public())
-            .filter(|repo| repo.doc.delegates().iter().any(|d| *d == did))
-            .collect::<Vec<_>>(),
-        RepoQuery::Pinned => storage
-            .repositories_by_id(pinned.repositories.iter())
-            .filter_map(|result| match result {
-                Ok(repo) => Some(repo),
-                Err(e) => {
-                    tracing::warn!("Failed to load pinned repository: {}", e);
-                    None
-                }
+            .filter_map(|id| {
+                let Ok((repo, doc)) = ctx.repo(id.rid) else {
+                    return None;
+                };
+                let Ok(repo_info) = ctx.repo_info(&repo, doc) else {
+                    return None;
+                };
+
+                Some(repo_info)
             })
-            .filter(|repo| repo.doc.visibility().is_public())
-            .filter(|repo| repo.doc.delegates().iter().any(|d| *d == did))
-            .collect::<Vec<_>>(),
-    };
-    repos.sort_by_key(|p| p.rid);
-
-    let infos = repos
-        .into_iter()
-        .filter_map(|id| {
-            let Ok((repo, doc)) = ctx.repo(id.rid) else {
-                return None;
-            };
-            let Ok(repo_info) = ctx.repo_info(&repo, doc) else {
-                return None;
-            };
-
-            Some(repo_info)
-        })
-        .skip(page * per_page)
-        .take(per_page)
-        .collect::<Vec<_>>();
+            .skip(page * per_page)
+            .take(per_page)
+            .collect::<Vec<_>>();
+        Ok::<_, Error>(infos)
+    })
+    .await?;
 
     Ok::<_, Error>(Json(infos))
 }

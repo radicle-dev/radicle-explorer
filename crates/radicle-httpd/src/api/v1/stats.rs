@@ -18,10 +18,13 @@ pub fn router(ctx: Context) -> Router {
 /// Return the stats for the node.
 /// `GET /stats`
 async fn stats_handler(State(ctx): State<Context>) -> impl IntoResponse {
-    let db = &ctx.profile.database()?;
-    let nid = ctx.profile.public_key;
+    let total_seeded = crate::api::blocking(move || {
+        let db = ctx.profile.database()?;
+        let nid = ctx.profile.public_key;
 
-    let total_seeded = db.get_inventory(&nid)?.len();
+        Ok::<_, Error>(db.get_inventory(&nid)?.len())
+    })
+    .await?;
 
     Ok::<_, Error>(Json(json!({ "repos": { "total": total_seeded } })))
 }
