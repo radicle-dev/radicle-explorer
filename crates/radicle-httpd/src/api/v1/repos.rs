@@ -825,6 +825,88 @@ fn remote_info(
         .set_delegate(delegates.contains(&id.into()))
 }
 
+/// A blob read from the repository, or a marker that it exceeds the size limit.
+enum BlobData {
+    Blob {
+        is_binary: bool,
+        content: Vec<u8>,
+        last_commit: Box<radicle_surf::Commit>,
+    },
+    TooLarge,
+}
+
+/// Read the blob at `path` in the tree of `commit`.
+///
+/// Resolves content via a direct tree lookup and the last-modifying commit via
+/// [`last_path_commit`], avoiding `radicle_surf::Repository::blob`, which walks
+/// the full history to find that commit.
+fn read_blob(
+    storage: &radicle::storage::git::Repository,
+    surf_repo: &Repository,
+    commit: Oid,
+    path: &str,
+) -> Result<BlobData, Error> {
+    let tree = storage.backend.find_commit(commit.into())?.tree()?;
+    let entry = tree.get_path(std::path::Path::new(path))?;
+    let blob = entry
+        .to_object(&storage.backend)?
+        .into_blob()
+        .map_err(|_| radicle::git::raw::Error::from_str("path does not point to a blob"))?;
+
+    if blob.content().len() > MAX_BODY_LIMIT {
+        return Ok(BlobData::TooLarge);
+    }
+
+    let last_commit = last_path_commit(surf_repo, storage.path(), commit, path)?;
+
+    Ok(BlobData::Blob {
+        is_binary: blob.is_binary(),
+        content: blob.content().to_vec(),
+        last_commit: Box::new(last_commit),
+    })
+}
+
+/// Resolve the most recent commit that modified `path`, reachable from `head`.
+///
+/// Fast path: `git rev-list -1` walks history using the commit-graph (when
+/// present), skipping the per-commit tree diff that a libgit2 pathspec walk
+/// performs. On large histories this is near-instant even for a file last
+/// touched long ago. Falls back to the surf history walk if the git binary is
+/// unavailable or errors.
+fn last_path_commit(
+    surf_repo: &Repository,
+    repo_path: &std::path::Path,
+    head: Oid,
+    path: &str,
+) -> Result<radicle_surf::Commit, Error> {
+    let fast = std::process::Command::new("git")
+        .current_dir(repo_path)
+        .arg("rev-list")
+        .arg("-1")
+        .arg(head.to_string())
+        .arg("--")
+        // `:(literal)` disables pathspec glob matching so file names containing
+        // `[`, `*` or `?` (e.g. `src/pages/[id].ts`) are looked up verbatim.
+        .arg(format!(":(literal){path}"))
+        .output()
+        .ok()
+        .filter(|output| output.status.success())
+        .and_then(|output| {
+            String::from_utf8_lossy(&output.stdout)
+                .trim()
+                .parse::<Oid>()
+                .ok()
+        });
+
+    match fast {
+        Some(oid) => Ok(surf_repo.commit(oid)?),
+        None => {
+            let path = std::path::Path::new(path);
+            surf_repo.last_commit(&path, head)?.ok_or(Error::NotFound)
+        }
+    }
+}
+
 /// Get repo source file.
 /// `GET /repos/:rid/blob/:sha/*path`
 async fn blob_handler(
@@ -832,22 +914,31 @@ async fn blob_handler(
     Path((rid, sha, path)): Path<(RepoId, Oid, String)>,
 ) -> impl IntoResponse {
     let (repo, _) = ctx.repo(rid)?;
-    let repo = Repository::open(repo.path())?;
-    let blob = repo.blob(sha, &path)?;
+    let surf_repo = Repository::open(repo.path())?;
 
-    if blob.size() > MAX_BODY_LIMIT {
-        return Ok::<_, Error>(
+    match read_blob(&repo, &surf_repo, sha, &path)? {
+        BlobData::TooLarge => Ok::<_, Error>(
             (
                 StatusCode::PAYLOAD_TOO_LARGE,
                 [(header::CACHE_CONTROL, "no-cache")],
                 Json(json!([])),
             )
                 .into_response(),
-        );
+        ),
+        BlobData::Blob {
+            is_binary,
+            content,
+            last_commit,
+        } => Ok::<_, Error>(
+            immutable_response(api::json::commit::blob_json(
+                is_binary,
+                &content,
+                &path,
+                &last_commit,
+            ))
+            .into_response(),
+        ),
     }
-    Ok::<_, Error>(
-        immutable_response(api::json::commit::Blob::new(&blob).as_json(&path)).into_response(),
-    )
 }
 
 /// Get repo readme.
@@ -857,7 +948,7 @@ async fn readme_handler(
     Path((rid, sha)): Path<(RepoId, Oid)>,
 ) -> impl IntoResponse {
     let (repo, _) = ctx.repo(rid)?;
-    let repo = Repository::open(repo.path())?;
+    let surf_repo = Repository::open(repo.path())?;
     let paths = [
         "README",
         "README.md",
@@ -873,8 +964,8 @@ async fn readme_handler(
         .map(ToString::to_string)
         .chain(paths.iter().map(|p| p.to_lowercase()))
     {
-        if let Ok(blob) = repo.blob(sha, &path) {
-            if blob.size() > MAX_BODY_LIMIT {
+        match read_blob(&repo, &surf_repo, sha, &path) {
+            Ok(BlobData::TooLarge) => {
                 return Ok::<_, Error>(
                     (
                         StatusCode::PAYLOAD_TOO_LARGE,
@@ -884,11 +975,22 @@ async fn readme_handler(
                         .into_response(),
                 );
             }
-
-            return Ok::<_, Error>(
-                immutable_response(api::json::commit::Blob::new(&blob).as_json(&path))
+            Ok(BlobData::Blob {
+                is_binary,
+                content,
+                last_commit,
+            }) => {
+                return Ok::<_, Error>(
+                    immutable_response(api::json::commit::blob_json(
+                        is_binary,
+                        &content,
+                        &path,
+                        &last_commit,
+                    ))
                     .into_response(),
-            );
+                );
+            }
+            Err(_) => continue,
         }
     }
 

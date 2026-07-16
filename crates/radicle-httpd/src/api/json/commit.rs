@@ -31,27 +31,28 @@ impl<'a> Commit<'a> {
     }
 }
 
-pub(crate) struct Blob<'a, T: AsRef<[u8]>>(&'a surf::blob::Blob<T>);
+/// Serialize a blob to JSON from its raw parts.
+///
+/// The blob is read directly via git, bypassing
+/// `radicle_surf::Repository::blob` and its history walk.
+pub(crate) fn blob_json(
+    is_binary: bool,
+    content: &[u8],
+    path: &str,
+    last_commit: &surf::Commit,
+) -> Value {
+    let content = match str::from_utf8(content) {
+        Ok(s) => s.to_owned(),
+        Err(_) => BASE64_STANDARD.encode(content),
+    };
 
-impl<'a, T: AsRef<[u8]>> Blob<'a, T> {
-    pub fn new(blob: &'a surf::blob::Blob<T>) -> Self {
-        Self(blob)
-    }
-
-    pub fn as_json(&self, path: &str) -> Value {
-        let content = match str::from_utf8(self.0.content()) {
-            Ok(s) => s.to_owned(),
-            Err(_) => BASE64_STANDARD.encode(self.0.content()),
-        };
-
-        json!({
-            "binary": self.0.is_binary(),
-            "name": name_in_path(path),
-            "content": content,
-            "path": path,
-            "lastCommit": Commit(self.0.commit()).as_json()
-        })
-    }
+    json!({
+        "binary": is_binary,
+        "name": name_in_path(path),
+        "content": content,
+        "path": path,
+        "lastCommit": Commit::new(last_commit).as_json()
+    })
 }
 
 pub(crate) struct Tree<'a>(&'a surf::tree::Tree);
