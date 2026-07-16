@@ -41,6 +41,12 @@ import type {
   Revision,
   Verdict,
 } from "./lib/repo/patch.js";
+import type {
+  Artifact,
+  Location,
+  Redaction,
+  Release,
+} from "./lib/repo/release.js";
 import type { RequestOptions } from "./lib/fetcher.js";
 import type { ZodSchema } from "zod";
 
@@ -57,6 +63,7 @@ import {
 } from "./lib/shared.js";
 
 export type {
+  Artifact,
   Author,
   BaseUrl,
   Blob,
@@ -79,11 +86,14 @@ export type {
   IssueState,
   Job,
   LifecycleState,
+  Location,
   Merge,
   Patch,
   PatchState,
   PeerRefs,
   Reaction,
+  Redaction,
+  Release,
   Remote,
   Repo,
   RepoListQuery,
