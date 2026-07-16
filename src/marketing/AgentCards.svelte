@@ -61,8 +61,8 @@
   <div class="product-card-text">
     <h3 class="product-title">Claude skill</h3>
     <p class="product-description">
-      Teach your AI agent to use Radicle. Break down issues into tasks, sync
-      progress, and capture session context, built for Claude Code.
+      Don’t want to learn Radicle? Let your agent do it. Claude Code manages
+      issues, patches, and session context for you.
     </p>
     <a
       href="https://radicle.network/nodes/seed.radicle.garden/rad:zvBj4kByGeQSrSy2c4H7fyK42cS8"

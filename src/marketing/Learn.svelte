@@ -194,36 +194,35 @@
     }
   }
 
-  .garden-banner {
+  .garden-promo {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+    padding: 2rem;
     margin: var(--section-gap) 0;
-    padding: 1.5rem;
-    min-height: 25.5rem;
     background:
       url("/marketing/images/garden.png") no-repeat right center,
       var(--color-accent-citrus-500);
     background-size: cover;
-    border-radius: 0.25rem;
+    border-radius: var(--border-radius-tiny);
   }
 
-  .garden-title {
-    max-width: 28rem;
-    color: var(--color-neutrals-opaque-dark-0);
-  }
-
-  .garden-bottom {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: flex-end;
-  }
-
-  .garden-description {
-    max-width: 25rem;
+  .garden-promo-text h3,
+  .garden-promo-text p {
     margin: 0;
-    color: var(--color-neutrals-opaque-dark-0);
+    max-width: 32rem;
+    color: var(--color-neutrals-opaque-light-900);
+  }
+
+  .garden-promo-text h3 {
+    padding-top: 0;
+    margin-bottom: 0.25rem;
+  }
+
+  .garden-promo-action {
+    align-self: flex-end;
   }
 
   @media (max-width: 90rem) {
@@ -237,15 +236,21 @@
     #guides.section {
       padding-top: 1.5rem;
     }
+  }
 
-    .garden-banner {
-      min-height: auto;
-    }
-
-    .garden-bottom {
+  @media (max-width: 56rem) {
+    .garden-promo {
       flex-direction: column;
       align-items: flex-start;
-      gap: 1rem;
+      gap: 1.5rem;
+    }
+
+    .garden-promo-action {
+      align-self: flex-start;
+    }
+
+    .garden-break {
+      display: none;
     }
   }
 </style>
@@ -418,7 +423,7 @@
     <div class="card-row faq-row">
       <article class="product-card">
         <div class="product-card-text">
-          <strong class="product-title">General Questions</strong>
+          <strong class="product-title">General questions</strong>
           <span class="product-description">
             What is Radicle and how is it different from GitHub? Who’s building
             it, how many people use it, and what’s the project’s history.
@@ -433,7 +438,7 @@
       </article>
       <article class="product-card">
         <div class="product-card-text">
-          <strong class="product-title">Technical Questions</strong>
+          <strong class="product-title">Technical questions</strong>
           <span class="product-description">
             What does “peer-to-peer” mean in practice? Why not just use Git
             directly? How does identity work without accounts? The technical
@@ -455,23 +460,27 @@
     </a>
   </section>
 
-  <section class="garden-banner">
-    <h2 class="txt-bold-32 garden-title">
-      Introducing Radicle Garden. The quickest way to get started on the
-      network.
-    </h2>
-    <div class="garden-bottom">
-      <p class="txt-medium-16 garden-description">
-        Get started in minutes—no servers required. Instantly share code and
-        discover new projects.
+  <section class="garden-promo">
+    <div class="garden-promo-text">
+      <h3 class="txt-bold-22">
+        Need a hosted node?
+        <br class="garden-break" />
+        Try Radicle Garden.
+      </h3>
+      <p class="txt-medium-16">
+        Always-on nodes for your repositories.
+        <br class="garden-break" />
+        No infrastructure to manage.
       </p>
+    </div>
+    <div class="garden-promo-action">
       <Button
         href="https://radicle.garden"
         variant="white"
         target="_blank"
         rel="noopener noreferrer">
         Visit radicle.garden
-        <span class="link-arrow link-arrow-up-right">↗</span>
+        <span class="link-arrow link-arrow-up-right" aria-hidden="true">↗</span>
       </Button>
     </div>
   </section>

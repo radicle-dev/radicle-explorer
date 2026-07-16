@@ -121,15 +121,18 @@
   transition: transform 0.15s ease;
 }
 
-.marketing .arrow-link:hover .link-arrow-right {
+.marketing .arrow-link:hover .link-arrow-right,
+.marketing .button:hover .link-arrow-right {
   transform: translateX(0.15rem);
 }
 
-.marketing .arrow-link:hover .link-arrow-down {
+.marketing .arrow-link:hover .link-arrow-down,
+.marketing .button:hover .link-arrow-down {
   transform: translateY(0.15rem);
 }
 
-.marketing .arrow-link:hover .link-arrow-up-right {
+.marketing .arrow-link:hover .link-arrow-up-right,
+.marketing .button:hover .link-arrow-up-right {
   transform: translate(0.15rem, -0.15rem);
 }
 
@@ -221,6 +224,11 @@
 
 .marketing .page-header {
   margin-bottom: 3rem;
+}
+
+/* Balance headline line lengths so the last line isn't a lone word (widow). */
+.marketing .page-header h1 {
+  text-wrap: balance;
 }
 
 .marketing .page-label {

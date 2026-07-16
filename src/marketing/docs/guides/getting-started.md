@@ -13,11 +13,11 @@ subtitle: A quick start guide to getting up and running with Radicle
 
 <Meta title="Getting Started | Radicle" description="A quick start guide to installing Radicle, creating your identity, and opening your first issue and patch." canonical="https://radicle.dev/guides/quick-start" />
 
-# Getting Started with Radicle
+# Getting started with Radicle
 
 This quick start guide will take you through the basic installation and usage of the Radicle toolchain.
 
-## Installing the Radicle Toolchain
+## Installing the Radicle toolchain
 
 Radicle is an ecosystem for code collaboration over a decentralized network.
 You can start by installing the command-line toolchain, which includes:
@@ -92,7 +92,7 @@ Currently, the best way to install on Windows is building it [from source](#from
 
 Pre-built binaries and verification instructions are available on the [download page](/download).
 
-## Creating Your Radicle Identity
+## Creating your Radicle identity
 
 Before using Radicle, you need to create an identity — a cryptographic key pair that uniquely identifies you and your node on the network:
 
@@ -137,7 +137,7 @@ did:key:z6Mkux1...
 > Radicle does not currently support using a single identity across multiple devices, nor rotating keys.
 > Each device requires its own identity.
 
-## Your Node and the Network
+## Your node and the network
 
 Radicle is a decentralized code forge — there is no central server.
 You participate in the network by running a node, which connects to other nodes to discover and replicate repositories.
@@ -185,7 +185,7 @@ $ rad node stop
 
 [systemd-service]: https://radicle.network/nodes/iris.radicle.network/rad:z3gqcJUoA1n9HaHKufZs5FCSGazv5/tree/systemd/user/radicle-node.service
 
-## Your First Repository
+## Your first repository
 
 Radicle is built on top of Git, so any existing Git repository can be published to the network.
 To publish your first repository, you can navigate to the repository and run `rad init`.
@@ -253,7 +253,7 @@ $ rad sync
 > Private repositories are only replicated to nodes you explicitly allow.
 > See the [User Guide](/guides/user#3-selectively-revealing-repositories) for details on managing access.
 
-## Cloning a Repository
+## Cloning a repository
 
 You can clone any repository from the network using its Repository ID (RID).
 For example, to clone Heartwood, the Radicle protocol implementation itself:
@@ -275,7 +275,7 @@ $ rad clone rad:z3gqcJUoA1n9HaHKufZs5FCSGazv5
 This fetches the repository from connected peers and creates a working copy, just like `git clone`.
 The difference is that Radicle will first ask the network for the repository, and clone it from the first available node.
 
-## Your First Issue
+## Your first issue
 
 Once you are working within a Radicle repository, it is easy to open an issue, whether your node is running or you are offline.
 
@@ -305,7 +305,7 @@ Here is an example of an issue in the `heartwood` repository:
 ╰───────────────────────────────────────────────────────────────────╯
 ```
 
-## Your First Patch
+## Your first patch
 
 At this stage, you will likely want to propose changes to a repository.
 As mentioned before, Radicle is built on top of Git, which means your `git` (or `jj`) workflow does not need to change too much.
@@ -381,7 +381,7 @@ $ git push rad patches/76f1369e7bab4126e97b175bcddea58f55f3c741
 Alternatively, you can create an upstream branch that points to `patches/76f1369e7bab4126e97b175bcddea58f55f3c741`.
 In fact, `rad patch checkout` will do this for you.
 
-## Next Steps
+## Next steps
 
 Now you know enough about Radicle to be dangerous!
 

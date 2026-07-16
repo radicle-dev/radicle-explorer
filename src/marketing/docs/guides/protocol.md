@@ -14,7 +14,7 @@ subtitle: How Radicle works under the hood
 
 <Meta title="Protocol Guide | Radicle" description="Gossip, replication, identity, and the data structures behind Radicle." canonical="https://radicle.dev/guides/protocol" />
 
-# Radicle Protocol Guide
+# Radicle protocol guide
 
 Heartwood, the latest generation of the [Radicle](/) protocol establishes a sovereign data network for code collaboration and publishing, built on top of [Git][git]. In Radicle, users maintain local copies of their repositories of interest and related social artifacts such as issues and patches. Instead of depending on a centralized service like GitHub, each participant in Radicle operates a node that is capable of running on a personal computer, and is connected via a peer-to-peer network.
 
@@ -39,7 +39,7 @@ Radicle is a [peer-to-peer][peer-to-peer] system, which means that there is no t
 <aside> In the peer-to-peer model, nodes act as <em>both clients and
 servers</em>. </aside>
 
-### Seeding Repositories
+### Seeding repositories
 
 Whenever a user clones, initializes, or opts to seed a repository, their node’s seeding policy is changed to reflect their choices. This policy establishes the repositories they are interested in and sets the rules for data retention, and synchronization, allowing users to have direct control over which repositories are kept on their device and offered to the network.
 
@@ -49,7 +49,7 @@ The typical end-user may choose to only seed the repositories they are actively 
 href="/guides/seeder">Radicle Seeder’s Guide</a>.
 </aside>
 
-### Node Identifiers (NIDs)
+### Node identifiers (NIDs)
 
 <aside class="kicker"> DIDs are a new identifier standard established by the
 W3C. </aside>
@@ -72,7 +72,7 @@ It is important to safeguard one’s private key, as if it is either lost or com
 <aside> In the Radicle protocol, the terms “Node ID”, “Peer ID”, and “Public
 Key” all refer to the same thing and can be used interchangeably. </aside>
 
-### Running a Node
+### Running a node
 
 To run a node and connect to the network, users install Radicle client software that is lightweight and suitable for use on both end-user devices and seed nodes. The reference implementation can be found in the Radicle [Heartwood][heartwood] repository, and is actively maintained by a small team of engineers.
 
@@ -85,7 +85,7 @@ The Radicle _stack_ is comprised of both the network client and a command line i
 <aside> For a guided install of the Radicle stack, check out the <a
 href="/guides/user">user guide</a>. For reproducible binaries and verification, see the <a href="/download">download</a> page. </aside>
 
-## Peer-to-peer Protocol
+## Peer-to-peer protocol
 
 Radicle adopts a local-first, peer-to-peer (P2P) architecture, which draws inspiration from Secure Scuttlebutt (SSB) and Bitcoin’s [Lightning Network][ln].
 
@@ -100,7 +100,7 @@ Unlike SSB’s focus on social networking via append-only logs, Radicle focuses 
   <figcaption>A set of connected peers forming a gossip network.</figcaption>
 </figure>
 
-### Gossip Protocol
+### Gossip protocol
 
 The Radicle networking layer is designed as a gossip protocol, where messages are relayed between peers to build routing tables that aid in repository discovery and replication. The core functionality is achieved with three message types, each fulfilling a distinct role:
 
@@ -145,7 +145,7 @@ Each announcement includes the originating _Node ID_ along with a _cryptographic
 
 > **Tip**: Refer to [RIP-1][rip-1] to learn more details about Radicle’s networking protocol.
 
-### Transport Encryption & Privacy
+### Transport encryption & privacy
 
 Connections between peers in the Radicle network are encrypted using a [Noise][noise] protocol handshake. This begins with two peers performing a [Diffie-Hellman][ecdh] key exchange to agree on a shared session key that is used for the duration of the connection.
 
@@ -186,7 +186,7 @@ href="https://en.wikipedia.org/wiki/Multiplexing">multiplexing</a>. </aside>
   <figcaption>Connection multiplexing in Radicle.</figcaption>
 </figure>
 
-### Bootstrap Nodes
+### Bootstrap nodes
 
 A node joining the network for the first time will not know any peers. Hence, it’s useful to pre-configure network clients with addresses of well-known nodes that can be used to initiate or _bootstrap_ the peer discovery process and build an address book.
 
@@ -194,7 +194,7 @@ Radicle’s reference implementation is pre-configured with two bootstrap nodes 
 
 In the bootstrapping process, nodes connect to an initial set of bootstrap nodes and once they establish a connection, use the regular peer discovery mechanism to find more peers.
 
-### Federation vs. Peer-to-peer
+### Federation vs. peer-to-peer
 
 Federation allows for a degree of sovereignty, as each node can set its content policies, but user experience and identity are ultimately tied and mediated by these nodes’ administrators rather than by the users themselves.
 
@@ -229,7 +229,7 @@ The identity document is where repository permissions and ownership are defined,
 
 Repositories are managed and owned by what are called _delegates_. A delegate is an individual, group, or bot, identified by a [DID][did]. Delegates are responsible for critical tasks such as merging patches, addressing issues, and modifying repository permissions. A repository always begins with one delegate, its creator, and can eventually grow to multiple delegates.
 
-### Identity Document
+### Identity document
 
 Before a repository can be published on Radicle, it needs to be initialized with an _identity document_. This JSON document, stored under the `refs/rad/id` reference in Git, encapsulates key metadata such as the repository’s name, description, and default branch. It also includes the DIDs of the repository’s delegates and the _threshold_ of delegate signatures required to authorize changes to the repository’s default branch.
 
@@ -254,7 +254,7 @@ Here’s an example of the identity document for the [heartwood][heartwood] repo
 }
 ```
 
-### Private Repositories
+### Private repositories
 
 Radicle supports **private repositories** where access is restricted to a designated group of trusted peers. This is achieved by setting the `visibility` attribute in the identity document. For example, the following snippet sets the visibility to _private_, while also allowing a specific peer to have access to the repository.
 
@@ -272,7 +272,7 @@ This ensures only nodes in the privacy set can replicate and access the data, ma
 
 Note that repository delegates _always_ have access to their private repositories.
 
-### Repository Identifier (RID)
+### Repository identifier (RID)
 
 To ensure uniqueness and easy identification of repositories, a stable and globally unique identifier, known as the Repository Identifier (RID), is assigned to each repository. The RID is deterministically derived from the initial version of the repository’s identity document. This process involves using Git’s `hash-object` function to produce a 160-bit SHA-1 digest of the document. This is then encoded using [multibase][mb] encoding with the `base-58-btc` alphabet, and prefixed with `rad:`, making it a valid [URN][urn]:
 
@@ -288,13 +288,13 @@ Since the RID is derived from the _initial_ version of the repository’s identi
 
 > **Tip**: Refer to [RIP-2][rip-2] for more details about how repository identity works in the Radicle protocol.
 
-## Local-First Storage
+## Local-first storage
 
 Storage is designed in such a way that it’s easy to transfer data between peers over the network using an unmodified Git protocol. Radicle repositories are simply Git repositories stored in a special location on disk. Peer data is stored within the same repository using Git [namespaces][gns], where Node IDs are used as the namespace. This allows storage to be managed through a partitioned approach where each user maintains their own _namespace_ of a repository, as well as namespaces of other users they have an interest in, all within the same Git repository. These copies are then shared among users across the network.
 
 We can view a peer’s namespace as their “soft-fork” of the repository. It is their own space for making changes to the repository without affecting other namespaces. The peer is the _sole owner and writer_ of this namespace, identified, and verified, by their Node ID.
 
-### Working vs. Stored Copy
+### Working vs. stored copy
 
 Storage is accessed directly by the node to report its inventory to other nodes, and by the end user through either specialized tooling or the `git` command line tool. Users are typically interacting with two repository copies: the _working copy_, and a remote _stored copy_ that is interacted with via `git push` and `git fetch`, using Radicle’s [git-remote-helper][grh].
 
@@ -307,7 +307,7 @@ Changes to the stored copy are automatically propagated to the network when the 
   <figcaption>Synchronizing the working copy with the stored copy of a repository.</figcaption>
 </figure>
 
-### Storage Layout
+### Storage layout
 
 Radicle’s storage layout is designed to support multiple repositories and multiple peers per repository. Each repository is a _bare_ Git repository, stored under a common base directory, identified uniquely with its Repository ID or RID. Instead of each of the repository’s peers storing data in a separate Git repository with a separate [object database][git-odb] (ODB), peer data is stored within the same Git repository using Git [namespaces][gns].
 
@@ -345,7 +345,7 @@ Though this storage tree is browsable by the user with standard file system comm
 
 > **Tip**: Refer to [RIP-3][rip-3] to learn more about storage in the Radicle protocol.
 
-### Git URL Scheme
+### Git URL scheme
 
 The Radicle protocol uses its own URL scheme to point to specific repository namespaces in the network. This allows the Git `fetch` and `push` commands to operate on the correct namespace when fetching or pushing code.
 
@@ -372,11 +372,11 @@ If a Node ID is not specified in the URL, Git will interact with the repository�
   references.</figcaption>
 </figure>
 
-## Trust through Self-Certification
+## Trust through self-certification
 
 Unlike centralized forges such as GitHub, where repositories are deemed authentic based on their location (e.g. `https://github.com/bitcoin/bitcoin`), in a decentralized network like Radicle, location is not enough. Instead, we need a way to automatically verify the data we get from _any given location_. This is because peers in a decentralized network may be dishonest. Radicle’s approach hinges on the self-certifying nature of its repositories, anchored in the repository [identity document](#identity-document).
 
-### Canonical Branches
+### Canonical branches
 
 When repositories are hosted in a known, trusted location, updating the repository’s canonical branch (eg. `master`) is simply a matter of pushing to that repository’s branch. Permission to push is granted to a small set of maintainers, and any one maintainer is allowed to update the branch.
 
@@ -384,13 +384,13 @@ In Radicle, lacking a central location where repositories are hosted, the canoni
 
 > **Note**: Currently, only the branch specified under the `defaultBranch` attribute of the identity document is set automatically based on a signature threshold. In the future, additional branches may be supported.
 
-### Self-certifying Repositories
+### Self-certifying repositories
 
 Together, a repository’s RID and its identity document create a cryptographic proof that serves as the basis for verifying all repository states leading up to its current state. For this reason, we say that Radicle repositories are _self-certifying_: the process of verification doesn’t require any inputs other than the repository itself.
 
 For repositories to be self-certifying, delegates authenticate every change to the repository data and metadata via cryptographic signatures. This includes all Git references published to the network.
 
-#### Signed Refs
+#### Signed refs
 
 To enable the verification of Git references beyond commits to the source code, Radicle automatically signs the entirety of a node’s references every time they change. This signature is then placed in a Git blob under a special branch referenced under `refs/rad/sigrefs`, along with the references that were signed.
 
@@ -426,7 +426,7 @@ through an <em>id</em> COB. </aside>
 
 COBs are identified by a unique type name in [reverse domain name notation][reverse-dns] and a unique Object ID.
 
-### Concurrency & Consistency
+### Concurrency & consistency
 
 In a system with no central server, operation concurrency is the norm. If two users comment on an issue at the same time, those comments will reach peers in the network at different times and in different orders. To maintain a good user experience, it’s important that these factors don’t determine the issue’s final state. All users must eventually converge to the same exact state and see the same thing.
 

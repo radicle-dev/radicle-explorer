@@ -35,10 +35,10 @@ const docsTitles = new Map<DocsPage, string>([
   ["faq", "FAQ"],
   ["glossary", "Glossary"],
   ["download", "Download"],
-  ["guides/getting-started", "Getting Started"],
-  ["guides/protocol", "Protocol Guide"],
-  ["guides/seeder", "Seeder Guide"],
-  ["guides/user", "User Guide"],
+  ["guides/getting-started", "Getting started"],
+  ["guides/protocol", "Protocol guide"],
+  ["guides/seeder", "Seeder guide"],
+  ["guides/user", "User guide"],
 ]);
 
 export function docsTitle(page: DocsPage): string[] {

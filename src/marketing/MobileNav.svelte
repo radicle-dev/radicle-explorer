@@ -272,7 +272,8 @@
               <div class="mobile-nav-text">
                 <span class="mobile-nav-title">Garden</span>
                 <span class="mobile-nav-description">
-                  The quickest way to get started on the network.
+                  An always-on hosted node that keeps your repositories
+                  available 24/7.
                 </span>
               </div>
             </a>

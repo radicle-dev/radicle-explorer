@@ -14,7 +14,7 @@ subtitle: How to run a Radicle seed node
 
 <Meta title="Seeder Guide | Radicle" description="Run a public seed node to keep repositories available 24/7." canonical="https://radicle.dev/guides/seeder" />
 
-# Radicle Seeder Guide
+# Radicle seeder guide
 
 To seed is to give back. By seeding repositories on the Radicle network, you offer bandwidth, storage, and data availability to Radicle users.
 
@@ -36,7 +36,7 @@ Therefore, a healthy peer-to-peer network necessitates at least _some_ highly av
 
 > By running a _permissive_ node (see below for further explanation), you are contributing to the growth and resilience of the Radicle network, but it is important to be aware of the potential implications of hosting data in a permissionless network. Use your best judgment. If you have any concerns, consider starting with the selective seeding policy, described in the following section, and expanding as you become more comfortable with the network.
 
-## Getting Started
+## Getting started
 
 For this guide, we’ll focus on setting up a seed node using `systemd`. If you’re running a different service manager, you should be able to follow along just fine, as we’ll be explaining the steps. Using a service manager is not required, but highly recommended.
 
@@ -127,7 +127,7 @@ Once your profile is initialized, a decentralized identifier (DID) will be outpu
 
 You can view information about your Radicle profile by running `rad self`. The `--nid` and `--alias` flags can be used to return the Node ID and alias.
 
-## Configuring Your Node
+## Configuring your node
 
 There are a couple of things we need to set up a seed node.
 
@@ -291,7 +291,7 @@ rad node config --addresses
 
 Share this with others, and they will be able to connect to your node using `rad node connect <address>`, or by adding your address to their configuration, under the `node.connect` field.
 
-#### DNS-Based Service Discovery
+#### DNS-based service discovery
 
 If you would like to facilitate discovery of your node via DNS, you can do so via [DNS-Based Service Discovery (DNS-SD)][dnssd]. This requires you to set three DNS records per node you are running.
 
@@ -315,7 +315,7 @@ With these records set, anyone can discover your nodes from the domain name `rad
 
 To find out more about the the interpretation of `SRV` records, refer to [RFC 2782][srv].
 
-## Running Your Node
+## Running your node
 
 Before setting up your node as a system service, it’s a good idea to run it once to make sure everything is working properly. Enter the following command to start your node in the foreground:
 
@@ -407,7 +407,7 @@ If you are running a firewall, ensure that port `8776` is open for TCP connectio
 
 > It’s recommended to run a basic firewall to further lock down your server, using something like `iptables`, though this is out of scope for this guide.
 
-## Running the HTTP Daemon
+## Running the HTTP daemon
 
 In the prior sections, we set up `radicle-node`, a background process that actively and continuously discovers and replicates repositories on the network, based on your seeding policy. This node allows users to collaborate, host, share, and publish repositories on the network via the Radicle CLI or any compatible application. However, at this stage, the repositories on your seed node cannot be browsed or viewed without cloning them first, using the Radicle CLI. To enable web browsing of the content of your seed node, the Radicle HTTP Daemon `radicle-httpd` needs to be deployed alongside `radicle-node`.
 
@@ -502,7 +502,7 @@ You should now be able to visit your seed node via any Radicle web frontend as w
 
 > On some distributions, installing `caddy` will start the system service automatically. If you’re not able to connect to your HTTP daemon from the outside, try running `systemctl reload caddy` after you’ve updated the configuration.
 
-## You’re All Set
+## You’re all set
 
 If you got this far, congratulations, you now have a Radicle seed node up and running!
 

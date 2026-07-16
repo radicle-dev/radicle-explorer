@@ -11,7 +11,7 @@ export interface Guide {
 // Learn page, and the next entries fill the small guide grid beneath it.
 export const guides: Guide[] = [
   {
-    title: "Getting Started",
+    title: "Getting started",
     description:
       "New to Radicle? This quick-start walks you through installing the stack, creating your identity, and opening your first patch.",
     href: "/guides/getting-started",
@@ -20,7 +20,7 @@ export const guides: Guide[] = [
     video: false,
   },
   {
-    title: "Protocol Guide",
+    title: "Protocol guide",
     description:
       "Gossip, replication, identity, and the data structures behind it all.",
     href: "/guides/protocol",
@@ -29,7 +29,7 @@ export const guides: Guide[] = [
     video: false,
   },
   {
-    title: "Seeder Guide",
+    title: "Seeder guide",
     description: "Run a public seed node to keep repositories available 24/7.",
     href: "/guides/seeder",
     image: "/marketing/images/learn/seeder.jpg",
@@ -37,7 +37,7 @@ export const guides: Guide[] = [
     video: false,
   },
   {
-    title: "User Guide",
+    title: "User guide",
     description:
       "Create an identity, open patches, manage issues, and collaborate from the CLI.",
     href: "/guides/user",
@@ -55,7 +55,7 @@ export const guides: Guide[] = [
     video: false,
   },
   {
-    title: "Custom Domains on Radicle Garden",
+    title: "Custom domains on Radicle Garden",
     description:
       "Set up a custom domain for your repositories on Radicle Garden.",
     href: "https://www.youtube.com/watch?v=KDbajeSTtjk",

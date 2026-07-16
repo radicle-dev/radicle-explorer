@@ -103,14 +103,13 @@
 
 <Meta
   title="Install | Radicle"
-  description="Everything you need to collaborate on code, from the terminal, the desktop, and agent skills." />
+  description="Everything you need to collaborate on code across the terminal, the desktop, and AI agents." />
 
 <main class="page-container">
   <header class="page-header">
     <h1 class="txt-bold-32">
       Get started with Radicle. <span class="txt-color-tertiary">
-        Everything you need to collaborate on code, from the terminal, the
-        desktop, and agent skills.
+        Everything you need to collaborate on code.
       </span>
     </h1>
   </header>

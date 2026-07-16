@@ -52,7 +52,6 @@
   }
 
   .button.white:hover {
-    opacity: 0.85;
     color: var(--color-neutrals-opaque-light-900);
   }
 </style>

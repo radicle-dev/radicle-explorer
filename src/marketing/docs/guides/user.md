@@ -14,7 +14,7 @@ subtitle: A fantastic journey through the Radicle universe
 
 <Meta title="User Guide | Radicle" description="Create an identity, open patches, manage issues, and collaborate from the CLI." canonical="https://radicle.dev/guides/user" />
 
-# Radicle User Guide
+# Radicle user guide
 
 Software is _the_ fundamental way in which we interface with data that comprises our current reality, and code is the language of software. Most software systems were created through a collaborative process involving multiple people. If we accept that software is important and collaborative by nature, then a shared system for communicating about code and collaborating is needed. This system shouldn’t be owned by one company, as code is too important to be monopolized.
 
@@ -47,7 +47,7 @@ We’ve created this Radicle Guide to initiate you as a settler of our network t
 <aside> The Radicle manual can be accessed by entering <code>man
 rad</code> from your command line, after installing Radicle. </aside>
 
-## 1. Getting Started
+## 1. Getting started
 
 One of the important facts to understand about Radicle is that it is a peer-to-peer protocol, which is uncommon when it comes to software you typically rely on. Most collaboration technologies are hinged upon a client-server model, where you’re entrusting your data and social interactions to a single entity that is managing a bunch of servers or data centers. This paradigm is transformed in a peer-to-peer protocol, where every user of the protocol is a _peer_, participating equally. Peers on the Radicle network are also referred to as **nodes**, and it doesn’t matter what you are doing -- whether you’re publishing repositories or discussing issues -- you have to run a node.
 
@@ -1221,7 +1221,7 @@ And, that’s a wrap! You now know the most relevant nitty gritty details of how
 
 _One thing to keep in mind is that Radicle doesn’t have advanced code review features yet for patches, but that is coming in a near-term release._
 
-## 3. Selectively Revealing Repositories
+## 3. Selectively revealing repositories
 
 In his influential work, [A Cypherpunk’s Manifesto][cyph-man] (1993), Eric Hughes eloquently encapsulated the essence of privacy, stating: **_Privacy is the power to selectively reveal oneself to the world._** This notion of self-determination and control over one’s personal information stands in stark contrast to the reality of using “private repository” features on traditional centralized code forges. In those systems, privacy is merely an illusion maintained by terms of service agreements, as data is stored in cleartext, fully accessible to the platform’s employees, vulnerable to potential misuse or leaks, and subject to external pressures such as government requests. Users are left with no real control, forced to blindly trust that their code and data won’t be viewed, exploited, or even used without consent for purposes like training large language models.
 
@@ -1603,7 +1603,7 @@ By leveraging Radicle’s private repositories and the Tor network, we protected
 
 While Mixed Mode allows us to connect to Tor nodes and traverse NATs, there are two additional configurations that offer more comprehensive network privacy through Tor, at the expense of network latency. These options route all Radicle traffic through the Tor network, including to nodes that are not configured with Tor.
 
-#### Full Proxy Mode
+#### Full proxy mode
 
 Full Proxy Mode routes all traffic through Tor for maximum anonymity.
 
@@ -1637,7 +1637,7 @@ Then, we change the `mode` for `.onion` addresses to `forward`, and remove the `
 
 The `listen` and `externalAddresses` configuration doesn’t change.
 
-#### Transparent Proxy Mode
+#### Transparent proxy mode
 
 If you’ve already set up a fully transparent Tor proxy on your network, simply omit the global proxy configuration, and set the `.onion` configuration to `forward`:
 

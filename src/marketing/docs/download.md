@@ -66,7 +66,7 @@ Replace `$TARGET` with one of:
 | macOS x86_64 | `x86_64-apple-darwin` |
 | macOS ARM64 | `aarch64-apple-darwin` |
 
-### Radicle HTTP Daemon
+### Radicle HTTP daemon
 
 ```
 curl -O -L https://files.radicle.dev/releases/radicle-httpd/latest/radicle-httpd-$TARGET.tar.xz

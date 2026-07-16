@@ -28,7 +28,7 @@ If you can’t find an answer here, drop by our [support channel][support] and a
 
 [support]: https://radicle.zulipchat.com/#narrow/stream/369873-support
 
-## General Questions
+## General questions
 
 ### What is Radicle? How is it different from Git/GitHub?
 
@@ -50,7 +50,7 @@ The current codebase is a little under 2 years old, but we’ve been working on 
 
 [heartwood]: https://radicle.network/nodes/seed.radicle.xyz/rad:z3gqcJUoA1n9HaHKufZs5FCSGazv5
 
-## Technical Questions
+## Technical questions
 
 ### What do you mean by “peer-to-peer”?
 
@@ -149,7 +149,7 @@ Radicle does not use DHT technology because DHTs don’t allow nodes on the netw
 
 Additionally, DHTs can introduce high network latency, especially in the case of permissionless networks, due to requests beyond routed across the globe.
 
-## User Experience
+## User experience
 
 ### Are there plans to add multilingual/localization support to the UI?
 
@@ -187,7 +187,7 @@ There is a Visual Studio Code [integration][vscode] extension built by the commu
 
 [vscode]: https://marketplace.visualstudio.com/items?itemName=radicle-ide-plugins-team.radicle
 
-## Monetization & Funding
+## Monetization & funding
 
 ### What is the monetization strategy for Radicle? Is Radicle free software?
 
@@ -207,7 +207,7 @@ The Radicle team is funded by [Radworks][radworks]. To date, around $7m has been
 
 ## Legal
 
-### Am I liable as a Node Operator?
+### Am I liable as a node operator?
 
 Node operators should consult applicable local regulations. Radicle is free and open-source software; the project does not provide legal advice.
 

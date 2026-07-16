@@ -130,6 +130,12 @@
 <style>
   /* color inherited from :root, padding from .page-container */
 
+  /* Balance the hero into even lines so the second sentence starts a new line
+     instead of leaving a hanging word, without forcing a break when it fits. */
+  .hero h1 {
+    text-wrap: balance;
+  }
+
   h3 {
     padding-top: 3rem;
     padding-bottom: 1rem;
@@ -461,6 +467,10 @@
     .garden-promo-action {
       align-self: flex-start;
     }
+
+    .garden-break {
+      display: none;
+    }
   }
 
   @media (max-width: 44rem) {
@@ -497,7 +507,7 @@
   </section>
   <section class="features">
     <article class="feature-card">
-      <h4 class="txt-bold-18">Local-First</h4>
+      <h4 class="txt-bold-18">Local-first</h4>
       <p class="txt-medium-16 txt-color-tertiary">
         Code, issues, and patches all live on your machine. No API limits, no
         latency, no outage to wait out. Your agents work offline and sync when
@@ -514,9 +524,9 @@
     </article>
 
     <article class="feature-card">
-      <h4 class="txt-bold-18">Signed by Default</h4>
+      <h4 class="txt-bold-18">Signed by default</h4>
       <p class="txt-medium-16 txt-color-tertiary">
-        Every change is cryptographically signed — commits, patches, issues,
+        Every change is cryptographically signed: commits, patches, issues,
         comments, all of it. Nothing enters your repo unverified, so the whole
         history is tamper-proof and attributable. Trust cryptography, not the
         platform.
@@ -524,20 +534,20 @@
     </article>
 
     <article class="feature-card">
-      <h4 class="txt-bold-18">Human-First, Agent-Scale</h4>
+      <h4 class="txt-bold-18">Human-first, agent-scale</h4>
       <p class="txt-medium-16 txt-color-tertiary">
         One person or a thousand agents, same conflict-free workflow. Each gets
         its own namespace, and Collaborative Objects merge concurrent edits
-        automatically — every one signed.
+        automatically, every one signed.
       </p>
     </article>
 
     <article class="feature-card">
-      <h4 class="txt-bold-18">Programmable Repos</h4>
+      <h4 class="txt-bold-18">Programmable repos</h4>
       <p class="txt-medium-16 txt-color-tertiary">
         Radicle extends Git with conflict-free, programmable data types that
-        live inside your repo. Design custom workflows for humans and agents,
-        and they travel with your code, not a vendor’s API.
+        live inside your repo. Design custom workflows for humans and agents
+        that travel with your code, not a vendor’s API.
       </p>
     </article>
 
@@ -626,15 +636,21 @@
       href={routeToPath(exploreRoute)}
       on:click={e => onRepoClick(e, exploreRoute)}
       class="all-repos txt-bold-18 arrow-link">
-      Explore <span class="link-arrow link-arrow-right">→</span>
+      Explore the network <span class="link-arrow link-arrow-right">→</span>
     </a>
   </section>
 
   <section class="garden-promo">
     <div class="garden-promo-text">
-      <h3 class="txt-bold-22">Need a hosted node? Try Radicle Garden.</h3>
+      <h3 class="txt-bold-22">
+        Need a hosted node?
+        <br class="garden-break" />
+        Try Radicle Garden.
+      </h3>
       <p class="txt-medium-16">
-        Always-on nodes for your repositories — no infrastructure to manage.
+        Always-on nodes for your repositories.
+        <br class="garden-break" />
+        No infrastructure to manage.
       </p>
     </div>
     <div class="garden-promo-action">
