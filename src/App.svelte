@@ -24,6 +24,8 @@
   import NotFound from "@app/views/NotFound.svelte";
   import Patch from "@app/views/repos/Patch.svelte";
   import Patches from "@app/views/repos/Patches.svelte";
+  import Release from "@app/views/repos/Release.svelte";
+  import Releases from "@app/views/repos/Releases.svelte";
   import Source from "@app/views/repos/Source.svelte";
   import Users from "@app/views/users/View.svelte";
 
@@ -100,6 +102,10 @@
   <Patches {...$activeRouteStore.params} />
 {:else if $activeRouteStore.resource === "repo.patch"}
   <Patch {...$activeRouteStore.params} />
+{:else if $activeRouteStore.resource === "repo.releases"}
+  <Releases {...$activeRouteStore.params} />
+{:else if $activeRouteStore.resource === "repo.release"}
+  <Release {...$activeRouteStore.params} />
 {:else if $activeRouteStore.resource === "error"}
   <Error {...$activeRouteStore.params} />
 {:else if $activeRouteStore.resource === "notFound"}

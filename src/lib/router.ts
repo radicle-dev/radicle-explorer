@@ -295,7 +295,9 @@ function setTitle(loadedRoute: LoadedRoute) {
     loadedRoute.resource === "repo.issue" ||
     loadedRoute.resource === "repo.issues" ||
     loadedRoute.resource === "repo.patches" ||
-    loadedRoute.resource === "repo.patch"
+    loadedRoute.resource === "repo.patch" ||
+    loadedRoute.resource === "repo.releases" ||
+    loadedRoute.resource === "repo.release"
   ) {
     title.push(...repoTitle(loadedRoute));
   } else if (loadedRoute.resource === "nodes") {
@@ -539,7 +541,9 @@ export function routeToPath(route: Route): string {
     route.resource === "repo.issues" ||
     route.resource === "repo.issue" ||
     route.resource === "repo.patches" ||
-    route.resource === "repo.patch"
+    route.resource === "repo.patch" ||
+    route.resource === "repo.releases" ||
+    route.resource === "repo.release"
   ) {
     return repoRouteToPath(route);
   } else if (

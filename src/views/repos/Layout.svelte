@@ -194,6 +194,24 @@
           </Button>
         </Link>
       </div>
+
+      <div style:width="100%">
+        <Link
+          title="Releases"
+          route={{
+            resource: "repo.releases",
+            repo: repo.rid,
+            node: baseUrl,
+          }}>
+          <Button
+            variant={activeTab === "releases"
+              ? "secondary"
+              : "secondary-mobile"}
+            styleWidth="100%">
+            <Icon name="parcel" />
+          </Button>
+        </Link>
+      </div>
     </MobileFooter>
   </div>
 </div>

@@ -17,6 +17,7 @@ import type {
   Patch,
   PatchState,
   PeerRefs,
+  Release,
   Remote,
   Repo,
   Revision,
@@ -39,6 +40,7 @@ import { nodePath } from "@app/views/nodes/router";
 
 export const PATCHES_PER_PAGE = 10;
 export const ISSUES_PER_PAGE = 10;
+export const RELEASES_PER_PAGE = 30;
 
 function peerHasBranches(peer: PeerRefs): boolean {
   return Object.keys(peer.refs).some(name => name.startsWith("refs/heads/"));
@@ -91,13 +93,29 @@ export type RepoRoute =
   | RepoIssuesRoute
   | RepoIssueRoute
   | RepoPatchesRoute
-  | RepoPatchRoute;
+  | RepoPatchRoute
+  | RepoReleasesRoute
+  | RepoReleaseRoute;
 
 interface RepoIssuesRoute {
   resource: "repo.issues";
   node: BaseUrl;
   repo: string;
   status?: "open" | "closed";
+}
+
+interface RepoReleasesRoute {
+  resource: "repo.releases";
+  node: BaseUrl;
+  repo: string;
+  allAuthors?: boolean;
+}
+
+interface RepoReleaseRoute {
+  resource: "repo.release";
+  node: BaseUrl;
+  repo: string;
+  release: string;
 }
 
 interface RepoIssueRoute {
@@ -242,6 +260,27 @@ export type RepoLoadedRoute =
         nodeId: string;
         nodeAvatarUrl: string | undefined;
       };
+    }
+  | {
+      resource: "repo.releases";
+      params: {
+        baseUrl: BaseUrl;
+        repo: Repo;
+        releases: Release[];
+        allAuthors: boolean;
+        nodeId: string;
+        nodeAvatarUrl: string | undefined;
+      };
+    }
+  | {
+      resource: "repo.release";
+      params: {
+        baseUrl: BaseUrl;
+        repo: Repo;
+        release: Release;
+        nodeId: string;
+        nodeAvatarUrl: string | undefined;
+      };
     };
 
 export type BlobResult =
@@ -340,6 +379,10 @@ export async function loadRepoRoute(
       return await loadIssuesView(route);
     } else if (route.resource === "repo.patches") {
       return await loadPatchesView(route);
+    } else if (route.resource === "repo.releases") {
+      return await loadReleasesView(route);
+    } else if (route.resource === "repo.release") {
+      return await loadReleaseView(route);
     } else {
       return unreachable(route);
     }
@@ -409,6 +452,58 @@ async function loadIssuesView(
       issues,
       status,
       repo,
+      nodeId: node.id,
+      nodeAvatarUrl: node.avatarUrl,
+    },
+  };
+}
+
+async function loadReleasesView(
+  route: RepoReleasesRoute,
+): Promise<RepoLoadedRoute> {
+  const api = new HttpdClient(route.node);
+  const allAuthors = route.allAuthors || false;
+
+  const [repo, releases, node] = await Promise.all([
+    api.repo.getByRid(route.repo),
+    api.repo.getAllReleases(route.repo, {
+      allAuthors,
+      page: 0,
+      perPage: RELEASES_PER_PAGE,
+    }),
+    api.getNode(),
+  ]);
+
+  return {
+    resource: "repo.releases",
+    params: {
+      baseUrl: route.node,
+      releases,
+      allAuthors,
+      repo,
+      nodeId: node.id,
+      nodeAvatarUrl: node.avatarUrl,
+    },
+  };
+}
+
+async function loadReleaseView(
+  route: RepoReleaseRoute,
+): Promise<RepoLoadedRoute> {
+  const api = new HttpdClient(route.node);
+
+  const [repo, release, node] = await Promise.all([
+    api.repo.getByRid(route.repo),
+    api.repo.getReleaseById(route.repo, route.release),
+    api.getNode(),
+  ]);
+
+  return {
+    resource: "repo.release",
+    params: {
+      baseUrl: route.node,
+      repo,
+      release,
       nodeId: node.id,
       nodeAvatarUrl: node.avatarUrl,
     },
@@ -967,6 +1062,27 @@ export function resolveRepoRoute(
     }
   } else if (content === "patches") {
     return resolvePatchesRoute(node, repo, segments, urlSearch);
+  } else if (content === "releases") {
+    const release = segments.shift();
+    if (release) {
+      return {
+        resource: "repo.release",
+        node,
+        repo,
+        release,
+      };
+    } else {
+      const allAuthors =
+        new URLSearchParams(sanitizeQueryString(urlSearch)).get(
+          "allAuthors",
+        ) === "true";
+      return {
+        resource: "repo.releases",
+        node,
+        repo,
+        allAuthors,
+      };
+    }
   } else {
     return null;
   }
@@ -1088,6 +1204,14 @@ export function repoRouteToPath(route: RepoRoute): string {
     return url;
   } else if (route.resource === "repo.patch") {
     return patchRouteToPath(route);
+  } else if (route.resource === "repo.releases") {
+    let url = [...pathSegments, "releases"].join("/");
+    if (route.allAuthors) {
+      url += "?allAuthors=true";
+    }
+    return url;
+  } else if (route.resource === "repo.release") {
+    return [...pathSegments, "releases", route.release].join("/");
   } else {
     return unreachable(route);
   }
@@ -1157,6 +1281,16 @@ export function repoTitle(loadedRoute: RepoLoadedRoute) {
   } else if (loadedRoute.resource === "repo.patches") {
     title.push(project.data.name);
     title.push("patches");
+  } else if (loadedRoute.resource === "repo.release") {
+    title.push(
+      loadedRoute.params.release.title ||
+        loadedRoute.params.release.tagName ||
+        loadedRoute.params.release.id,
+    );
+    title.push("release");
+  } else if (loadedRoute.resource === "repo.releases") {
+    title.push(project.data.name);
+    title.push("releases");
   } else {
     return unreachable(loadedRoute);
   }

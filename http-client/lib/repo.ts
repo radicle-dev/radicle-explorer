@@ -2,6 +2,7 @@ import type { Fetcher, RequestOptions } from "./fetcher.js";
 import type { Commit, Commits } from "./repo/commit.js";
 import type { Issue } from "./repo/issue.js";
 import type { Patch } from "./repo/patch.js";
+import type { Release } from "./repo/release.js";
 import type { ZodSchema } from "zod";
 
 import {
@@ -26,6 +27,7 @@ import {
 } from "./repo/commit.js";
 import { issueSchema, issuesSchema } from "./repo/issue.js";
 import { patchSchema, patchesSchema } from "./repo/patch.js";
+import { releaseSchema, releasesSchema } from "./repo/release.js";
 import { authorSchema } from "./shared.js";
 
 export type PeerRefs = {
@@ -68,6 +70,8 @@ const repoSchema = object({
           open: number(),
           closed: number(),
         }),
+        // Optional: absent on older nodes that don't report release counts.
+        releases: optional(number()),
       }),
     }),
   }),
@@ -501,6 +505,42 @@ export class Client {
         options,
       },
       patchesSchema,
+    );
+  }
+
+  public async getReleaseById(
+    rid: string,
+    releaseId: string,
+    options?: RequestOptions,
+  ): Promise<Release> {
+    return this.#fetcher.fetchOk(
+      {
+        method: "GET",
+        path: `repos/${rid}/releases/${releaseId}`,
+        options,
+      },
+      releaseSchema,
+    );
+  }
+
+  public async getAllReleases(
+    rid: string,
+    query?: {
+      page?: number;
+      perPage?: number;
+      allAuthors?: boolean;
+      showRedacted?: boolean;
+    },
+    options?: RequestOptions,
+  ): Promise<Release[]> {
+    return this.#fetcher.fetchOk(
+      {
+        method: "GET",
+        path: `repos/${rid}/releases`,
+        query,
+        options,
+      },
+      releasesSchema,
     );
   }
 }

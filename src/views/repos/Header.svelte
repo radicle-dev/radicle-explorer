@@ -1,5 +1,10 @@
 <script lang="ts" context="module">
-  export type ActiveTab = "source" | "issues" | "patches" | undefined;
+  export type ActiveTab =
+    | "source"
+    | "issues"
+    | "patches"
+    | "releases"
+    | undefined;
 </script>
 
 <script lang="ts">
@@ -35,6 +40,12 @@
     } else if (activeTab === "patches") {
       return routeToPath({
         resource: "repo.patches",
+        repo: repo.rid,
+        node: baseUrl,
+      });
+    } else if (activeTab === "releases") {
+      return routeToPath({
+        resource: "repo.releases",
         repo: repo.rid,
         node: baseUrl,
       });
@@ -152,10 +163,34 @@
     </Button>
   </Link>
 
+  <Link
+    route={{
+      resource: "repo.releases",
+      repo: repo.rid,
+      node: baseUrl,
+    }}>
+    <Button
+      let:hover
+      variant={activeTab === "releases" ? "gray" : "background"}>
+      <Icon name="parcel" />
+      <div class="title-counter">
+        Releases
+        {#if repo.payloads["xyz.radicle.project"].meta.releases !== undefined}
+          <span
+            class="counter"
+            class:hover={hover && activeTab !== "releases"}
+            class:selected={activeTab === "releases"}>
+            {repo.payloads["xyz.radicle.project"].meta.releases}
+          </span>
+        {/if}
+      </div>
+    </Button>
+  </Link>
+
   <div class="spacer"></div>
 
   <div class="actions">
-    {#if activeTab !== "issues" && activeTab !== "patches"}
+    {#if activeTab !== "issues" && activeTab !== "patches" && activeTab !== "releases"}
       <Button variant="outline" size="regular" on:click={copyLink}>
         <Icon name={shareIcon} />
         <span class="global-hide-on-small-desktop-down">Copy link</span>
