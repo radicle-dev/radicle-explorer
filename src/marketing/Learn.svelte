@@ -289,38 +289,62 @@
             <line x1="232" y1="283" x2="63" y2="202" />
             <line x1="128" y1="283" x2="86" y2="100" />
           </g>
-          <circle class="nd-blue" cx="180" cy="55" r="20" fill-opacity="0.13" />
-          <circle
-            class="nd-green"
-            cx="274"
-            cy="100"
-            r="20"
-            fill-opacity="0.13" />
-          <circle
-            class="nd-purple"
-            cx="297"
-            cy="202"
-            r="20"
-            fill-opacity="0.13" />
-          <circle
+          <rect
             class="nd-blue"
-            cx="232"
-            cy="283"
-            r="20"
+            x="160"
+            y="35"
+            width="40"
+            height="40"
+            rx="12"
             fill-opacity="0.13" />
-          <circle
+          <rect
             class="nd-green"
-            cx="128"
-            cy="283"
-            r="20"
+            x="254"
+            y="80"
+            width="40"
+            height="40"
+            rx="12"
             fill-opacity="0.13" />
-          <circle
+          <rect
             class="nd-purple"
-            cx="63"
-            cy="202"
-            r="20"
+            x="277"
+            y="182"
+            width="40"
+            height="40"
+            rx="12"
             fill-opacity="0.13" />
-          <circle class="nd-blue" cx="86" cy="100" r="20" fill-opacity="0.13" />
+          <rect
+            class="nd-blue"
+            x="212"
+            y="263"
+            width="40"
+            height="40"
+            rx="12"
+            fill-opacity="0.13" />
+          <rect
+            class="nd-green"
+            x="108"
+            y="263"
+            width="40"
+            height="40"
+            rx="12"
+            fill-opacity="0.13" />
+          <rect
+            class="nd-purple"
+            x="43"
+            y="182"
+            width="40"
+            height="40"
+            rx="12"
+            fill-opacity="0.13" />
+          <rect
+            class="nd-blue"
+            x="66"
+            y="80"
+            width="40"
+            height="40"
+            rx="12"
+            fill-opacity="0.13" />
           <circle class="nd-blue" cx="180" cy="55" r="9" />
           <circle class="nd-green" cx="274" cy="100" r="9" />
           <circle class="nd-purple" cx="297" cy="202" r="9" />
