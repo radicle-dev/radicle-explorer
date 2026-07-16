@@ -53,6 +53,21 @@ pub struct CobsQuery<T> {
     pub status: Option<T>,
 }
 
+/// Query parameters for the releases list endpoint.
+///
+/// Releases and artifacts are scoped to the repository's delegates by default;
+/// the boolean flags widen that view. See `api/v1/repos/releases.rs`.
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct ReleasesQuery {
+    pub page: Option<usize>,
+    pub per_page: Option<usize>,
+    /// Include releases and artifacts authored by non-delegates.
+    pub all_authors: Option<bool>,
+    /// Include artifacts redacted by their author or a delegate.
+    pub show_redacted: Option<bool>,
+}
+
 #[derive(Default, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub enum IssueStatus {

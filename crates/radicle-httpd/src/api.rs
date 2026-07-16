@@ -14,6 +14,7 @@ use radicle::patch::cache::Patches as _;
 use radicle::storage::git::Repository;
 use radicle::storage::{ReadRepository, ReadStorage};
 use radicle::{git, web, Profile};
+use radicle_artifact::Releases;
 use tokio::sync::RwLock;
 
 mod error;
@@ -29,7 +30,7 @@ use crate::Options;
 
 pub const RADICLE_VERSION: &str = env!("RADICLE_VERSION");
 // This version has to be updated on every breaking change to the radicle-httpd API.
-pub const API_VERSION: &str = "6.1.0";
+pub const API_VERSION: &str = "6.2.0";
 
 /// Thread-safe wrapper around radicle's web configuration.
 ///
@@ -150,6 +151,9 @@ impl Context {
                     let patches = patches.counts().ok()?;
                     let issues = self.profile.issues(repo).ok()?;
                     let issues = issues.counts().ok()?;
+                    // Full count of release COBs; the default releases list
+                    // shows only delegate-authored ones, so this can be higher.
+                    let releases = Releases::open(repo).ok()?.count().unwrap_or_default();
 
                     Some((
                         id.clone(),
@@ -158,7 +162,8 @@ impl Context {
                             "meta": {
                                 "head": head,
                                 "issues": issues,
-                                "patches": patches
+                                "patches": patches,
+                                "releases": releases
                             }
                         }),
                     ))
