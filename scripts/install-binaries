@@ -4,10 +4,13 @@ set -e
 REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo "$PWD")
 RELEASE=$(cat "$REPO_ROOT/tests/support/heartwood-release")
 HTTPD_RELEASE=$(cat "$REPO_ROOT/tests/support/radicle-httpd-release")
+ARTIFACT_RELEASE=$(cat "$REPO_ROOT/tests/support/radicle-artifact-release")
 BINARY_PATH=$REPO_ROOT/tests/tmp/bin
 OS=$(uname)
 
 install() {
+  local BINARY=""
+
   if test -d "$BINARY_PATH/$1/$2"; then
     echo ✅ "Folder $BINARY_PATH/$1/$2 exists already skipping download."
   else
@@ -32,13 +35,23 @@ install() {
       FETCH_URL="https://files.radicle.dev/releases/radicle-httpd/$2/radicle-httpd-$ARCH.tar.xz"
       FILENAME="radicle-httpd-$2-$ARCH"
       ;;
+    artifact)
+      # radicle-artifact publishes bare executables instead of archives.
+      FETCH_URL="https://files.radicle.dev/releases/radicle-artifact/$2/rad-artifact_$2_$ARCH"
+      BINARY="rad-artifact"
+      ;;
     *)
       echo "No precompiled binary found with the name $1." && exit 1
       ;;
     esac
 
     echo Downloading "$1" v"$2" from "$FETCH_URL into /tests/tmp/bin/$1/$2"
-    curl --fail --silent --location "$FETCH_URL" | tar -xJ --strip-components=2 -C "$BINARY_PATH/$1/$2" "$FILENAME/bin/" || (echo "Download failed" && exit 1)
+    if test -n "$BINARY"; then
+      curl --fail --silent --location --output "$BINARY_PATH/$1/$2/$BINARY" "$FETCH_URL" || (echo "Download failed" && exit 1)
+      chmod +x "$BINARY_PATH/$1/$2/$BINARY"
+    else
+      curl --fail --silent --location "$FETCH_URL" | tar -xJ --strip-components=2 -C "$BINARY_PATH/$1/$2" "$FILENAME/bin/" || (echo "Download failed" && exit 1)
+    fi
   fi
 }
 
@@ -65,5 +78,6 @@ done
 
 install "heartwood" "$RELEASE"
 install "httpd" "$HTTPD_RELEASE"
+install "artifact" "$ARTIFACT_RELEASE"
 
 echo

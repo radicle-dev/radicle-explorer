@@ -54,5 +54,10 @@ jobs:
         run: cargo clippy --workspace --all-features --tests
         env:
           RUSTFLAGS: -D warnings
+      # Nothing else compiles the artifacts-off path, so it would rot.
+      - name: Run clippy on httpd without default features
+        run: cargo clippy -p radicle-httpd --no-default-features --tests
+        env:
+          RUSTFLAGS: -D warnings
       - name: Check formatting
         run: cargo fmt --all -- --check

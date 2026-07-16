@@ -195,6 +195,26 @@
           </Button>
         </Link>
       </div>
+
+      {#if repo.payloads["xyz.radicle.project"].meta.releases !== undefined}
+        <div style:width="100%">
+          <Link
+            title="Releases"
+            route={{
+              resource: "repo.releases",
+              repo: repoId,
+              node: baseUrl,
+            }}>
+            <Button
+              variant={activeTab === "releases"
+                ? "secondary"
+                : "secondary-mobile"}
+              styleWidth="100%">
+              <Icon name="parcel" />
+            </Button>
+          </Link>
+        </div>
+      {/if}
     </MobileFooter>
   </div>
 </div>

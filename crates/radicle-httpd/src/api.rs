@@ -14,6 +14,8 @@ use radicle::patch::cache::Patches as _;
 use radicle::storage::git::Repository;
 use radicle::storage::{ReadRepository, ReadStorage};
 use radicle::{git, web, Profile};
+#[cfg(feature = "artifacts")]
+use radicle_artifact::Releases;
 use tokio::sync::RwLock;
 
 mod error;
@@ -29,7 +31,7 @@ use crate::Options;
 
 pub const RADICLE_VERSION: &str = env!("RADICLE_VERSION");
 // This version has to be updated on every breaking change to the radicle-httpd API.
-pub const API_VERSION: &str = "6.1.0";
+pub const API_VERSION: &str = "6.2.0";
 
 /// Thread-safe wrapper around radicle's web configuration.
 ///
@@ -178,16 +180,18 @@ impl Context {
                     let patches = patches.counts().ok()?;
                     let issues = self.profile.issues(repo).ok()?;
                     let issues = issues.counts().ok()?;
+                    let mut meta = json!({
+                        "head": head,
+                        "issues": issues,
+                        "patches": patches
+                    });
+                    add_releases_meta(&mut meta, repo);
 
                     Some((
                         id.clone(),
                         json!({
                             "data": payload,
-                            "meta": {
-                                "head": head,
-                                "issues": issues,
-                                "patches": patches
-                            }
+                            "meta": meta
                         }),
                     ))
                 } else {
@@ -237,6 +241,21 @@ impl Context {
         &self.profile
     }
 }
+
+/// Add the release count to a project payload's `meta` object.
+#[cfg(feature = "artifacts")]
+fn add_releases_meta(meta: &mut Value, repo: &Repository) {
+    let releases = Releases::open(repo)
+        .ok()
+        .and_then(|releases| releases.count().ok())
+        .unwrap_or_default();
+
+    meta["releases"] = json!(releases);
+}
+
+/// Without artifact support there is no release store, so the key is omitted.
+#[cfg(not(feature = "artifacts"))]
+fn add_releases_meta(_meta: &mut Value, _repo: &Repository) {}
 
 /// Run a blocking closure on the blocking thread pool.
 ///

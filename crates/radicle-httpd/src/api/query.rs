@@ -53,6 +53,18 @@ pub struct CobsQuery<T> {
     pub status: Option<T>,
 }
 
+#[cfg(feature = "artifacts")]
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct ReleasesQuery {
+    pub page: Option<usize>,
+    pub per_page: Option<usize>,
+    /// Include releases and artifacts authored by non-delegates.
+    pub all_authors: Option<bool>,
+    /// Include artifacts redacted by their author or a delegate.
+    pub show_redacted: Option<bool>,
+}
+
 #[derive(Default, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub enum IssueStatus {

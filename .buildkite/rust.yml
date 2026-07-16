@@ -76,4 +76,8 @@ steps:
       # components. Only this step needs them.
       - rustup component add rustfmt clippy
       - RUSTFLAGS="-D warnings" cargo clippy --workspace --all-features --tests
+      # Run clippy with default features disabled (artifacts)
+      # TODO: If more features are added explore adding `cargo hack --feature-powerset`
+      # to cover every feature combination
+      - RUSTFLAGS="-D warnings" cargo clippy -p radicle-httpd --no-default-features --tests
       - cargo fmt --all -- --check

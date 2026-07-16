@@ -104,12 +104,17 @@ export const test = base.extend<{
     await logFile.close();
   },
 
-  peerManager: async ({ stateDir, outputLog }, use) => {
+  peerManager: async ({ stateDir, outputLog, page }, use) => {
     const peerManager = await createPeerManager({
       dataDir: Path.resolve(Path.join(stateDir, "peers")),
       outputLog,
     });
     await use(peerManager);
+    // A test can end with requests still in flight, because the router pushes
+    // the URL before the route finishes loading. Close the page before the
+    // nodes go away, so those requests don't fail against a dead httpd and
+    // trip the page error handler above after the test has already passed.
+    await page.close();
     await peerManager.shutdown();
   },
 

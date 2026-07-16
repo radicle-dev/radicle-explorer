@@ -4,6 +4,10 @@ test("navigate patch details", async ({ page }) => {
   await page.goto(`${cobUrl}/patches`);
   await page.getByText("Add subtitle to README").click();
   await expect(page).toHaveURL(/patches\/[a-f0-9]{40}$/);
+  // The router pushes the URL before the patch view renders. Until it is up,
+  // the link below resolves to the teaser on the patch listing, and clicking
+  // that navigates to the patch we are already on.
+  await page.getByRole("heading", { name: "Add subtitle to README" }).waitFor();
   await page.getByRole("link", { name: "Add subtitle to README" }).click();
   await expect(page).toHaveURL(/commits\/[a-f0-9]{40}$/);
   await page.goBack();

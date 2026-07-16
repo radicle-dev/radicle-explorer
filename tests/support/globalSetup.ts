@@ -3,6 +3,7 @@ import * as Path from "node:path";
 import {
   assertBinariesInstalled,
   heartwoodRelease,
+  radicleArtifactRelease,
   radicleHttpdRelease,
   removeWorkspace,
   tmpDir,
@@ -25,6 +26,12 @@ const heartwoodBinaryPath = Path.join(
   "heartwood",
   heartwoodRelease,
 ).trim();
+const artifactBinaryPath = Path.join(
+  tmpDir,
+  "bin",
+  "artifact",
+  radicleArtifactRelease,
+).trim();
 const httpdBinaryPath = useLocalHttpd
   ? Path.join(tmpDir, "bin", "httpd", "local").trim()
   : Path.join(tmpDir, "bin", "httpd", radicleHttpdRelease).trim();
@@ -32,6 +39,7 @@ const httpdBinaryPath = useLocalHttpd
 process.env.PATH = [
   heartwoodBinaryPath,
   httpdBinaryPath,
+  artifactBinaryPath,
   process.env.PATH,
 ].join(Path.delimiter);
 
@@ -43,15 +51,20 @@ export default async function globalSetup(): Promise<() => void> {
       useLocalHttpd ? "pre-release" : radicleHttpdRelease,
       httpdBinaryPath,
     );
+    await assertBinariesInstalled(
+      "rad-artifact",
+      radicleArtifactRelease,
+      artifactBinaryPath,
+    );
   } catch (error) {
     console.error(error);
     console.log("");
+    console.log("To download the required test binaries, run:");
+    console.log(" 👉 ./scripts/install-binaries");
     if (useLocalHttpd) {
+      console.log("");
       console.log("To compile local radicle-httpd binary, run:");
       console.log(" 👉 ./scripts/compile-local-httpd");
-    } else {
-      console.log("To download the required test binaries, run:");
-      console.log(" 👉 ./scripts/install-binaries");
     }
     console.log("");
     process.exit(1);
@@ -172,6 +185,9 @@ export default async function globalSetup(): Promise<() => void> {
     "--version",
   ]);
   const { stdout: httpdVersion } = await exec("radicle-httpd", ["--version"]);
+  const { stdout: radArtifactVersion } = await exec("rad-artifact", [
+    "--version",
+  ]);
   // radicle-httpd outputs logging lines, extract just the version line (last line)
   const httpdVersionClean =
     httpdVersion.trim().split("\n").pop() || httpdVersion;
@@ -182,6 +198,7 @@ export default async function globalSetup(): Promise<() => void> {
   console.log(
     `  radicle-httpd: ${httpdVersionClean}${useLocalHttpd ? " (local)" : ""}`,
   );
+  console.log(`  rad-artifact: ${radArtifactVersion.trim()}`);
   console.log("");
 
   return async () => {

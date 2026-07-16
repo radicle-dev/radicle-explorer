@@ -109,6 +109,9 @@ test.describe("repo page navigation", () => {
 
     await page.getByText(".hidden").click();
     await expect(page).toHaveURL(`${repoTreeURL}/.hidden`);
+    // Wait for the blob, not just the URL: clicking a source tree that is
+    // about to be re-rendered loses the click.
+    await expect(page.getByText("I'm a hidden file.")).toBeVisible();
 
     await page.getByText("bin").click();
     await page.getByText("true").click();
@@ -154,6 +157,9 @@ test.describe("repo page navigation", () => {
 
     await page.getByText(".hidden").click();
     await expect(page).toHaveURL(`${repoTreeURL}/tree/.hidden`);
+    // Wait for the blob, not just the URL: clicking a source tree that is
+    // about to be re-rendered loses the click.
+    await expect(page.getByText("I'm a hidden file.")).toBeVisible();
 
     await page.getByText("bin").click();
     await page.getByText("true").click();
@@ -178,6 +184,9 @@ test.describe("repo page navigation", () => {
 
     await page.getByText(".hidden").click();
     await expect(page).toHaveURL(`${repoTreeURL}/.hidden`);
+    // Wait for the blob, not just the URL: clicking a source tree that is
+    // about to be re-rendered loses the click.
+    await expect(page.getByText("I'm a hidden file.")).toBeVisible();
 
     await page.getByText("bin").click();
     await page.getByText("true").click();

@@ -33,7 +33,14 @@ export const radicleHttpdRelease = (
   await Fs.readFile(`${supportDir}/radicle-httpd-release`, "utf8")
 ).trim();
 
+export const radicleArtifactRelease = (
+  await Fs.readFile(`${supportDir}/radicle-artifact-release`, "utf8")
+).trim();
+
 export const useLocalHttpd = process.env.USE_LOCAL_HTTPD === "true";
+
+export const releaseApiOnlyLocal =
+  "the release read API only exists in the local httpd build";
 
 // Assert that binaries are installed and are the correct version.
 export async function assertBinariesInstalled(
@@ -41,7 +48,12 @@ export async function assertBinariesInstalled(
   expectedVersion: string,
   expectedPath: string,
 ): Promise<void> {
-  const { stdout: which } = await execa("which", [binary]);
+  let which: string;
+  try {
+    ({ stdout: which } = await execa("which", [binary]));
+  } catch {
+    throw new Error(`${binary} is not installed`);
+  }
   if (Path.dirname(which) !== expectedPath) {
     throw new Error(
       `${binary} path doesn't match used ${binary} binary: ${expectedPath} !== ${which}`,

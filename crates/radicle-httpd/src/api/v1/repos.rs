@@ -1,4 +1,6 @@
 mod job;
+#[cfg(feature = "artifacts")]
+mod releases;
 
 use std::collections::{BTreeMap, HashMap};
 
@@ -29,7 +31,7 @@ use crate::axum_extra::{cached_response, immutable_response, Path, Query};
 const MAX_BODY_LIMIT: usize = 4_194_304;
 
 pub fn router(ctx: Context) -> Router {
-    Router::new()
+    let router = Router::new()
         .route("/repos", get(repo_root_handler))
         .route("/repos/search", get(repo_search_handler))
         .route("/repos/{rid}", get(repo_handler))
@@ -56,7 +58,14 @@ pub fn router(ctx: Context) -> Router {
         .route("/repos/{rid}/issues", get(issues_handler))
         .route("/repos/{rid}/issues/{id}", get(issue_handler))
         .route("/repos/{rid}/patches", get(patches_handler))
-        .route("/repos/{rid}/patches/{id}", get(patch_handler))
+        .route("/repos/{rid}/patches/{id}", get(patch_handler));
+
+    #[cfg(feature = "artifacts")]
+    let router = router
+        .route("/repos/{rid}/releases", get(releases::list_handler))
+        .route("/repos/{rid}/releases/{id}", get(releases::get_handler));
+
+    router
         .with_state(ctx)
         .layer(DefaultBodyLimit::max(MAX_BODY_LIMIT))
 }
@@ -1391,6 +1400,7 @@ mod routes {
                         "open": 1,
                         "closed": 0,
                       },
+                      "releases": 0,
                     }
                   }
                 },
@@ -1428,6 +1438,7 @@ mod routes {
                         "open": 0,
                         "closed": 0,
                       },
+                      "releases": 0,
                     }
                   }
                 },
@@ -1478,6 +1489,7 @@ mod routes {
                         "open": 1,
                         "closed": 0,
                       },
+                      "releases": 0,
                     }
                   }
                 },
@@ -1515,6 +1527,7 @@ mod routes {
                         "open": 0,
                         "closed": 0,
                       },
+                      "releases": 0,
                     }
                   }
                 },
@@ -1695,6 +1708,7 @@ mod routes {
                         "open": 1,
                         "closed": 0,
                       },
+                      "releases": 0,
                     }
                   }
                 },
