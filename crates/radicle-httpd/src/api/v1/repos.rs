@@ -1,4 +1,5 @@
 mod job;
+mod releases;
 
 use std::collections::{BTreeMap, HashMap};
 
@@ -53,6 +54,8 @@ pub fn router(ctx: Context) -> Router {
         .route("/repos/{rid}/blob/{sha}/{*path}", get(blob_handler))
         .route("/repos/{rid}/readme/{sha}", get(readme_handler))
         .route("/repos/{rid}/jobs/{sha}", get(job::handler))
+        .route("/repos/{rid}/releases", get(releases::list_handler))
+        .route("/repos/{rid}/releases/{id}", get(releases::get_handler))
         .route("/repos/{rid}/issues", get(issues_handler))
         .route("/repos/{rid}/issues/{id}", get(issue_handler))
         .route("/repos/{rid}/patches", get(patches_handler))
@@ -1391,6 +1394,7 @@ mod routes {
                         "open": 1,
                         "closed": 0,
                       },
+                      "releases": 0,
                     }
                   }
                 },
@@ -1428,6 +1432,7 @@ mod routes {
                         "open": 0,
                         "closed": 0,
                       },
+                      "releases": 0,
                     }
                   }
                 },
@@ -1478,6 +1483,7 @@ mod routes {
                         "open": 1,
                         "closed": 0,
                       },
+                      "releases": 0,
                     }
                   }
                 },
@@ -1515,6 +1521,7 @@ mod routes {
                         "open": 0,
                         "closed": 0,
                       },
+                      "releases": 0,
                     }
                   }
                 },
@@ -1695,6 +1702,7 @@ mod routes {
                         "open": 1,
                         "closed": 0,
                       },
+                      "releases": 0,
                     }
                   }
                 },
