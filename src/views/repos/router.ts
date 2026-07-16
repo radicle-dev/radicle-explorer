@@ -458,27 +458,56 @@ async function loadIssuesView(
   };
 }
 
+// Older nodes don't report a release count and lack the release API. Show a
+// friendly page pointing to another node instead of a raw 404.
+function releasesNotSupported(node: BaseUrl): NotFoundRoute {
+  return {
+    resource: "notFound",
+    params: {
+      title: "Releases are not available on this node",
+      description:
+        "This node is running an older version that doesn't support browsing releases yet.\nSelect a different node to continue.",
+      baseUrl: node,
+    },
+  };
+}
+
 async function loadReleasesView(
   route: RepoReleasesRoute,
-): Promise<RepoLoadedRoute> {
+): Promise<RepoLoadedRoute | NotFoundRoute> {
   const api = new HttpdClient(route.node);
   const allAuthors = route.allAuthors || false;
 
-  const [repo, releases, node] = await Promise.all([
+  // Fetch releases alongside the repo so the common path stays parallel; the
+  // repo's `meta.releases` then tells us whether a failure is an unsupported
+  // node or a genuine error.
+  const [repo, releasesResult, node] = await Promise.all([
     api.repo.getByRid(route.repo),
-    api.repo.getAllReleases(route.repo, {
-      allAuthors,
-      page: 0,
-      perPage: RELEASES_PER_PAGE,
-    }),
+    api.repo
+      .getAllReleases(route.repo, {
+        allAuthors,
+        page: 0,
+        perPage: RELEASES_PER_PAGE,
+      })
+      .then(
+        releases => ({ releases }),
+        (error: unknown) => ({ error }),
+      ),
     api.getNode(),
   ]);
+
+  if (repo.payloads["xyz.radicle.project"].meta.releases === undefined) {
+    return releasesNotSupported(route.node);
+  }
+  if ("error" in releasesResult) {
+    throw releasesResult.error;
+  }
 
   return {
     resource: "repo.releases",
     params: {
       baseUrl: route.node,
-      releases,
+      releases: releasesResult.releases,
       allAuthors,
       repo,
       nodeId: node.id,
@@ -489,21 +518,31 @@ async function loadReleasesView(
 
 async function loadReleaseView(
   route: RepoReleaseRoute,
-): Promise<RepoLoadedRoute> {
+): Promise<RepoLoadedRoute | NotFoundRoute> {
   const api = new HttpdClient(route.node);
 
-  const [repo, release, node] = await Promise.all([
+  const [repo, releaseResult, node] = await Promise.all([
     api.repo.getByRid(route.repo),
-    api.repo.getReleaseById(route.repo, route.release),
+    api.repo.getReleaseById(route.repo, route.release).then(
+      release => ({ release }),
+      (error: unknown) => ({ error }),
+    ),
     api.getNode(),
   ]);
+
+  if (repo.payloads["xyz.radicle.project"].meta.releases === undefined) {
+    return releasesNotSupported(route.node);
+  }
+  if ("error" in releaseResult) {
+    throw releaseResult.error;
+  }
 
   return {
     resource: "repo.release",
     params: {
       baseUrl: route.node,
       repo,
-      release,
+      release: releaseResult.release,
       nodeId: node.id,
       nodeAvatarUrl: node.avatarUrl,
     },

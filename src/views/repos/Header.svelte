@@ -163,29 +163,31 @@
     </Button>
   </Link>
 
-  <Link
-    route={{
-      resource: "repo.releases",
-      repo: repo.rid,
-      node: baseUrl,
-    }}>
-    <Button
-      let:hover
-      variant={activeTab === "releases" ? "gray" : "background"}>
-      <Icon name="parcel" />
-      <div class="title-counter">
-        Releases
-        {#if repo.payloads["xyz.radicle.project"].meta.releases !== undefined}
+  <!-- Only nodes that report a release count support the release API; hide the
+  tab on older nodes where the field is absent. -->
+  {#if repo.payloads["xyz.radicle.project"].meta.releases !== undefined}
+    <Link
+      route={{
+        resource: "repo.releases",
+        repo: repo.rid,
+        node: baseUrl,
+      }}>
+      <Button
+        let:hover
+        variant={activeTab === "releases" ? "gray" : "background"}>
+        <Icon name="parcel" />
+        <div class="title-counter">
+          Releases
           <span
             class="counter"
             class:hover={hover && activeTab !== "releases"}
             class:selected={activeTab === "releases"}>
             {repo.payloads["xyz.radicle.project"].meta.releases}
           </span>
-        {/if}
-      </div>
-    </Button>
-  </Link>
+        </div>
+      </Button>
+    </Link>
+  {/if}
 
   <div class="spacer"></div>
 
