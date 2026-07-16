@@ -18,6 +18,10 @@ export function handleError(
       subject = "Issue";
     } else if (route.resource === "repo.patch") {
       subject = "Patch";
+    } else if (route.resource === "repo.release") {
+      subject = "Release";
+    } else if (route.resource === "repo.releases") {
+      subject = "Releases";
     } else {
       subject = "Repository";
     }
