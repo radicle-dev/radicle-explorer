@@ -74,6 +74,14 @@ pub async fn run(options: Options) -> anyhow::Result<()> {
 
     tracing::info!("{}", str::from_utf8(&git_version)?.trim());
 
+    // Listing a repo's refs resolves every remote's signed refs through libgit2,
+    // opening a descriptor per packfile. Radicle storage can hold thousands of
+    // packfiles, so under a low default limit reads exhaust file descriptors and
+    // objects in unopened packs fail with spurious "missing" errors.
+    if let Err(e) = radicle::io::set_file_limit(4096) {
+        tracing::warn!("Unable to set open file limit: {e}");
+    }
+
     let listener = DualListener::bind(&options.listen).await?;
     tracing::info!("listening on {:?}", &options.listen);
 
