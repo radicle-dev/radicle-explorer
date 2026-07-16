@@ -90,7 +90,7 @@ Basic search functionality exists, but this area is still a work-in-progress. We
 
 ### Can Radicle handle large binary files like datasets or machine learning models?
 
-Radicle uses Git internally, which can handle moderately-sized binary data relatively well. For large data however, we are considering adding support for solutions like `git-annex` or `git-lfs`. We intend for Radicle to help with the proliferation of open source AI models.
+Radicle uses Git internally, which can handle moderately-sized binary data relatively well. For large data, we built [Radicle Artifact](https://radicle.network/nodes/daniel.radicle.garden/rad:z4VYyJ9KuwMNkXGQnmKuGPGKw3inv) which complements Radicle with peer-to-peer artifact distribution and provenance. It can be used to distribute any file that would typically be too large for a repository like open source AI models, and large data sets.
 
 ### How does Radicle ensure persistence and availability of repositories when nodes go offline?
 
