@@ -5,8 +5,7 @@ import { commentSchema } from "./comment.js";
 import { authorSchema } from "../shared.js";
 
 export type IssueState =
-  | { status: "open" }
-  | { status: "closed"; reason: "other" | "solved" };
+  { status: "open" } | { status: "closed"; reason: "other" | "solved" };
 
 const issueStateSchema = z.union([
   z.object({ status: z.literal("open") }),

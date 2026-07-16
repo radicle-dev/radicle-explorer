@@ -101,6 +101,4 @@ export type Patch = z.infer<typeof patchSchema>;
 export const patchesSchema = array(patchSchema) satisfies ZodSchema<Patch[]>;
 
 export type LifecycleState =
-  | { status: "draft" }
-  | { status: "open" }
-  | { status: "archived" };
+  { status: "draft" } | { status: "open" } | { status: "archived" };

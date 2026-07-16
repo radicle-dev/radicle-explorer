@@ -1,4 +1,4 @@
-import yaml from "js-yaml";
+import { load } from "js-yaml";
 
 const FRONTMATTER_RE = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/;
 
@@ -12,7 +12,7 @@ export function parseFrontmatter(input: string): ParsedFrontmatter {
   if (!match) {
     return { data: {}, content: input };
   }
-  const parsed = yaml.load(match[1]);
+  const parsed = load(match[1]);
   const data =
     parsed && typeof parsed === "object" && !Array.isArray(parsed)
       ? (parsed as Record<string, unknown>)

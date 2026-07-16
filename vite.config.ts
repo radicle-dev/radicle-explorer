@@ -8,7 +8,7 @@ export default defineConfig({
     buildTimeConfig: JSON.stringify(config.util.toObject()),
   },
   test: {
-    environment: "happy-dom",
+    environment: "jsdom",
     include: ["tests/unit/**/*.test.ts"],
     reporters: "verbose",
   },

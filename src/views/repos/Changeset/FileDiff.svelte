@@ -77,12 +77,10 @@
   });
 
   function deselectHandler(e: MouseEvent) {
-    if (
-      !(
-        e.target instanceof HTMLElement &&
-        e.target.closest("[data-file-diff-select]")
-      )
-    ) {
+    if (!(
+      e.target instanceof HTMLElement &&
+      e.target.closest("[data-file-diff-select]")
+    )) {
       updateHash("");
     }
   }
