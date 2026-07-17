@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { BaseUrl, Patch, Revision } from "@http-client";
 
-  import { cachedGetDiff } from "@app/views/repos/router";
+  import { cachedGetDiffStats } from "@app/views/repos/router";
   import { formatCommit } from "@app/lib/utils";
 
   import DiffStatBadge from "@app/components/DiffStatBadge.svelte";
@@ -14,9 +14,9 @@
   export let latestRevision: Revision;
 </script>
 
-{#await cachedGetDiff(baseUrl, repoId, latestRevision.base, latestRevision.oid)}
+{#await cachedGetDiffStats(baseUrl, repoId, latestRevision.base, latestRevision.oid)}
   <Loading small />
-{:then { diff }}
+{:then stats}
   <Link
     title="Compare {formatCommit(latestRevision.base)}..{formatCommit(
       latestRevision.oid,
@@ -34,7 +34,7 @@
     }}>
     <DiffStatBadge
       hoverable
-      insertions={diff.stats.insertions}
-      deletions={diff.stats.deletions} />
+      insertions={stats.insertions}
+      deletions={stats.deletions} />
   </Link>
 {/await}

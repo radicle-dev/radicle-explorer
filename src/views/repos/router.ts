@@ -283,6 +283,15 @@ export const cachedGetDiff = cached(
   { max: 200 },
 );
 
+export const cachedGetDiffStats = cached(
+  async (baseUrl: BaseUrl, rid: string, base: string, oid: string) => {
+    const api = new HttpdClient(baseUrl);
+    return await api.repo.getDiffStats(rid, base, oid);
+  },
+  (...args) => JSON.stringify(args),
+  { max: 200 },
+);
+
 function parseRevisionToOid(
   revision: string | undefined,
   defaultBranch: string,
@@ -751,6 +760,9 @@ async function loadPatchView(
   ]);
 
   const latestRevision = patch.revisions.at(-1) as Revision;
+  // Take the header badge's stats from the latest revision's full diff (the
+  // same source the changeset view uses) so the two badges on the patch page
+  // never disagree. The patch list still uses the fast /stats endpoint.
   const {
     diff: { stats },
   } = await cachedGetDiff(
