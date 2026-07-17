@@ -47,8 +47,8 @@
   let totalCommits: number | undefined = undefined;
 
   function fetchTotalCommits(rid: string, sha: string) {
-    void api.repo.getTreeStatsBySha(rid, sha).then(stats => {
-      totalCommits = stats.commits;
+    void api.repo.getCommitCountBySha(rid, sha).then(commits => {
+      totalCommits = commits;
     });
   }
 

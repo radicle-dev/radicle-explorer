@@ -40,9 +40,9 @@
     if (cached !== undefined) {
       commitCount = cached;
     } else {
-      void api.repo.getTreeStatsBySha(rid, sha).then(stats => {
-        commitCountCache[sha] = stats.commits;
-        commitCount = stats.commits;
+      void api.repo.getCommitCountBySha(rid, sha).then(commits => {
+        commitCountCache[sha] = commits;
+        commitCount = commits;
       });
     }
   }
