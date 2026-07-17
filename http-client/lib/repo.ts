@@ -169,6 +169,14 @@ const diffResponseSchema = object({
   files: record(string(), diffBlobSchema),
 });
 
+const diffStatsSchema = object({
+  filesChanged: number(),
+  insertions: number(),
+  deletions: number(),
+});
+
+export type DiffStats = z.infer<typeof diffStatsSchema>;
+
 const statusSchema = union([
   literal("started"),
   literal("failed"),
@@ -448,6 +456,38 @@ export class Client {
       },
       diffResponseSchema,
     );
+  }
+
+  public async getDiffStats(
+    rid: string,
+    revisionBase: string,
+    revisionOid: string,
+    options?: RequestOptions,
+  ): Promise<DiffStats> {
+    try {
+      return await this.#fetcher.fetchOk(
+        {
+          method: "GET",
+          path: `repos/${rid}/diff/${revisionBase}/${revisionOid}/stats`,
+          options,
+        },
+        diffStatsSchema,
+      );
+    } catch (error) {
+      // Older nodes don't serve the dedicated diff-stats endpoint, so fall back
+      // to the full diff, which also carries the stats.
+      // TODO: Drop this fallback once enough nodes serve /diff/:base/:oid/stats.
+      if (error instanceof ResponseError && error.status === 404) {
+        const { diff } = await this.getDiff(
+          rid,
+          revisionBase,
+          revisionOid,
+          options,
+        );
+        return diff.stats;
+      }
+      throw error;
+    }
   }
 
   public async getJobsByCommit(
