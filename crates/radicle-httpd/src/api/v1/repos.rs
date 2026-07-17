@@ -41,6 +41,10 @@ pub fn router(ctx: Context) -> Router {
         .route("/repos/{rid}/tree/{sha}/", get(tree_handler_root))
         .route("/repos/{rid}/tree/{sha}/{*path}", get(tree_handler))
         .route("/repos/{rid}/stats/tree/{sha}", get(stats_tree_handler))
+        .route(
+            "/repos/{rid}/stats/commits/{sha}",
+            get(stats_commits_handler),
+        )
         .route("/repos/{rid}/remotes", get(remotes_handler))
         .route("/repos/{rid}/remotes/{peer}", get(remote_handler))
         .route("/repos/{rid}/blob/{sha}/{*path}", get(blob_handler))
@@ -716,6 +720,57 @@ async fn stats_tree_handler(
     .await?;
 
     Ok::<_, Error>(immutable_response(stats))
+}
+
+/// Get the number of commits reachable from a commit.
+/// `GET /repos/:rid/stats/commits/:sha`
+async fn stats_commits_handler(
+    State(ctx): State<Context>,
+    Path((rid, sha)): Path<(RepoId, Oid)>,
+) -> impl IntoResponse {
+    let commits = api::blocking(move || {
+        let (repo, _) = ctx.repo(rid)?;
+        commit_count(&repo, sha)
+    })
+    .await?;
+
+    Ok::<_, Error>(immutable_response(json!({ "commits": commits })))
+}
+
+/// Count commits reachable from `head`.
+///
+/// Fast path: `git rev-list --count --use-bitmap-index` uses the pack bitmap /
+/// commit-graph for a near-instant count, whereas a libgit2 revwalk ignores
+/// those indexes and walks every commit (seconds on large histories). Falls
+/// back to the walk if the git binary is unavailable or errors.
+fn commit_count(repo: &radicle::storage::git::Repository, head: Oid) -> Result<usize, Error> {
+    let count = std::process::Command::new("git")
+        .current_dir(repo.backend.path())
+        .args([
+            "rev-list",
+            "--count",
+            "--use-bitmap-index",
+            &head.to_string(),
+        ])
+        .output()
+        .ok()
+        .filter(|output| output.status.success())
+        .and_then(|output| {
+            String::from_utf8_lossy(&output.stdout)
+                .trim()
+                .parse::<usize>()
+                .ok()
+        });
+    if let Some(count) = count {
+        return Ok(count);
+    }
+
+    // Unsorted walk (the default): counting only needs the reachable OIDs, not
+    // any ordering or commit materialization.
+    let mut revwalk = repo.backend.revwalk()?;
+    revwalk.push(head.into())?;
+
+    Ok(revwalk.count())
 }
 
 /// Get all repo remotes.
@@ -1909,6 +1964,16 @@ mod routes {
               }
             )
         );
+    }
+
+    #[tokio::test]
+    async fn test_repos_stats_commits() {
+        let tmp = tempfile::tempdir().unwrap();
+        let app = super::router(seed(tmp.path()));
+        let response = get(&app, format!("/repos/{RID}/stats/commits/{HEAD}")).await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(response.json().await, json!({ "commits": 3 }));
     }
 
     #[tokio::test]
