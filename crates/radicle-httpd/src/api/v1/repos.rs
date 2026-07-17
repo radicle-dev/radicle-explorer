@@ -37,6 +37,10 @@ pub fn router(ctx: Context) -> Router {
         .route("/repos/{rid}/commits", get(history_handler))
         .route("/repos/{rid}/commits/{sha}", get(commit_handler))
         .route("/repos/{rid}/diff/{base}/{oid}", get(diff_handler))
+        .route(
+            "/repos/{rid}/diff/{base}/{oid}/stats",
+            get(diff_stats_handler),
+        )
         .route("/repos/{rid}/activity", get(activity_handler))
         .route("/repos/{rid}/tree/{sha}/", get(tree_handler_root))
         .route("/repos/{rid}/tree/{sha}/{*path}", get(tree_handler))
@@ -625,6 +629,100 @@ async fn diff_handler(
     Ok::<_, Error>(immutable_response(response))
 }
 
+/// Get diff stats between two commits.
+/// `GET /repos/:rid/diff/:base/:oid/stats`
+async fn diff_stats_handler(
+    State(ctx): State<Context>,
+    Path((rid, base, oid)): Path<(RepoId, Oid, Oid)>,
+) -> impl IntoResponse {
+    let stats = api::blocking(move || {
+        let (repo, _) = ctx.repo(rid)?;
+        diff_stats(&repo, base, oid)
+    })
+    .await?;
+
+    Ok::<_, Error>(immutable_response(stats))
+}
+
+/// Compute the diff stats between `base` and `head`.
+///
+/// Fast path: `git diff --numstat` tallies per-file line counts without
+/// generating hunks or loading blobs, unlike the full `radicle_surf` diff.
+/// Falls back to the surf diff if the git binary is unavailable or errors.
+fn diff_stats(
+    repo: &radicle::storage::git::Repository,
+    base: Oid,
+    head: Oid,
+) -> Result<serde_json::Value, Error> {
+    if let Some((files_changed, insertions, deletions)) = numstat(repo.backend.path(), base, head) {
+        return Ok(json!({
+            "filesChanged": files_changed,
+            "insertions": insertions,
+            "deletions": deletions,
+        }));
+    }
+
+    // Fallback when the git binary is unavailable. `git diff --numstat` and
+    // radicle-surf can report slightly different counts for the same range
+    // (e.g. rename and binary-file handling differ), so a value served here may
+    // differ marginally from the fast path above and from the full `/diff`
+    // endpoint. This is a cosmetic difference in the diff-stat badge.
+    let surf_repo = Repository::open(repo.path())?;
+    let stats = surf_repo.diff(base, head)?;
+    let stats = stats.stats();
+    Ok(json!({
+        "filesChanged": stats.files_changed,
+        "insertions": stats.insertions,
+        "deletions": stats.deletions,
+    }))
+}
+
+/// Tally `git diff --numstat` between two commits into `(files, insertions,
+/// deletions)`. Returns `None` if git is unavailable or its output can't be
+/// parsed, so the caller can fall back to the surf diff.
+/// Run `git` in `repo_dir` with `args` and return its stdout on success, or
+/// `None` if the binary is unavailable or it exits non-zero.
+///
+/// User and system git config are pinned to `/dev/null` so output stays
+/// deterministic and independent of the machine's configuration (e.g.
+/// `diff.renames`, `diff.algorithm`).
+fn git_output(repo_dir: &std::path::Path, args: &[&str]) -> Option<Vec<u8>> {
+    std::process::Command::new("git")
+        .current_dir(repo_dir)
+        .env("GIT_CONFIG_GLOBAL", "/dev/null")
+        .env("GIT_CONFIG_SYSTEM", "/dev/null")
+        .args(args)
+        .output()
+        .ok()
+        .filter(|output| output.status.success())
+        .map(|output| output.stdout)
+}
+
+fn numstat(repo_dir: &std::path::Path, base: Oid, head: Oid) -> Option<(usize, usize, usize)> {
+    let (base, head) = (base.to_string(), head.to_string());
+    let stdout = git_output(
+        repo_dir,
+        &["diff", "--numstat", base.as_str(), head.as_str()],
+    )?;
+
+    let mut files_changed = 0;
+    let mut insertions = 0;
+    let mut deletions = 0;
+    for line in String::from_utf8_lossy(&stdout).lines() {
+        // Each line is "<added>\t<deleted>\t<path>"; binary files report "-".
+        let mut cols = line.split('\t');
+        let added = cols.next()?;
+        let deleted = cols.next()?;
+        if cols.next().is_none() {
+            continue;
+        }
+        files_changed += 1;
+        insertions += added.parse::<usize>().unwrap_or(0);
+        deletions += deleted.parse::<usize>().unwrap_or(0);
+    }
+    Some((files_changed, insertions, deletions))
+}
+
 /// Get repo activity for the past year.
 /// `GET /repos/:rid/activity`
 async fn activity_handler(
@@ -744,23 +842,22 @@ async fn stats_commits_handler(
 /// those indexes and walks every commit (seconds on large histories). Falls
 /// back to the walk if the git binary is unavailable or errors.
 fn commit_count(repo: &radicle::storage::git::Repository, head: Oid) -> Result<usize, Error> {
-    let count = std::process::Command::new("git")
-        .current_dir(repo.backend.path())
-        .args([
+    let head_arg = head.to_string();
+    let count = git_output(
+        repo.backend.path(),
+        &[
             "rev-list",
             "--count",
             "--use-bitmap-index",
-            &head.to_string(),
-        ])
-        .output()
-        .ok()
-        .filter(|output| output.status.success())
-        .and_then(|output| {
-            String::from_utf8_lossy(&output.stdout)
-                .trim()
-                .parse::<usize>()
-                .ok()
-        });
+            head_arg.as_str(),
+        ],
+    )
+    .and_then(|stdout| {
+        String::from_utf8_lossy(&stdout)
+            .trim()
+            .parse::<usize>()
+            .ok()
+    });
     if let Some(count) = count {
         return Ok(count);
     }
@@ -993,24 +1090,15 @@ fn last_path_commit(
     head: Oid,
     path: &str,
 ) -> Result<radicle_surf::Commit, Error> {
-    let fast = std::process::Command::new("git")
-        .current_dir(repo_path)
-        .arg("rev-list")
-        .arg("-1")
-        .arg(head.to_string())
-        .arg("--")
-        // `:(literal)` disables pathspec glob matching so file names containing
-        // `[`, `*` or `?` (e.g. `src/pages/[id].ts`) are looked up verbatim.
-        .arg(format!(":(literal){path}"))
-        .output()
-        .ok()
-        .filter(|output| output.status.success())
-        .and_then(|output| {
-            String::from_utf8_lossy(&output.stdout)
-                .trim()
-                .parse::<Oid>()
-                .ok()
-        });
+    let head_arg = head.to_string();
+    // `:(literal)` disables pathspec glob matching so file names containing
+    // `[`, `*` or `?` (e.g. `src/pages/[id].ts`) are looked up verbatim.
+    let pathspec = format!(":(literal){path}");
+    let fast = git_output(
+        repo_path,
+        &["rev-list", "-1", head_arg.as_str(), "--", pathspec.as_str()],
+    )
+    .and_then(|stdout| String::from_utf8_lossy(&stdout).trim().parse::<Oid>().ok());
 
     match fast {
         Some(oid) => Ok(surf_repo.commit(oid)?),
@@ -2334,6 +2422,27 @@ mod routes {
                     }
                   }
                 ],
+            })
+        );
+    }
+
+    #[tokio::test]
+    async fn test_repos_diff_stats() {
+        let tmp = tempfile::tempdir().unwrap();
+        let app = super::router(seed(tmp.path()));
+        let response = get(
+            &app,
+            format!("/repos/{RID}/diff/{INITIAL_COMMIT}/{HEAD}/stats"),
+        )
+        .await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response.json().await,
+            json!({
+                "filesChanged": 1,
+                "insertions": 1,
+                "deletions": 0,
             })
         );
     }
