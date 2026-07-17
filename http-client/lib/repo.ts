@@ -1,4 +1,6 @@
 import type { Fetcher, RequestOptions } from "./fetcher.js";
+
+import { ResponseError } from "./fetcher.js";
 import type { Commit, Commits } from "./repo/commit.js";
 import type { Issue } from "./repo/issue.js";
 import type { Patch } from "./repo/patch.js";
@@ -135,6 +137,8 @@ const treeStatsSchema = object({
 });
 
 export type TreeStats = z.infer<typeof treeStatsSchema>;
+
+const commitCountSchema = object({ commits: number() });
 
 export type Tree = z.infer<typeof treeSchema>;
 
@@ -335,6 +339,33 @@ export class Client {
       treeStatsSchema,
     );
     return tree;
+  }
+
+  public async getCommitCountBySha(
+    rid: string,
+    sha: string,
+    options?: RequestOptions,
+  ): Promise<number> {
+    try {
+      const { commits } = await this.#fetcher.fetchOk(
+        {
+          method: "GET",
+          path: `repos/${rid}/stats/commits/${sha}`,
+          options,
+        },
+        commitCountSchema,
+      );
+      return commits;
+    } catch (error) {
+      // Older nodes don't serve the dedicated commit-count endpoint, so fall
+      // back to the tree stats endpoint, which also returns the commit count.
+      // TODO: Drop this fallback once enough nodes serve /stats/commits.
+      if (error instanceof ResponseError && error.status === 404) {
+        const stats = await this.getTreeStatsBySha(rid, sha, options);
+        return stats.commits;
+      }
+      throw error;
+    }
   }
 
   public async getAllRemotes(

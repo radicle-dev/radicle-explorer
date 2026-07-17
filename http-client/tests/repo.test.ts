@@ -48,6 +48,10 @@ describe("repo", () => {
     await api.repo.getTreeStatsBySha(sourceBrowsingRid, aliceMainHead);
   });
 
+  test("#getCommitCountBySha(rid, sha)", async () => {
+    await api.repo.getCommitCountBySha(sourceBrowsingRid, aliceMainHead);
+  });
+
   test("#getTree(rid, sha, path)", async () => {
     await api.repo.getTree(sourceBrowsingRid, aliceMainHead, "src");
   });
