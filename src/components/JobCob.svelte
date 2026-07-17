@@ -5,7 +5,10 @@
 
   import { HttpdClient } from "@http-client";
 
-  const inFlightJobs = new LRUCache<string, Promise<Job[]>>({ max: 50 });
+  const inFlightJobs = new LRUCache<string, Promise<Job[]>>({
+    max: 200,
+    ttl: 30_000,
+  });
 
   function fetchJobs(
     baseUrl: BaseUrl,
@@ -15,9 +18,19 @@
     const key = `${baseUrl.scheme}://${baseUrl.hostname}:${baseUrl.port}/${rid}/${commit}`;
     let promise = inFlightJobs.get(key);
     if (!promise) {
-      promise = new HttpdClient(baseUrl).repo.getJobsByCommit(rid, commit);
-      promise.catch(() => inFlightJobs.delete(key));
-      inFlightJobs.set(key, promise);
+      const request = new HttpdClient(baseUrl).repo.getJobsByCommit(
+        rid,
+        commit,
+      );
+      // Only evict on failure if this exact request is still cached; after the
+      // entry's ttl expires a later request may have replaced it under the key.
+      request.catch(() => {
+        if (inFlightJobs.peek(key) === request) {
+          inFlightJobs.delete(key);
+        }
+      });
+      inFlightJobs.set(key, request);
+      promise = request;
     }
     return promise;
   }
