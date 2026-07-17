@@ -204,6 +204,50 @@
   padding: 6rem var(--marketing-inline-gap);
 }
 
+/* On section-based pages, each top-level block rises and fades in, staggered,
+   when the page mounts. Markdown docs (FAQ, glossary, guides) are a flat list
+   of paragraphs, so they rise in as a single block instead. */
+@keyframes section-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+.marketing .page-container:not(.markdown-content) > * {
+  animation: section-rise 500ms cubic-bezier(0, 0, 0.2, 1) both;
+}
+.marketing .page-container:not(.markdown-content) > *:nth-child(2) {
+  animation-delay: 70ms;
+}
+.marketing .page-container:not(.markdown-content) > *:nth-child(3) {
+  animation-delay: 140ms;
+}
+.marketing .page-container:not(.markdown-content) > *:nth-child(4) {
+  animation-delay: 210ms;
+}
+.marketing .page-container:not(.markdown-content) > *:nth-child(5) {
+  animation-delay: 280ms;
+}
+.marketing .page-container:not(.markdown-content) > *:nth-child(n + 6) {
+  animation-delay: 350ms;
+}
+
+/* Markdown docs (FAQ, glossary, guides) are a flat element list. Animate the
+   elements with the same timing (no stagger) so the doc rises in as one block.
+   This lives on the children, not the reused .markdown-content container, so it
+   replays on client-side navigation and not only on hard reload. */
+.marketing .page-container.markdown-content > * {
+  animation: section-rise 500ms cubic-bezier(0, 0, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marketing .page-container:not(.markdown-content) > *,
+  .marketing .page-container.markdown-content > * {
+    animation: none;
+  }
+}
+
 @media (max-width: 90rem) {
   .marketing {
     --marketing-inline-gap: 2rem;

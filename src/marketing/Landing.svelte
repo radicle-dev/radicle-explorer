@@ -494,10 +494,14 @@
         For humans and machines alike.
       </span>
     </h1>
+  </section>
+  <section class="hero-media">
     <img
       src="/marketing/images/radicle-bg.jpg"
       alt="Radicle"
       class="hero-image" />
+  </section>
+  <section class="hero-install">
     <h2 class="txt-bold-32">Peer-to-peer code infrastructure, built on Git.</h2>
     <h3 class="txt-bold-22 install-heading">Install the CLI now</h3>
     <CopyCommand />
