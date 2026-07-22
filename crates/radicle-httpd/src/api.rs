@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
 use axum::response::{IntoResponse, Json};
@@ -75,6 +75,10 @@ pub struct Context {
     /// `RADICLE_SEARCH_URL`. When absent, listing and search fall back to
     /// the storage walk.
     search: Option<SearchClient>,
+    /// The repo aliases configured via `--alias`, mapping each alias to its
+    /// [`RepoId`]. Used to resolve alias path segments to a repo and to
+    /// advertise a repo's short name in its info.
+    repo_aliases: Arc<HashMap<String, RepoId>>,
 }
 
 impl Context {
@@ -117,7 +121,19 @@ impl Context {
             cache: options.cache.map(Cache::new),
             web_config,
             search,
+            repo_aliases: Arc::new(options.aliases.clone()),
         })
+    }
+
+    /// Return the configured alias for a repo, if any. When several aliases
+    /// point at the same repo, the lexicographically smallest is returned so
+    /// the result is stable across requests.
+    fn repo_alias(&self, rid: &RepoId) -> Option<String> {
+        self.repo_aliases
+            .iter()
+            .filter(|(_, id)| *id == rid)
+            .map(|(alias, _)| alias.clone())
+            .min()
     }
 
     /// The search backend client, if one is configured and reachable at
@@ -180,6 +196,7 @@ impl Context {
             rid,
             seeding,
             refs,
+            alias: self.repo_alias(&rid),
         })
     }
 
@@ -501,6 +518,9 @@ mod repo {
         pub rid: RepoId,
         pub seeding: usize,
         pub refs: CanonicalReferences,
+        /// The alias configured for this repo via `--alias`, if any.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub alias: Option<String>,
     }
 }
 

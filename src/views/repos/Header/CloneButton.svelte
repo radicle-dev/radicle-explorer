@@ -22,6 +22,7 @@
   export let id: string;
   export let name: string;
   export let currentRefname: string;
+  export let alias: string | undefined = undefined;
 
   let activeTab: "radicle" | "git" | "archive" = "radicle";
   let archiveProbe: Promise<boolean> | undefined;
@@ -39,10 +40,10 @@
     baseUrl.port === config.nodes.defaultHttpdPort
       ? ""
       : `:${baseUrl.port}`;
-  $: archiveUrl = `curl -OJ ${baseUrl.scheme}://${baseUrl.hostname}${portFragment}/raw/${id}/archive/${currentRefname}`;
+  $: archiveUrl = `curl -OJ ${baseUrl.scheme}://${baseUrl.hostname}${portFragment}/raw/${alias ?? id}/archive/${currentRefname}`;
   $: gitCloneUrl = `git clone ${baseUrl.scheme}://${
     baseUrl.hostname
-  }${portFragment}/${parseRepositoryId(id)?.pubkey ?? id}.git ${name}`;
+  }${portFragment}/${alias ?? parseRepositoryId(id)?.pubkey ?? id}.git ${name}`;
 </script>
 
 <style>
