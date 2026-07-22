@@ -119,6 +119,7 @@
       {baseUrl}
       {currentRefname}
       id={repo.rid}
+      alias={repo.alias}
       name={repo.payloads["xyz.radicle.project"].data.name} />
   </svelte:fragment>
   <RepoNameHeader {repo} {baseUrl} {seedingPolicy} slot="header" />

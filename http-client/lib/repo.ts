@@ -82,6 +82,7 @@ const repoSchema = object({
     tags: record(string(), tagInfoSchema),
     refs: record(string(), string()),
   }).optional(),
+  alias: string().optional(),
 });
 const reposSchema = array(repoSchema);
 
