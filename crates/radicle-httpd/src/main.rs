@@ -29,6 +29,11 @@ Options
     --cache        <number>          Max amount of items in cache for /tree endpoints (default: 100)
     --version, -v                    Print program version
     --help, -h                       Print help
+
+Environment
+
+    RUST_LOG                         Set the log level (e.g. RUST_LOG=warn, or
+                                     RUST_LOG=radicle_httpd=debug). Defaults to "info".
 "#;
 
 #[tokio::main]

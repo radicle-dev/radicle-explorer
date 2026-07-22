@@ -20,6 +20,13 @@ A Radicle HTTP daemon exposing a JSON HTTP API that allows someone to browse loc
 repositories on a Radicle node via their web browser. This manual page is a
 placeholder to point you at the *--help* option.
 
+== Environment
+
+*RUST_LOG*::
+  Sets the log level. Accepts standard `tracing`/`env_logger`-style directives,
+  for example `RUST_LOG=warn` or `RUST_LOG=radicle_httpd=debug`. Defaults to
+  `info` when unset.
+
 == SEE ALSO ==
 
 *rad*(1)

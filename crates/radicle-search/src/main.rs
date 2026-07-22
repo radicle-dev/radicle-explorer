@@ -24,6 +24,8 @@ Environment
     RADICLE_SEARCH_RESCAN_SECS         Periodic full rescan interval in seconds (default: 3600)
     RADICLE_SEARCH_RECONNECT_BACKOFF_SECS  Reconnect delay after a dropped event stream (default: 5)
     RAD_HOME, RAD_SOCKET               Standard Radicle paths
+    RUST_LOG                           Log level, e.g. RUST_LOG=warn or
+                                       RUST_LOG=radicle_search=debug (default: info)
 "#;
 
 #[tokio::main]
@@ -43,7 +45,7 @@ async fn main() {
 
 fn init_tracing() {
     let filter = tracing_subscriber::EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("radicle_search=info,info"));
+        .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info"));
     tracing_subscriber::fmt().with_env_filter(filter).init();
 }
 

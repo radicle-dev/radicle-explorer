@@ -237,9 +237,13 @@ pub mod logger {
 
     #[cfg(not(feature = "logfmt"))]
     pub fn subscriber() -> impl tracing::Subscriber {
+        use tracing_subscriber::EnvFilter;
+
         tracing_subscriber::FmtSubscriber::builder()
             .with_target(false)
-            .with_max_level(tracing::Level::DEBUG)
+            .with_env_filter(
+                EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+            )
             .finish()
     }
 }
