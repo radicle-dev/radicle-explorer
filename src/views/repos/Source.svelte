@@ -30,6 +30,7 @@
   export let peer: string | undefined;
   export let peers: PeerRefs[];
   export let repo: Repo;
+  export let repoId: string;
   export let rawPath: (commit?: string) => string;
   export let revision: string | undefined;
   export let seedingPolicy: SeedingPolicy;
@@ -62,7 +63,7 @@
   $: baseRoute = {
     resource: "repo.source",
     node: baseUrl,
-    repo: repo.rid,
+    repo: repoId,
     path: "/",
   } as Extract<RepoRoute, { resource: "repo.source" }>;
 </script>
@@ -129,6 +130,7 @@
   {nodeId}
   {nodeAvatarUrl}
   {repo}
+  {repoId}
   activeTab="source"
   stylePaddingBottom="0">
   <svelte:fragment slot="breadcrumb">
@@ -145,7 +147,7 @@
       alias={repo.alias}
       name={repo.payloads["xyz.radicle.project"].data.name} />
   </svelte:fragment>
-  <RepoNameHeader {repo} {baseUrl} {seedingPolicy} slot="header" />
+  <RepoNameHeader {repo} {repoId} {baseUrl} {seedingPolicy} slot="header" />
 
   <div
     style:padding="1rem"
@@ -160,6 +162,7 @@
       {peers}
       {peer}
       {repo}
+      {repoId}
       {revision}
       {tree} />
   </div>
@@ -180,7 +183,7 @@
       {#if mobileFileTree}
         <div class="layout-mobile" style:margin="1rem">
           <TreeComponent
-            repoId={repo.rid}
+            {repoId}
             {revision}
             {baseUrl}
             {fetchTree}
@@ -200,7 +203,7 @@
       <div class="column-left global-hide-on-small-desktop-down">
         <div class="source-tree sticky">
           <TreeComponent
-            repoId={repo.rid}
+            {repoId}
             {revision}
             {baseUrl}
             {fetchTree}
@@ -214,7 +217,7 @@
           <BlobComponent
             {path}
             {baseUrl}
-            repoId={repo.rid}
+            {repoId}
             blob={blobResult.blob}
             highlighted={blobResult.highlighted}
             rawPath={rawPath(tree.lastCommit.id)} />

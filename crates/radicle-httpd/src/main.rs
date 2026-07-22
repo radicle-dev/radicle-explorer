@@ -24,8 +24,9 @@ Options
     --listen       <address>         Address to listen on: TCP address (e.g., 127.0.0.1:8080)
                                      or Unix socket path (e.g., /tmp/radicle.sock)
                                      (default: 0.0.0.0:8080)
-    --alias, -a    <alias> <rid>     Provide alias and RID pairs to shorten git clone commands for repositories,
+    --alias, -a    <alias> <rid>     Provide alias and RID pairs to use in place of the RID for a repository,
                                      e.g. heartwood and rad:z3gqcJUoA1n9HaHKufZs5FCSGazv5 to produce https://seed.radicle.dev/heartwood.git
+                                     Aliases work anywhere the RID is accepted: git clone, the JSON API and raw endpoints.
     --cache        <number>          Max amount of items in cache for /tree endpoints (default: 100)
     --version, -v                    Print program version
     --help, -h                       Print help

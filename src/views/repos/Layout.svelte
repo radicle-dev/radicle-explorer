@@ -14,6 +14,7 @@
   export let activeTab: ActiveTab | undefined = undefined;
   export let baseUrl: BaseUrl;
   export let repo: Repo;
+  export let repoId: string;
   export let stylePaddingBottom: string = "2.5rem";
   export let nodeId: string;
   export let nodeAvatarUrl: string | undefined;
@@ -113,7 +114,7 @@
             <Link
               route={{
                 resource: "repo.source",
-                repo: repo.rid,
+                repo: repoId,
                 node: baseUrl,
               }}>
               <div class="breadcrumb">
@@ -131,7 +132,7 @@
   </div>
 
   <div class="tab-bar">
-    <RepoHeader {activeTab} {baseUrl} {repo}>
+    <RepoHeader {activeTab} {baseUrl} {repo} {repoId}>
       <svelte:fragment slot="actions">
         <slot name="actions" />
       </svelte:fragment>
@@ -151,7 +152,7 @@
           title="Home"
           route={{
             resource: "repo.source",
-            repo: repo.rid,
+            repo: repoId,
             node: baseUrl,
             path: "/",
           }}>
@@ -168,7 +169,7 @@
           title={`${repo.payloads["xyz.radicle.project"].meta.issues.open} Issues`}
           route={{
             resource: "repo.issues",
-            repo: repo.rid,
+            repo: repoId,
             node: baseUrl,
           }}>
           <Button
@@ -184,7 +185,7 @@
           title={`${repo.payloads["xyz.radicle.project"].meta.patches.open} Patches`}
           route={{
             resource: "repo.patches",
-            repo: repo.rid,
+            repo: repoId,
             node: baseUrl,
           }}>
           <Button

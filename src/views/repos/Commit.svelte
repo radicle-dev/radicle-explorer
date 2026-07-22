@@ -23,6 +23,7 @@
   export let baseUrl: BaseUrl;
   export let commit: Commit;
   export let repo: Repo;
+  export let repoId: string;
   export let nodeId: string;
   export let nodeAvatarUrl: string | undefined;
 
@@ -74,13 +75,13 @@
   }
 </style>
 
-<Layout {nodeId} {nodeAvatarUrl} {baseUrl} {repo}>
+<Layout {nodeId} {nodeAvatarUrl} {baseUrl} {repo} {repoId}>
   <svelte:fragment slot="breadcrumb">
     <Separator />
     <Link
       route={{
         resource: "repo.history",
-        repo: repo.rid,
+        repo: repoId,
         node: baseUrl,
       }}>
       Commits
@@ -112,7 +113,7 @@
             <Link
               route={{
                 resource: "repo.source",
-                repo: repo.rid,
+                repo: repoId,
                 node: baseUrl,
                 path: "/",
                 revision: commit.commit.id,
@@ -163,7 +164,7 @@
               styleHoverState
               route={{
                 resource: "repo.commit",
-                repo: repo.rid,
+                repo: repoId,
                 node: baseUrl,
                 commit: parent,
               }}>
@@ -180,7 +181,7 @@
     </div>
     <Changeset
       {baseUrl}
-      repoId={repo.rid}
+      {repoId}
       files={commit?.files}
       diff={commit?.diff}
       revision={commit?.commit?.id} />

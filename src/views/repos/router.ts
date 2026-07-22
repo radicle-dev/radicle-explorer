@@ -152,6 +152,13 @@ interface RepoPatchesRoute {
   search?: string;
 }
 
+// `repoId` on each loaded route is the repo path segment the user navigated in
+// with: an alias when one was used, otherwise the canonical RID. It carries a
+// dual meaning. In-repo links are built from it so the alias/RID form is
+// preserved across navigation, and it is also handed to child components as the
+// repo identifier for their API calls. The httpd resolves either form, so both
+// uses are safe (`repo.rid` remains available on the `Repo` object when the
+// canonical id is specifically needed, e.g. for stable cache keys).
 export type RepoLoadedRoute =
   | {
       resource: "repo.source";
@@ -160,6 +167,7 @@ export type RepoLoadedRoute =
         seedingPolicy: SeedingPolicy;
         commit: string;
         repo: Repo;
+        repoId: string;
         peers: PeerRefs[];
         peer: string | undefined;
         revision: string | undefined;
@@ -178,6 +186,7 @@ export type RepoLoadedRoute =
         seedingPolicy: SeedingPolicy;
         commit: string;
         repo: Repo;
+        repoId: string;
         peers: PeerRefs[];
         peer: string | undefined;
         revision: string | undefined;
@@ -192,6 +201,7 @@ export type RepoLoadedRoute =
       params: {
         baseUrl: BaseUrl;
         repo: Repo;
+        repoId: string;
         commit: Commit;
         nodeId: string;
         nodeAvatarUrl: string | undefined;
@@ -202,6 +212,7 @@ export type RepoLoadedRoute =
       params: {
         baseUrl: BaseUrl;
         repo: Repo;
+        repoId: string;
         rawPath: (commit?: string) => string;
         issue: Issue;
         nodeId: string;
@@ -213,6 +224,7 @@ export type RepoLoadedRoute =
       params: {
         baseUrl: BaseUrl;
         repo: Repo;
+        repoId: string;
         issues: Issue[];
         status: IssueState["status"];
         nodeId: string;
@@ -224,6 +236,7 @@ export type RepoLoadedRoute =
       params: {
         baseUrl: BaseUrl;
         repo: Repo;
+        repoId: string;
         patches: Patch[];
         status: PatchState["status"];
         nodeId: string;
@@ -235,6 +248,7 @@ export type RepoLoadedRoute =
       params: {
         baseUrl: BaseUrl;
         repo: Repo;
+        repoId: string;
         rawPath: (commit?: string) => string;
         patch: Patch;
         stats: Diff["stats"];
@@ -335,6 +349,7 @@ export async function loadRepoRoute(
         resource: "repo.commit",
         params: {
           baseUrl: route.node,
+          repoId: route.repo,
           repo,
           commit,
           nodeId: node.id,
@@ -386,6 +401,7 @@ async function loadPatchesView(
     resource: "repo.patches",
     params: {
       baseUrl: route.node,
+      repoId: route.repo,
       patches,
       status,
       repo,
@@ -415,6 +431,7 @@ async function loadIssuesView(
     resource: "repo.issues",
     params: {
       baseUrl: route.node,
+      repoId: route.repo,
       issues,
       status,
       repo,
@@ -440,7 +457,9 @@ async function loadTreeView(
   if (
     (previousLoaded.resource === "repo.source" ||
       previousLoaded.resource === "repo.history") &&
-    previousLoaded.params.repo.rid === route.repo &&
+    [previousLoaded.params.repo.rid, previousLoaded.params.repo.alias].includes(
+      route.repo,
+    ) &&
     previousLoaded.params.peer === route.peer
   ) {
     repoPromise = Promise.resolve(previousLoaded.params.repo);
@@ -529,6 +548,7 @@ async function loadTreeView(
     resource: "repo.source",
     params: {
       baseUrl: route.node,
+      repoId: route.repo,
       seedingPolicy,
       commit,
       repo,
@@ -606,7 +626,9 @@ async function loadHistoryView(
   if (
     (previousLoaded.resource === "repo.source" ||
       previousLoaded.resource === "repo.history") &&
-    previousLoaded.params.repo.rid === route.repo &&
+    [previousLoaded.params.repo.rid, previousLoaded.params.repo.alias].includes(
+      route.repo,
+    ) &&
     previousLoaded.params.peer === route.peer
   ) {
     repoPromise = Promise.resolve(previousLoaded.params.repo);
@@ -663,7 +685,9 @@ async function loadHistoryView(
   if (
     (previousLoaded.resource === "repo.source" ||
       previousLoaded.resource === "repo.history") &&
-    previousLoaded.params.repo.rid === route.repo &&
+    [previousLoaded.params.repo.rid, previousLoaded.params.repo.alias].includes(
+      route.repo,
+    ) &&
     previousLoaded.params.commit === commitId
   ) {
     treePromise = Promise.resolve(previousLoaded.params.tree);
@@ -684,6 +708,7 @@ async function loadHistoryView(
     resource: "repo.history",
     params: {
       baseUrl: route.node,
+      repoId: route.repo,
       seedingPolicy,
       commit: commitId,
       repo,
@@ -714,6 +739,7 @@ async function loadIssueView(route: RepoIssueRoute): Promise<RepoLoadedRoute> {
     resource: "repo.issue",
     params: {
       baseUrl: route.node,
+      repoId: route.repo,
       repo,
       rawPath,
       issue,
@@ -739,7 +765,9 @@ async function loadPatchView(
 
   if (
     previousLoaded.resource === "repo.patch" &&
-    previousLoaded.params.repo.rid === route.repo &&
+    [previousLoaded.params.repo.rid, previousLoaded.params.repo.alias].includes(
+      route.repo,
+    ) &&
     previousLoaded.params.patch.id === route.patch
   ) {
     repoPromise = Promise.resolve(previousLoaded.params.repo);
@@ -821,6 +849,7 @@ async function loadPatchView(
     resource: "repo.patch",
     params: {
       baseUrl: route.node,
+      repoId: route.repo,
       repo,
       rawPath,
       patch,

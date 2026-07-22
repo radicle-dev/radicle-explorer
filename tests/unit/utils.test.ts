@@ -286,3 +286,18 @@ describe("isLocal", () => {
     });
   });
 });
+
+describe("repoSegment", () => {
+  const rid = "rad:z3gqcJUoA1n9HaHKufZs5FCSGazv5";
+
+  test("prefers the alias when the node advertises one", () => {
+    expect(utils.repoSegment({ rid, alias: "heartwood" })).toEqual("heartwood");
+  });
+
+  test.each([
+    { repo: { rid }, description: "no alias field" },
+    { repo: { rid, alias: undefined }, description: "undefined alias" },
+  ])("falls back to the RID with $description", ({ repo }) => {
+    expect(utils.repoSegment(repo)).toEqual(rid);
+  });
+});

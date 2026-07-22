@@ -33,6 +33,7 @@
   export let peer: string | undefined;
   export let peers: PeerRefs[];
   export let repo: Repo;
+  export let repoId: string;
   export let revision: string | undefined;
   export let tree: Tree;
   export let nodeId: string;
@@ -63,7 +64,7 @@
   $: baseRoute = {
     resource: "repo.history",
     node: baseUrl,
-    repo: repo.rid,
+    repo: repoId,
   } as Extract<RepoRoute, { resource: "repo.history" }>;
   $: {
     allCommitHeaders = commitHeaders;
@@ -102,13 +103,13 @@
   }
 </style>
 
-<Layout {nodeId} {nodeAvatarUrl} {baseUrl} {repo} activeTab="source">
+<Layout {nodeId} {nodeAvatarUrl} {baseUrl} {repo} {repoId} activeTab="source">
   <svelte:fragment slot="breadcrumb">
     <Separator />
     <Link
       route={{
         resource: "repo.history",
-        repo: repo.rid,
+        repo: repoId,
         node: baseUrl,
       }}>
       Commits
@@ -122,7 +123,7 @@
       alias={repo.alias}
       name={repo.payloads["xyz.radicle.project"].data.name} />
   </svelte:fragment>
-  <RepoNameHeader {repo} {baseUrl} {seedingPolicy} slot="header" />
+  <RepoNameHeader {repo} {repoId} {baseUrl} {seedingPolicy} slot="header" />
 
   <div
     style:padding="1rem"
@@ -134,6 +135,7 @@
       {peers}
       {peer}
       {repo}
+      {repoId}
       {revision}
       {tree}
       node={baseUrl}
@@ -145,12 +147,7 @@
     {#each groupCommits(allCommitHeaders) as group (group.time)}
       <div class="group-header">{group.date}</div>
       <List items={group.commits}>
-        <CommitTeaser
-          slot="item"
-          let:item
-          repoId={repo.rid}
-          {baseUrl}
-          commit={item} />
+        <CommitTeaser slot="item" let:item {repoId} {baseUrl} commit={item} />
       </List>
     {/each}
   </div>

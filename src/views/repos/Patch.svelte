@@ -83,6 +83,7 @@
   export let stats: Diff["stats"];
   export let rawPath: (commit?: string) => string;
   export let repo: Repo;
+  export let repoId: string;
   export let view: PatchView;
   export let nodeId: string;
   export let nodeAvatarUrl: string | undefined;
@@ -114,7 +115,7 @@
   $: {
     const baseRoute = {
       resource: "repo.patch",
-      repo: repo.rid,
+      repo: repoId,
       node: baseUrl,
       patch: patch.id,
     } as const;
@@ -304,6 +305,7 @@
 <Layout
   {baseUrl}
   {repo}
+  {repoId}
   {nodeId}
   {nodeAvatarUrl}
   activeTab="patches"
@@ -313,7 +315,7 @@
     <Link
       route={{
         resource: "repo.patches",
-        repo: repo.rid,
+        repo: repoId,
         node: baseUrl,
         search: `status=${patch.state.status}`,
       }}>
@@ -362,7 +364,7 @@
           <Link
             route={{
               resource: "repo.patch",
-              repo: repo.rid,
+              repo: repoId,
               node: baseUrl,
               patch: patch.id,
               view: { name: "changes", revision: latestRevision.id },
@@ -436,7 +438,7 @@
 
         {#if view.name === "changes"}
           <div class="global-hide-on-mobile-down" style="margin-left: auto;">
-            <RevisionSelector {view} {baseUrl} {patch} {repo} />
+            <RevisionSelector {view} {baseUrl} {patch} {repoId} />
           </div>
         {/if}
         {#if view.name === "diff"}
@@ -454,7 +456,7 @@
             style:padding="0 1rem"
             style:display="flex"
             class="global-hide-on-small-desktop-up">
-            <RevisionSelector {view} {baseUrl} {patch} {repo} />
+            <RevisionSelector {view} {baseUrl} {patch} {repoId} />
           </div>
         {/if}
         {#if view.name === "diff"}
@@ -469,7 +471,7 @@
           </div>
           <Changeset
             {baseUrl}
-            repoId={repo.rid}
+            {repoId}
             revision={view.toCommit}
             files={view.files}
             diff={view.diff} />
@@ -480,7 +482,7 @@
             <RevisionComponent
               {baseUrl}
               {rawPath}
-              repoId={repo.rid}
+              {repoId}
               {timelines}
               {...revision}
               first={index === 0}
@@ -500,7 +502,7 @@
         {:else if view.name === "changes"}
           <Changeset
             {baseUrl}
-            repoId={repo.rid}
+            {repoId}
             revision={view.oid}
             files={view.files}
             diff={view.diff} />

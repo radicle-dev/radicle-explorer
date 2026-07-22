@@ -26,6 +26,7 @@
   export let baseUrl: BaseUrl;
   export let issue: Issue;
   export let repo: Repo;
+  export let repoId: string;
   export let rawPath: (commit?: string) => string;
   export let nodeId: string;
   export let nodeAvatarUrl: string | undefined;
@@ -128,6 +129,7 @@
   {nodeId}
   {nodeAvatarUrl}
   {repo}
+  {repoId}
   activeTab="issues"
   stylePaddingBottom="0">
   <svelte:fragment slot="breadcrumb">
@@ -135,7 +137,7 @@
     <Link
       route={{
         resource: "repo.issues",
-        repo: repo.rid,
+        repo: repoId,
         node: baseUrl,
         status: issue.state.status,
       }}>

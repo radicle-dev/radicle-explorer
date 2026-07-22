@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { PatchView } from "../router";
-  import type { BaseUrl, Patch, Repo } from "@http-client";
+  import type { BaseUrl, Patch } from "@http-client";
   import * as utils from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
@@ -14,7 +14,7 @@
   export let view: Extract<PatchView, { name: "changes" }>;
   export let baseUrl: BaseUrl;
   export let patch: Patch;
-  export let repo: Repo;
+  export let repoId: string;
 </script>
 
 <Popover
@@ -49,7 +49,7 @@
         on:afterNavigate={closeFocused}
         route={{
           resource: "repo.patch",
-          repo: repo.rid,
+          repo: repoId,
           node: baseUrl,
           patch: patch.id,
           view: {

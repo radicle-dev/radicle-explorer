@@ -8,6 +8,7 @@
     absoluteTimestamp,
     formatTimestamp,
     formatRepositoryId,
+    repoSegment,
     twemoji,
   } from "@app/lib/utils";
 
@@ -154,7 +155,7 @@
 <Link
   route={{
     resource: "repo.source",
-    repo: repo.rid,
+    repo: repoSegment(repo),
     node: baseUrl,
   }}>
   <div class="repo-card" class:compact>

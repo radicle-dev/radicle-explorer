@@ -13,6 +13,7 @@
   import RepoAvatar from "@app/components/RepoAvatar.svelte";
 
   export let repo: Repo;
+  export let repoId: string;
   export let baseUrl: BaseUrl;
   export let seedingPolicy: SeedingPolicy;
 
@@ -114,7 +115,7 @@
         <Link
           route={{
             resource: "repo.source",
-            repo: repo.rid,
+            repo: repoId,
             node: baseUrl,
           }}>
           <span class="repo-name">

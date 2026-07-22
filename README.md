@@ -154,6 +154,33 @@ ensures the primary seed is deterministic; if you list multiple, users
 are bucketed across them and may land on a different node.
 
 
+## Repository aliases
+
+`radicle-httpd` can map a short, human-readable alias to a repository ID
+(RID), so a repository can be referred to by name instead of its full
+`rad:` identifier. Aliases are configured on the node with the
+`--alias <name> <rid>` flag, which may be repeated:
+
+```sh
+radicle-httpd --alias heartwood rad:z3gqcJUoA1n9HaHKufZs5FCSGazv5
+```
+
+An alias works anywhere the RID is accepted: `git clone`, the HTTP API, the
+raw endpoints, and Explorer URLs — the router resolves it transparently.
+With the alias above, these two Explorer URLs point at the same repository:
+
+```
+https://radicle.network/nodes/seed.example.com/rad:z3gqcJUoA1n9HaHKufZs5FCSGazv5/issues
+https://radicle.network/nodes/seed.example.com/heartwood/issues
+```
+
+and the repository can be cloned over Git by its alias:
+
+```sh
+git clone https://seed.example.com/heartwood.git
+```
+
+
 ## Contributing
 
 * For detailed contribution guidelines, refer to the [CONTRIBUTING.md][con]

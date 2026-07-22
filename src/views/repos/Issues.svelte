@@ -19,6 +19,7 @@
   export let baseUrl: BaseUrl;
   export let issues: Issue[];
   export let repo: Repo;
+  export let repoId: string;
   export let status: IssueState["status"];
   export let nodeId: string;
   export let nodeAvatarUrl: string | undefined;
@@ -103,13 +104,13 @@
   }
 </style>
 
-<Layout {nodeId} {nodeAvatarUrl} {baseUrl} {repo} activeTab="issues">
+<Layout {nodeId} {nodeAvatarUrl} {baseUrl} {repo} {repoId} activeTab="issues">
   <svelte:fragment slot="breadcrumb">
     <Separator />
     <Link
       route={{
         resource: "repo.issues",
-        repo: repo.rid,
+        repo: repoId,
         node: baseUrl,
       }}>
       Issues
@@ -119,7 +120,7 @@
     <Link
       route={{
         resource: "repo.issues",
-        repo: repo.rid,
+        repo: repoId,
         node: baseUrl,
         status: "open",
       }}>
@@ -136,7 +137,7 @@
     <Link
       route={{
         resource: "repo.issues",
-        repo: repo.rid,
+        repo: repoId,
         node: baseUrl,
         status: "closed",
       }}>
@@ -153,12 +154,7 @@
   </div>
 
   <List items={allIssues}>
-    <IssueTeaser
-      slot="item"
-      let:item
-      {baseUrl}
-      repoId={repo.rid}
-      issue={item} />
+    <IssueTeaser slot="item" let:item {baseUrl} {repoId} issue={item} />
   </List>
 
   {#if error}

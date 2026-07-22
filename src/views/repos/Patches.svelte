@@ -20,6 +20,7 @@
   export let baseUrl: BaseUrl;
   export let patches: Patch[];
   export let repo: Repo;
+  export let repoId: string;
   export let status: PatchState["status"];
   export let nodeId: string;
   export let nodeAvatarUrl: string | undefined;
@@ -108,13 +109,13 @@
   }
 </style>
 
-<Layout {nodeId} {nodeAvatarUrl} {baseUrl} {repo} activeTab="patches">
+<Layout {nodeId} {nodeAvatarUrl} {baseUrl} {repo} {repoId} activeTab="patches">
   <svelte:fragment slot="breadcrumb">
     <Separator />
     <Link
       route={{
         resource: "repo.patches",
-        repo: repo.rid,
+        repo: repoId,
         node: baseUrl,
       }}>
       Patches
@@ -124,7 +125,7 @@
     <Link
       route={{
         resource: "repo.patches",
-        repo: repo.rid,
+        repo: repoId,
         node: baseUrl,
         search: "status=open",
       }}>
@@ -141,7 +142,7 @@
     <Link
       route={{
         resource: "repo.patches",
-        repo: repo.rid,
+        repo: repoId,
         node: baseUrl,
         search: "status=draft",
       }}>
@@ -158,7 +159,7 @@
     <Link
       route={{
         resource: "repo.patches",
-        repo: repo.rid,
+        repo: repoId,
         node: baseUrl,
         search: "status=archived",
       }}>
@@ -175,7 +176,7 @@
     <Link
       route={{
         resource: "repo.patches",
-        repo: repo.rid,
+        repo: repoId,
         node: baseUrl,
         search: "status=merged",
       }}>
@@ -192,12 +193,7 @@
   </div>
 
   <List items={allPatches}>
-    <PatchTeaser
-      slot="item"
-      let:item
-      {baseUrl}
-      repoId={repo.rid}
-      patch={item} />
+    <PatchTeaser slot="item" let:item {baseUrl} {repoId} patch={item} />
   </List>
 
   {#if error}

@@ -76,6 +76,16 @@ export function truncateId(pubkey: string): string {
   return `${pubkey.substring(0, 6)}…${pubkey.slice(-6)}`;
 }
 
+// The URL path segment to use for a repo: its configured alias when the node
+// advertises one, otherwise the canonical RID. Keeps alias-based URLs sticky
+// across in-app navigation, since the backend resolves either form.
+export function repoSegment(repo: {
+  rid: string;
+  alias?: string | undefined;
+}): string {
+  return repo.alias ?? repo.rid;
+}
+
 export function formatCommit(oid: string): string {
   return oid.substring(0, 7);
 }

@@ -25,6 +25,7 @@
   export let peer: string | undefined;
   export let peers: PeerRefs[];
   export let repo: Repo;
+  export let repoId: string;
   export let baseRoute: Extract<
     RepoRoute,
     { resource: "repo.source" } | { resource: "repo.history" }
@@ -132,7 +133,7 @@
       variant={commitButtonVariant}
       styleMinWidth="0"
       hideSummaryOnMobile
-      repoId={repo.rid}
+      {repoId}
       commit={lastCommit}
       baseUrl={node} />
     {#if !onCanonical}
@@ -155,7 +156,7 @@
     <Link
       route={{
         resource: "repo.source",
-        repo: repo.rid,
+        repo: repoId,
         node: node,
         peer,
         revision,
@@ -168,7 +169,7 @@
     <Link
       route={{
         resource: "repo.history",
-        repo: repo.rid,
+        repo: repoId,
         node: node,
         peer,
         revision,
@@ -201,7 +202,7 @@
       variant={commitButtonVariant}
       styleMinWidth="0"
       hideSummaryOnMobile
-      repoId={repo.rid}
+      {repoId}
       commit={lastCommit}
       baseUrl={node} />
     {#if !onCanonical}

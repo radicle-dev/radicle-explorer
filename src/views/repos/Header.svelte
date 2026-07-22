@@ -18,6 +18,7 @@
   export let baseUrl: BaseUrl;
   export let activeTab: ActiveTab = undefined;
   export let repo: Repo;
+  export let repoId: string;
 
   let shareIcon: "link" | "checkmark" = "link";
 
@@ -29,19 +30,19 @@
     if (activeTab === "issues") {
       return routeToPath({
         resource: "repo.issues",
-        repo: repo.rid,
+        repo: repoId,
         node: baseUrl,
       });
     } else if (activeTab === "patches") {
       return routeToPath({
         resource: "repo.patches",
-        repo: repo.rid,
+        repo: repoId,
         node: baseUrl,
       });
     } else {
       return routeToPath({
         resource: "repo.source",
-        repo: repo.rid,
+        repo: repoId,
         node: baseUrl,
         path: "/",
       });
@@ -103,7 +104,7 @@
   <Link
     route={{
       resource: "repo.source",
-      repo: repo.rid,
+      repo: repoId,
       node: baseUrl,
       path: "/",
     }}>
@@ -115,7 +116,7 @@
   <Link
     route={{
       resource: "repo.issues",
-      repo: repo.rid,
+      repo: repoId,
       node: baseUrl,
     }}>
     <Button let:hover variant={activeTab === "issues" ? "gray" : "background"}>
@@ -135,7 +136,7 @@
   <Link
     route={{
       resource: "repo.patches",
-      repo: repo.rid,
+      repo: repoId,
       node: baseUrl,
     }}>
     <Button let:hover variant={activeTab === "patches" ? "gray" : "background"}>
@@ -162,6 +163,6 @@
       </Button>
     {/if}
     <slot name="actions" />
-    <SeedButton seedCount={repo.seeding} repoId={repo.rid} />
+    <SeedButton seedCount={repo.seeding} {repoId} />
   </div>
 </div>
