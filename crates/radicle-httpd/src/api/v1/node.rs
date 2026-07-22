@@ -7,7 +7,7 @@ use serde_json::json;
 use tokio::time::{timeout, Duration};
 
 use radicle::crypto::ssh::fmt;
-use radicle::identity::{Did, RepoId};
+use radicle::identity::Did;
 use radicle::node::address::Store as AddressStore;
 use radicle::node::routing::Store;
 use radicle::node::{AliasStore, Config, Handle, NodeId, UserAgent};
@@ -173,8 +173,9 @@ async fn node_policies_repos_handler(State(ctx): State<Context>) -> impl IntoRes
 /// `GET /node/policies/repos/:rid`
 async fn node_policies_repo_handler(
     State(ctx): State<Context>,
-    Path(rid): Path<RepoId>,
+    Path(rid): Path<String>,
 ) -> impl IntoResponse {
+    let rid = ctx.resolve_repo(&rid)?;
     let policies = ctx.profile.policies()?;
     let policy = policies.seed_policy(&rid)?;
 

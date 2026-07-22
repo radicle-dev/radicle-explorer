@@ -46,6 +46,15 @@ mod tracing_extra;
 /// Default cache HTTP size.
 pub const DEFAULT_CACHE_SIZE: NonZeroUsize = NonZeroUsize::new(100).unwrap();
 
+/// Resolve a repo path segment to a [`RepoId`]. The segment may be either a
+/// canonical RID or one of the aliases configured via `--alias`. Returns
+/// `None` when it is neither, letting each caller map that to its own error.
+pub(crate) fn resolve_rid(name: &str, aliases: &HashMap<String, RepoId>) -> Option<RepoId> {
+    name.parse::<RepoId>()
+        .ok()
+        .or_else(|| aliases.get(name).copied())
+}
+
 #[derive(Debug, Clone)]
 pub struct Options {
     pub aliases: HashMap<String, RepoId>,
@@ -162,8 +171,9 @@ pub async fn run(options: Options) -> anyhow::Result<()> {
 /// Create a router consisting of other sub-routers.
 fn router(options: Options, profile: Arc<Profile>, ctx: api::Context) -> anyhow::Result<Router> {
     let api_router = api::router(ctx);
-    let git_router = git::router(profile.clone(), options.aliases);
-    let raw_router = raw::router(profile);
+    let aliases = Arc::new(options.aliases);
+    let git_router = git::router(profile.clone(), aliases.clone());
+    let raw_router = raw::router(profile, aliases);
 
     let app = Router::new()
         .route("/", get(root_index_handler))

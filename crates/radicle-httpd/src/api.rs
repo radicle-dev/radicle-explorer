@@ -125,6 +125,13 @@ impl Context {
         })
     }
 
+    /// Resolve a repo path segment to a [`RepoId`]. The segment may be either
+    /// a canonical RID or one of the aliases configured via `--alias`.
+    #[allow(clippy::result_large_err)]
+    pub(crate) fn resolve_repo(&self, repo: &str) -> Result<RepoId, error::Error> {
+        crate::resolve_rid(repo, &self.repo_aliases).ok_or(error::Error::NotFound)
+    }
+
     /// Return the configured alias for a repo, if any. When several aliases
     /// point at the same repo, the lexicographically smallest is returned so
     /// the result is stable across requests.
@@ -134,6 +141,11 @@ impl Context {
             .filter(|(_, id)| *id == rid)
             .map(|(alias, _)| alias.clone())
             .min()
+    }
+
+    #[cfg(test)]
+    pub fn set_repo_aliases(&mut self, aliases: HashMap<String, RepoId>) {
+        self.repo_aliases = Arc::new(aliases);
     }
 
     /// The search backend client, if one is configured and reachable at

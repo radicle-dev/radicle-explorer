@@ -25,7 +25,7 @@ use tower_http::decompression::RequestDecompressionLayer;
 
 use crate::error::GitError as Error;
 
-pub fn router(profile: Arc<Profile>, aliases: HashMap<String, RepoId>) -> Router {
+pub fn router(profile: Arc<Profile>, aliases: Arc<HashMap<String, RepoId>>) -> Router {
     Router::new()
         .route(
             "/{rid}/{*path}",
@@ -35,7 +35,7 @@ pub fn router(profile: Arc<Profile>, aliases: HashMap<String, RepoId>) -> Router
 }
 
 async fn git_handler(
-    State((profile, aliases)): State<(Arc<Profile>, HashMap<String, RepoId>)>,
+    State((profile, aliases)): State<(Arc<Profile>, Arc<HashMap<String, RepoId>>)>,
     AxumPath((repository, path)): AxumPath<(String, String)>,
     method: Method,
     headers: HeaderMap,
@@ -45,14 +45,8 @@ async fn git_handler(
 ) -> impl IntoResponse {
     let query = query.0.unwrap_or_default();
     let name = repository.strip_suffix(".git").unwrap_or(&repository);
-    let rid: RepoId = match name.parse() {
-        Ok(rid) => rid,
-        Err(_) => {
-            let Some(rid) = aliases.get(name) else {
-                return Err(Error::NotFound);
-            };
-            *rid
-        }
+    let Some(rid) = crate::resolve_rid(name, &aliases) else {
+        return Err(Error::NotFound);
     };
 
     let (nid, path): (Option<NodeId>, &str) = {
@@ -196,6 +190,7 @@ mod routes {
     use std::collections::HashMap;
     use std::net::SocketAddr;
     use std::str::FromStr;
+    use std::sync::Arc;
 
     use axum::extract::connect_info::MockConnectInfo;
     use axum::http::StatusCode;
@@ -208,9 +203,9 @@ mod routes {
     async fn test_info_request() {
         let tmp = tempfile::tempdir().unwrap();
         let ctx = test::seed(tmp.path());
-        let app = super::router(ctx.profile().to_owned(), HashMap::new()).layer(MockConnectInfo(
-            DualAddr::Tcp(SocketAddr::from(([0, 0, 0, 0], 8080))),
-        ));
+        let app = super::router(ctx.profile().to_owned(), Arc::new(HashMap::new())).layer(
+            MockConnectInfo(DualAddr::Tcp(SocketAddr::from(([0, 0, 0, 0], 8080)))),
+        );
 
         let response = get(&app, format!("/{RID}.git/info/refs")).await;
 
@@ -223,7 +218,10 @@ mod routes {
         let ctx = test::seed(tmp.path());
         let app = super::router(
             ctx.profile().to_owned(),
-            HashMap::from_iter([(String::from("heartwood"), RepoId::from_str(RID).unwrap())]),
+            Arc::new(HashMap::from_iter([(
+                String::from("heartwood"),
+                RepoId::from_str(RID).unwrap(),
+            )])),
         )
         .layer(MockConnectInfo(DualAddr::Tcp(SocketAddr::from((
             [0, 0, 0, 0],

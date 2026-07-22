@@ -15,7 +15,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use radicle::cob::{issue::cache::Issues as _, patch::cache::Patches as _};
-use radicle::identity::RepoId;
 use radicle::node::{Alias, AliasStore, NodeId};
 use radicle::storage::{ReadRepository, RemoteRepository};
 
@@ -385,7 +384,8 @@ async fn repo_search_handler(
 
 /// Get repo metadata.
 /// `GET /repos/:rid`
-async fn repo_handler(State(ctx): State<Context>, Path(rid): Path<RepoId>) -> impl IntoResponse {
+async fn repo_handler(State(ctx): State<Context>, Path(rid): Path<String>) -> impl IntoResponse {
+    let rid = ctx.resolve_repo(&rid)?;
     let (repo, doc) = ctx.repo(rid)?;
     let info = ctx.repo_info(&repo, doc)?;
 
@@ -406,9 +406,10 @@ pub struct CommitsQueryString {
 /// `GET /repos/:rid/commits?parent=<sha>`
 async fn history_handler(
     State(ctx): State<Context>,
-    Path(rid): Path<RepoId>,
+    Path(rid): Path<String>,
     Query(qs): Query<CommitsQueryString>,
 ) -> impl IntoResponse {
+    let rid = ctx.resolve_repo(&rid)?;
     let (repo, _) = ctx.repo(rid)?;
     let (_, head) = repo.head()?;
     let CommitsQueryString {
@@ -467,8 +468,9 @@ async fn history_handler(
 /// `GET /repos/:rid/commits/:sha`
 async fn commit_handler(
     State(ctx): State<Context>,
-    Path((rid, sha)): Path<(RepoId, Oid)>,
+    Path((rid, sha)): Path<(String, Oid)>,
 ) -> impl IntoResponse {
+    let rid = ctx.resolve_repo(&rid)?;
     let (repo, _) = ctx.repo(rid)?;
     let repo = Repository::open(repo.path())?;
     let commit = repo.commit(sha)?;
@@ -533,8 +535,9 @@ async fn commit_handler(
 /// `GET /repos/:rid/diff/:base/:oid`
 async fn diff_handler(
     State(ctx): State<Context>,
-    Path((rid, base, oid)): Path<(RepoId, Oid, Oid)>,
+    Path((rid, base, oid)): Path<(String, Oid, Oid)>,
 ) -> impl IntoResponse {
+    let rid = ctx.resolve_repo(&rid)?;
     let (repo, _) = ctx.repo(rid)?;
     let repo = Repository::open(repo.path())?;
     let base = repo.commit(base)?;
@@ -600,8 +603,9 @@ async fn diff_handler(
 /// `GET /repos/:rid/activity`
 async fn activity_handler(
     State(ctx): State<Context>,
-    Path(rid): Path<RepoId>,
+    Path(rid): Path<String>,
 ) -> impl IntoResponse {
+    let rid = ctx.resolve_repo(&rid)?;
     let (repo, _) = ctx.repo(rid)?;
     let current_date = chrono::Utc::now().timestamp();
     // SAFETY: The number of weeks is static and not out of bounds.
@@ -629,7 +633,7 @@ async fn activity_handler(
 /// `GET /repos/:rid/tree/:sha/`
 async fn tree_handler_root(
     State(ctx): State<Context>,
-    Path((rid, sha)): Path<(RepoId, Oid)>,
+    Path((rid, sha)): Path<(String, Oid)>,
 ) -> impl IntoResponse {
     tree_handler(State(ctx), Path((rid, sha, String::new()))).await
 }
@@ -638,8 +642,9 @@ async fn tree_handler_root(
 /// `GET /repos/:rid/tree/:sha/*path`
 async fn tree_handler(
     State(ctx): State<Context>,
-    Path((rid, sha, path)): Path<(RepoId, Oid, String)>,
+    Path((rid, sha, path)): Path<(String, Oid, String)>,
 ) -> impl IntoResponse {
+    let rid = ctx.resolve_repo(&rid)?;
     let (repo, _) = ctx.repo(rid)?;
 
     if let Some(ref cache) = ctx.cache {
@@ -665,8 +670,9 @@ async fn tree_handler(
 /// `GET /repos/:rid/stats/tree/:sha`
 async fn stats_tree_handler(
     State(ctx): State<Context>,
-    Path((rid, sha)): Path<(RepoId, Oid)>,
+    Path((rid, sha)): Path<(String, Oid)>,
 ) -> impl IntoResponse {
+    let rid = ctx.resolve_repo(&rid)?;
     let (repo, _) = ctx.repo(rid)?;
     let repo = Repository::open(repo.path())?;
     let stats = repo.stats_from(&sha)?;
@@ -676,7 +682,8 @@ async fn stats_tree_handler(
 
 /// Get all repo remotes.
 /// `GET /repos/:rid/remotes`
-async fn remotes_handler(State(ctx): State<Context>, Path(rid): Path<RepoId>) -> impl IntoResponse {
+async fn remotes_handler(State(ctx): State<Context>, Path(rid): Path<String>) -> impl IntoResponse {
+    let rid = ctx.resolve_repo(&rid)?;
     let (repo, doc) = ctx.repo(rid)?;
     let delegates = doc.delegates();
     let aliases = &ctx.profile.aliases();
@@ -694,8 +701,9 @@ async fn remotes_handler(State(ctx): State<Context>, Path(rid): Path<RepoId>) ->
 /// `GET /repos/:rid/remotes/:peer`
 async fn remote_handler(
     State(ctx): State<Context>,
-    Path((rid, node_id)): Path<(RepoId, NodeId)>,
+    Path((rid, node_id)): Path<(String, NodeId)>,
 ) -> impl IntoResponse {
+    let rid = ctx.resolve_repo(&rid)?;
     let (repo, doc) = ctx.repo(rid)?;
     let delegates = doc.delegates();
     let aliases = &ctx.profile.aliases();
@@ -829,8 +837,9 @@ fn remote_info(
 /// `GET /repos/:rid/blob/:sha/*path`
 async fn blob_handler(
     State(ctx): State<Context>,
-    Path((rid, sha, path)): Path<(RepoId, Oid, String)>,
+    Path((rid, sha, path)): Path<(String, Oid, String)>,
 ) -> impl IntoResponse {
+    let rid = ctx.resolve_repo(&rid)?;
     let (repo, _) = ctx.repo(rid)?;
     let repo = Repository::open(repo.path())?;
     let blob = repo.blob(sha, &path)?;
@@ -854,8 +863,9 @@ async fn blob_handler(
 /// `GET /repos/:rid/readme/:sha`
 async fn readme_handler(
     State(ctx): State<Context>,
-    Path((rid, sha)): Path<(RepoId, Oid)>,
+    Path((rid, sha)): Path<(String, Oid)>,
 ) -> impl IntoResponse {
+    let rid = ctx.resolve_repo(&rid)?;
     let (repo, _) = ctx.repo(rid)?;
     let repo = Repository::open(repo.path())?;
     let paths = [
@@ -899,9 +909,10 @@ async fn readme_handler(
 /// `GET /repos/:rid/issues`
 async fn issues_handler(
     State(ctx): State<Context>,
-    Path(rid): Path<RepoId>,
+    Path(rid): Path<String>,
     Query(qs): Query<CobsQuery<api::query::IssueStatus>>,
 ) -> impl IntoResponse {
+    let rid = ctx.resolve_repo(&rid)?;
     let (repo, _) = ctx.repo(rid)?;
     let CobsQuery {
         page,
@@ -936,8 +947,9 @@ async fn issues_handler(
 /// `GET /repos/:rid/issues/:id`
 async fn issue_handler(
     State(ctx): State<Context>,
-    Path((rid, issue_id)): Path<(RepoId, Oid)>,
+    Path((rid, issue_id)): Path<(String, Oid)>,
 ) -> impl IntoResponse {
+    let rid = ctx.resolve_repo(&rid)?;
     let (repo, _) = ctx.repo(rid)?;
     let issue = ctx
         .profile
@@ -955,9 +967,10 @@ async fn issue_handler(
 /// `GET /repos/:rid/patches`
 async fn patches_handler(
     State(ctx): State<Context>,
-    Path(rid): Path<RepoId>,
+    Path(rid): Path<String>,
     Query(qs): Query<CobsQuery<api::query::PatchStatus>>,
 ) -> impl IntoResponse {
+    let rid = ctx.resolve_repo(&rid)?;
     let (repo, _) = ctx.repo(rid)?;
     let CobsQuery {
         page,
@@ -991,8 +1004,9 @@ async fn patches_handler(
 /// `GET /repos/:rid/patches/:id`
 async fn patch_handler(
     State(ctx): State<Context>,
-    Path((rid, patch_id)): Path<(RepoId, Oid)>,
+    Path((rid, patch_id)): Path<(String, Oid)>,
 ) -> impl IntoResponse {
+    let rid = ctx.resolve_repo(&rid)?;
     let (repo, _) = ctx.repo(rid)?;
     let patches = ctx.profile.patches(&repo)?;
     let patch = patches.get(&(&*patch_id).into())?.ok_or(Error::NotFound)?;
@@ -1371,6 +1385,35 @@ mod routes {
                "refs": { "tags": {}, "refs": { "refs/heads/master": HEAD } }
             })
         );
+    }
+
+    #[tokio::test]
+    async fn test_repo_alias_resolution() {
+        let tmp = tempfile::tempdir().unwrap();
+        let mut ctx = seed(tmp.path());
+        let rid = RID.parse().unwrap();
+        ctx.set_repo_aliases(std::collections::HashMap::from_iter([(
+            "hello".to_string(),
+            rid,
+        )]));
+        let app = super::router(ctx);
+
+        // The alias resolves to the same repo as the RID, and the repo info
+        // advertises the configured alias.
+        let response = get(&app, "/repos/hello").await;
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.json().await;
+        assert_eq!(body["rid"], json!(RID));
+        assert_eq!(body["alias"], json!("hello"));
+
+        // The RID itself keeps working and does not advertise an alias.
+        let response = get(&app, format!("/repos/{RID}")).await;
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(response.json().await["alias"], json!("hello"));
+
+        // An unknown alias is not found.
+        let response = get(&app, "/repos/nope").await;
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]

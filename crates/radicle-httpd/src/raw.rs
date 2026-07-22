@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -104,22 +105,29 @@ enum Committish<'a> {
     Ref(&'a str),
 }
 
-pub fn router(profile: Arc<Profile>) -> Router {
+pub fn router(profile: Arc<Profile>, aliases: Arc<HashMap<String, RepoId>>) -> Router {
     Router::new()
         .route("/{rid}/{sha}", get(commit_handler))
         .route("/{rid}/{sha}/{*path}", get(file_by_commit_handler))
         .route("/{rid}/head/{*path}", get(file_by_canonical_head_handler))
         .route("/{rid}/archive/{*refname}", get(archive_by_refname_handler))
         .route("/{rid}/blobs/{oid}", get(file_by_oid_handler))
-        .with_state(profile)
+        .with_state((profile, aliases))
+}
+
+/// Resolve a repo path segment to a [`RepoId`], mapping an unknown segment to
+/// [`Error::NotFound`].
+fn resolve_rid(repo: &str, aliases: &HashMap<String, RepoId>) -> Result<RepoId, Error> {
+    crate::resolve_rid(repo, aliases).ok_or(Error::NotFound)
 }
 
 async fn commit_handler(
     method: Method,
-    Path((rid, sha)): Path<(RepoId, String)>,
+    Path((rid, sha)): Path<(String, String)>,
     Query(q): Query<PrefixQuery>,
-    State(profile): State<Arc<Profile>>,
+    State((profile, aliases)): State<(Arc<Profile>, Arc<HashMap<String, RepoId>>)>,
 ) -> Result<Response<Body>, Error> {
+    let rid = resolve_rid(&rid, &aliases)?;
     let storage = &profile.storage;
     let repo = storage.repository(rid)?;
 
@@ -140,9 +148,10 @@ async fn commit_handler(
 }
 
 async fn file_by_commit_handler(
-    Path((rid, sha, path)): Path<(RepoId, Oid, String)>,
-    State(profile): State<Arc<Profile>>,
+    Path((rid, sha, path)): Path<(String, Oid, String)>,
+    State((profile, aliases)): State<(Arc<Profile>, Arc<HashMap<String, RepoId>>)>,
 ) -> impl IntoResponse {
+    let rid = resolve_rid(&rid, &aliases)?;
     let storage = &profile.storage;
     let repo = storage.repository(rid)?;
 
@@ -162,10 +171,11 @@ async fn file_by_commit_handler(
 
 async fn archive_by_refname_handler(
     method: Method,
-    Path((rid, refname)): Path<(RepoId, String)>,
+    Path((rid, refname)): Path<(String, String)>,
     Query(q): Query<PrefixQuery>,
-    State(profile): State<Arc<Profile>>,
+    State((profile, aliases)): State<(Arc<Profile>, Arc<HashMap<String, RepoId>>)>,
 ) -> Result<Response<Body>, Error> {
+    let rid = resolve_rid(&rid, &aliases)?;
     let (refname, format) = ArchiveFormat::detect(&refname);
     archive_by_committish(
         method,
@@ -279,9 +289,10 @@ async fn archive_by_committish(
 }
 
 async fn file_by_canonical_head_handler(
-    Path((rid, path)): Path<(RepoId, String)>,
-    State(profile): State<Arc<Profile>>,
+    Path((rid, path)): Path<(String, String)>,
+    State((profile, aliases)): State<(Arc<Profile>, Arc<HashMap<String, RepoId>>)>,
 ) -> impl IntoResponse {
+    let rid = resolve_rid(&rid, &aliases)?;
     let storage = &profile.storage;
     let repo = storage.repository(rid)?;
 
@@ -320,10 +331,11 @@ fn blob_response(
 }
 
 async fn file_by_oid_handler(
-    Path((rid, oid)): Path<(RepoId, Oid)>,
-    State(profile): State<Arc<Profile>>,
+    Path((rid, oid)): Path<(String, Oid)>,
+    State((profile, aliases)): State<(Arc<Profile>, Arc<HashMap<String, RepoId>>)>,
     Query(_qs): Query<RawQuery>,
 ) -> impl IntoResponse {
+    let rid = resolve_rid(&rid, &aliases)?;
     let storage = &profile.storage;
     let repo = storage.repository(rid)?;
 
@@ -351,6 +363,9 @@ async fn file_by_oid_handler(
 
 #[cfg(test)]
 mod routes {
+    use std::collections::HashMap;
+    use std::sync::Arc;
+
     use axum::http::StatusCode;
 
     use crate::test::{self, get, RID, RID_PRIVATE};
@@ -360,7 +375,7 @@ mod routes {
     async fn test_file_handler() {
         let tmp = tempfile::tempdir().unwrap();
         let ctx = test::seed(tmp.path());
-        let app = super::router(ctx.profile().to_owned());
+        let app = super::router(ctx.profile().to_owned(), Arc::new(HashMap::new()));
 
         let response = get(&app, format!("/{RID}/head/dir1/README")).await;
 
@@ -374,6 +389,26 @@ mod routes {
             .unwrap();
 
         let response = get(&app, format!("/{RID_PRIVATE}/head/README")).await;
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn test_alias_resolution() {
+        let tmp = tempfile::tempdir().unwrap();
+        let ctx = test::seed(tmp.path());
+        let aliases = Arc::new(HashMap::from_iter([(
+            "hello".to_string(),
+            RID.parse().unwrap(),
+        )]));
+        let app = super::router(ctx.profile().to_owned(), aliases);
+
+        // The alias serves the same content as the RID.
+        let response = get(&app, "/hello/head/dir1/README").await;
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(response.body().await, "Hello World from dir1!\n");
+
+        // An unknown alias is not found.
+        let response = get(&app, "/nope/head/dir1/README").await;
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
     }
 }

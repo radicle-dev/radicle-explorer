@@ -125,8 +125,9 @@ impl FindJobs for JobsSource<'_> {
 /// `GET /repos/:rid/jobs/:sha`
 pub async fn handler(
     State(ctx): State<Context>,
-    Path((rid, sha)): Path<(RepoId, Oid)>,
+    Path((rid, sha)): Path<(String, Oid)>,
 ) -> impl IntoResponse {
+    let rid = ctx.resolve_repo(&rid)?;
     let aliases = ctx.profile.aliases();
     let jobs = JobsSource { ctx: &ctx, rid }.jobs_by_commit(sha, &aliases)?;
 
