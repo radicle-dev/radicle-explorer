@@ -1,13 +1,13 @@
 import type { BaseUrl, CommitHeader } from "@http-client";
 
-import LinkifyIt from "linkify-it";
+import { LinkifyIt } from "linkify-it";
 import dompurify from "dompurify";
 import escape from "lodash/escape";
 
 import { getDaysPassed } from "@app/lib/utils";
 import { HttpdClient } from "@http-client";
 
-const linkify = new LinkifyIt({}, { fuzzyLink: false });
+const linkify = new LinkifyIt({ fuzzyLink: false });
 
 // A set of commits grouped by time.
 interface CommitGroup {
