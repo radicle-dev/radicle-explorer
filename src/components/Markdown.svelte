@@ -206,9 +206,11 @@
       }
     }
 
-    // Replace standard HTML checkboxes with our custom radicle-icon-small element
+    // Replace standard HTML checkboxes with our custom radicle-icon-small
+    // element, placing it inline at the start of the list item.
     for (const i of container.querySelectorAll('input[type="checkbox"]')) {
-      i.parentElement?.classList.add("task-item");
+      const listItem = i.closest("li");
+      (listItem ?? i.parentElement)?.classList.add("task-item");
 
       const checkbox = document.createElement("radicle-icon-small");
       const checked = i.getAttribute("checked");
@@ -216,7 +218,11 @@
         "name",
         checked === null ? "checkbox-unchecked" : "checkbox-checked",
       );
-      i.insertAdjacentElement("beforebegin", checkbox);
+      if (listItem) {
+        listItem.insertBefore(checkbox, listItem.firstChild);
+      } else {
+        i.insertAdjacentElement("beforebegin", checkbox);
+      }
       i.remove();
     }
 
@@ -404,11 +410,26 @@
 
   .markdown :global(li.task-item) {
     list-style-type: none;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.375rem;
     color: var(--color-text-tertiary);
   }
   .markdown :global(li.task-item radicle-icon-small) {
-    margin-right: 0.2rem;
-    vertical-align: middle;
+    flex-shrink: 0;
+  }
+  .markdown :global(li.task-item > p) {
+    margin: 0;
+  }
+  /* A nested list inside a task item wraps onto its own line, indented past
+     the checkbox, instead of sitting beside it as a flex sibling. */
+  .markdown :global(li.task-item > ul),
+  .markdown :global(li.task-item > ol) {
+    flex-basis: 100%;
+    width: 100%;
+    margin: 0.25rem 0 0 1.375rem;
+    padding: 0;
   }
   .markdown :global(li.task-item:not(:last-child)) {
     margin-bottom: 0.25rem;
@@ -513,6 +534,11 @@
     line-height: 1.625;
     padding-left: 1.25rem;
     margin-bottom: 1rem;
+  }
+  /* Task lists sit flush-left (no bullet indent); nested task lists get their
+     indent from the parent item's margin instead. */
+  .markdown :global(ul:has(> li.task-item)) {
+    padding-left: 0;
   }
   .markdown :global(.list-content) {
     margin: 1rem 0;

@@ -19,6 +19,8 @@
     | "bookmark"
     | "bookmark-filled"
     | "branch"
+    | "checkbox-checked"
+    | "checkbox-unchecked"
     | "checkmark"
     | "checkout"
     | "chevron-down"
@@ -192,6 +194,31 @@
     <path d="M4.5 5.5V10.5H3.5V5.5H4.5Z" />
     <path
       d="M12.5 5.00001V7.20705L10.707 9.00001H3.99995V8.00001H10.2929L11.5 6.79298V5.00001H12.5Z" />
+  {:else if name === "checkbox-unchecked"}
+    <rect
+      x="2.5"
+      y="2.5"
+      width="11"
+      height="11"
+      rx="2"
+      fill="none"
+      stroke="currentColor" />
+  {:else if name === "checkbox-checked"}
+    <rect
+      x="2.5"
+      y="2.5"
+      width="11"
+      height="11"
+      rx="2"
+      fill="none"
+      stroke="currentColor" />
+    <path
+      d="M4.75 8L7 10.25L11.25 5.5"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.2"
+      stroke-linecap="round"
+      stroke-linejoin="round" />
   {:else if name === "checkmark"}
     <path
       d="M3 7.79297L6 10.793L13 3.79297L13.707 4.5L6 12.207L2.29297 8.5L3 7.79297Z" />
