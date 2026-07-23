@@ -1,13 +1,5 @@
 <script lang="ts" context="module">
-  import type {
-    Author,
-    Comment,
-    Review,
-    Merge,
-    Repo,
-    Revision,
-    Diff,
-  } from "@http-client";
+  import type { Comment, Review, Merge, Repo, Diff } from "@http-client";
 
   interface Thread {
     root: Comment;
@@ -65,10 +57,9 @@
   import Layout from "@app/views/repos/Layout.svelte";
   import Link from "@app/components/Link.svelte";
   import Markdown from "@app/components/Markdown.svelte";
+  import PatchActivity from "@app/views/repos/Patch/PatchActivity.svelte";
   import PatchMetadata from "@app/views/repos/Patch/PatchMetadata.svelte";
-  import Placeholder from "@app/components/Placeholder.svelte";
-  import Reactions from "@app/components/Reactions.svelte";
-  import RevisionComponent from "@app/views/repos/Cob/Revision.svelte";
+  import PatchReactions from "@app/views/repos/Patch/PatchReactions.svelte";
   import RevisionSelector from "@app/views/repos/Patch/RevisionSelector.svelte";
   import Separator from "./Separator.svelte";
   import Share from "@app/views/repos/Share.svelte";
@@ -167,69 +158,7 @@
     "content",
   );
   $: description = patch.revisions[0].description;
-  $: timelineTuple = patch.revisions.map<
-    [
-      {
-        revisionId: string;
-        revisionTimestamp: number;
-        revisionBase: string;
-        revisionOid: string;
-        revisionEdits: Revision["edits"];
-        revisionReactions: Revision["reactions"];
-        revisionAuthor: Author;
-        revisionDescription: string;
-      },
-      Timeline[],
-    ]
-  >(rev => [
-    {
-      revisionId: rev.id,
-      revisionTimestamp: rev.timestamp,
-      revisionBase: rev.base,
-      revisionOid: rev.oid,
-      revisionEdits: rev.edits,
-      revisionReactions: rev.reactions,
-      revisionAuthor: rev.author,
-      revisionDescription: rev.description,
-    },
-    [
-      ...rev.reviews.map<TimelineReview>(review => {
-        const reviewThreads: Thread[] = review.comments
-          .filter(comment => !comment.replyTo)
-          .map(thread => ({
-            root: thread,
-            replies: review.comments
-              .filter(comment => comment.replyTo === thread.id)
-              .sort((a, b) => a.timestamp - b.timestamp),
-          }));
-        return {
-          timestamp: review.timestamp,
-          type: "review",
-          inner: [review.author.id, { ...review, threads: reviewThreads }],
-        };
-      }),
-      ...patch.merges
-        .filter(merge => merge.revision === rev.id)
-        .map<TimelineMerge>(inner => ({
-          timestamp: inner.timestamp,
-          type: "merge",
-          inner,
-        })),
-      ...rev.discussions
-        .filter(comment => !comment.replyTo)
-        .map<TimelineThread>(thread => ({
-          timestamp: thread.timestamp,
-          type: "thread",
-          inner: {
-            root: thread,
-            replies: rev.discussions
-              .filter(comment => comment.replyTo === thread.id)
-              .sort((a, b) => a.timestamp - b.timestamp),
-          },
-        })),
-    ].sort((a, b) => a.timestamp - b.timestamp),
-  ]);
-  $: firstRevision = timelineTuple[0][0];
+  $: firstReactions = patch.revisions[0].reactions;
 </script>
 
 <style>
@@ -317,7 +246,7 @@
     background: linear-gradient(
       to bottom,
       transparent,
-      var(--color-surface-base)
+      var(--color-surface-canvas)
     );
     pointer-events: none;
   }
@@ -396,6 +325,7 @@
   {nodeId}
   {nodeAvatarUrl}
   activeTab="patches"
+  styleContentBackground="var(--color-surface-canvas)"
   stylePaddingBottom="0">
   <svelte:fragment slot="breadcrumb">
     <Separator />
@@ -483,9 +413,9 @@
             </div>
           {/if}
         </div>
-        {#if firstRevision.revisionReactions.length > 0}
+        {#if firstReactions.length > 0}
           <div class="description-reactions">
-            <Reactions reactions={firstRevision.revisionReactions} />
+            <PatchReactions reactions={firstReactions} />
           </div>
         {/if}
         {#if uniqueEmbeds.length > 0}
@@ -545,29 +475,7 @@
           files={view.files}
           diff={view.diff} />
       {:else if view.name === "activity"}
-        {#each timelineTuple as [revision, timelines], index}
-          {@const previousRevision =
-            index > 0 ? patch.revisions[index - 1] : undefined}
-          <RevisionComponent
-            {baseUrl}
-            {rawPath}
-            repoId={repo.rid}
-            {timelines}
-            {...revision}
-            first={index === 0}
-            patchId={patch.id}
-            patchState={patch.state}
-            initiallyExpanded={index === patch.revisions.length - 1}
-            previousRevId={previousRevision?.id}
-            previousRevBase={previousRevision?.base}
-            previousRevOid={previousRevision?.oid} />
-        {:else}
-          <div style:margin="4rem 0">
-            <Placeholder
-              iconName="no-patches"
-              caption="No activity on this patch yet" />
-          </div>
-        {/each}
+        <PatchActivity {baseUrl} {repo} {patch} {rawPath} />
       {:else}
         {utils.unreachable(view)}
       {/if}

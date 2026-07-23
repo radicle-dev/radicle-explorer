@@ -17,6 +17,9 @@
   export let stylePaddingBottom: string = "2.5rem";
   export let nodeId: string;
   export let nodeAvatarUrl: string | undefined;
+  // Background applied from the repo tab-bar down. Defaults to the page
+  // surface; the patch view sets this to canvas for a desktop-like white body.
+  export let styleContentBackground: string | undefined = undefined;
 </script>
 
 <style>
@@ -138,7 +141,10 @@
     </RepoHeader>
   </div>
 
-  <div class="content" style:padding-bottom={stylePaddingBottom}>
+  <div
+    class="content"
+    style:padding-bottom={stylePaddingBottom}
+    style:background-color={styleContentBackground}>
     <slot name="header" />
     <slot name="subheader" />
     <slot />
