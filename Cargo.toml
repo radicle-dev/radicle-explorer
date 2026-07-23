@@ -15,11 +15,19 @@ lexopt = "0.3.1"
 # cross-compile to the Apple release targets under cargo-zigbuild. TLS still
 # uses `reqwest/rustls-tls`, which is backed by `ring` and cross-compiles fine.
 meilisearch-sdk = { version = "0.33.0", default-features = false, features = ["reqwest", "tls", "jwt_rust_crypto"] }
-radicle = "0.24.0"
-radicle-surf = { version = "0.27.1", default-features = false }
+radicle = "0.25.0"
+radicle-surf = { version = "0.28.0", default-features = false }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
 tokio = { version = "1.47.1", default-features = false }
 tracing = { version = "0.1.41", default-features = false, features = ["std", "log"] }
 tracing-subscriber = { version = "0.3.19", default-features = false, features = ["std", "ansi", "fmt"] }
+
+# Temporary: radicle-job is not yet published with radicle 0.25 support.
+# Replace with the published version once the radicle-job change is upstreamed.
+[patch.crates-io]
+radicle-job = {
+    git = "https://seed.radicle.dev/z2UcCU1LgMshWvXj6hXSDDrwB8q8M/z6MkwPUeUS2fJMfc2HZN1RQTQcTTuhw4HhPySB8JeUg2mVvx",
+    branch = "patches/da55667860741ee221483fc42fa7cbbb58e0cfc2"
+}

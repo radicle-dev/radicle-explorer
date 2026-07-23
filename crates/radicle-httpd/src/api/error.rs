@@ -22,7 +22,7 @@ pub enum Error {
 
     /// Crypto error.
     #[error(transparent)]
-    Crypto(#[from] radicle::crypto::Error),
+    Crypto(#[from] radicle::crypto::signature::Error),
 
     /// Storage error.
     #[error(transparent)]

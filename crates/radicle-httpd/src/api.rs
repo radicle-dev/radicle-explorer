@@ -232,7 +232,11 @@ impl ReadCanonicalRefs for Repository {
         let mut refs = Vec::new();
         for r in self.backend.references_glob(pattern.as_str())? {
             let r = r?;
-            let Some(refname) = r.name().and_then(|n| git::fmt::RefString::try_from(n).ok()) else {
+            let Some(refname) = r
+                .name()
+                .ok()
+                .and_then(|n| git::fmt::RefString::try_from(n).ok())
+            else {
                 continue;
             };
             let Some(oid) = r.target().map(git::Oid::from) else {
@@ -263,7 +267,7 @@ impl ResolveTag for Repository {
                     email: t.email().unwrap_or_default().to_owned(),
                     timestamp: t.when().seconds(),
                 }),
-                message: tag.message().map(str::to_owned),
+                message: tag.message().ok().flatten().map(str::to_owned),
             });
         }
         // Lightweight tag: ref points directly at a commit.

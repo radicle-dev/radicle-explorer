@@ -13,12 +13,10 @@ use tower::ServiceExt;
 use radicle::cob::migrate;
 use radicle::cob::patch::MergeTarget;
 use radicle::cob::Title;
-use radicle::crypto::signature::Signer;
 use radicle::crypto::ssh::Keystore;
-use radicle::crypto::{KeyPair, Seed, Signature};
+use radicle::crypto::{Seed, Signer, SigningKey};
 use radicle::git::fmt::RefString;
 use radicle::identity::{project, Visibility};
-use radicle::node::device::Device;
 use radicle::node::{Features, Timestamp, UserAgent};
 use radicle::profile::{env, Home};
 use radicle::storage::{
@@ -44,24 +42,25 @@ pub const CONTRIBUTOR_ALIAS: &str = "seed";
 pub fn profile(home: &Path, seed: [u8; 32]) -> radicle::Profile {
     let home = Home::new(home).unwrap();
     let keystore = Keystore::new(&home.keys());
-    let keypair = KeyPair::from_seed(Seed::from(seed));
+    let keypair = SigningKey::from_seed(Seed::new(seed));
+    let pk = *keypair.public_key();
     let alias = node::Alias::new("seed");
     let storage = Storage::open(
         home.storage(),
         radicle::git::UserInfo {
             alias: alias.clone(),
-            key: keypair.pk.into(),
+            key: pk,
         },
     )
     .unwrap();
 
     let mut db = home.policies_mut().unwrap();
-    db.follow(&keypair.pk.into(), Some(&alias)).unwrap();
+    db.follow(&pk, Some(&alias)).unwrap();
 
     let node_db = home.database_mut(Default::default()).unwrap();
     node_db
         .init(
-            &keypair.pk.into(),
+            &pk,
             Features::SEED,
             &alias,
             &UserAgent::default(),
@@ -75,13 +74,13 @@ pub fn profile(home: &Path, seed: [u8; 32]) -> radicle::Profile {
     cobs.migrate(migrate::ignore).unwrap();
 
     radicle::storage::git::transport::local::register(storage.clone());
-    keystore.store(keypair.clone(), "radicle", None).unwrap();
+    keystore.store(&keypair, "radicle", None).unwrap();
 
     radicle::Profile {
         home,
         storage,
         keystore,
-        public_key: keypair.pk.into(),
+        public_key: pk,
         config: profile::Config::new(alias),
     }
 }
@@ -89,18 +88,14 @@ pub fn profile(home: &Path, seed: [u8; 32]) -> radicle::Profile {
 pub fn seed(dir: &Path) -> Context {
     let home = dir.join("radicle");
     let profile = profile(home.as_path(), [0xff; 32]);
-    let signer = Device::mock_from_seed([0xff; 32]);
+    let signer = SigningKey::from_seed(Seed::new([0xff; 32]));
 
     crate::logger::init().ok();
 
     seed_with_signer(dir, profile, &signer)
 }
 
-fn seed_with_signer<G: Signer<Signature>>(
-    dir: &Path,
-    profile: radicle::Profile,
-    signer: &Device<G>,
-) -> Context {
+fn seed_with_signer<G: Signer>(dir: &Path, profile: radicle::Profile, signer: &G) -> Context {
     const DEFAULT_BRANCH: &str = "master";
 
     crate::logger::init().ok();
@@ -356,8 +351,8 @@ pub fn seed_multi_peer(dir: &Path) -> Context {
 
     let ctx = seed(dir);
 
-    let signer1 = Device::mock_from_seed([0xff; 32]);
-    let signer2 = Device::mock_from_seed([0xee; 32]);
+    let signer1 = SigningKey::from_seed(Seed::new([0xff; 32]));
+    let signer2 = SigningKey::from_seed(Seed::new([0xee; 32]));
 
     let rid = radicle::identity::RepoId::from_str(RID).unwrap();
     let storage = &ctx.profile().storage;
