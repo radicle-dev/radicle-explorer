@@ -2,7 +2,7 @@
   description = "Radicle web frontend";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/release-25.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/release-26.05";
     flake-utils.url = "github:numtide/flake-utils";
 
     crane.url = "github:ipetkov/crane";
@@ -192,7 +192,6 @@
         packages = with pkgs; [
           cargo-watch
           nodejs_24
-          radicle-node
           rust-analyzer
           rustToolchain
         ];
