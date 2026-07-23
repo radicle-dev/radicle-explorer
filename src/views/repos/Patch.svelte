@@ -52,27 +52,22 @@
   import * as utils from "@app/lib/utils";
   import capitalize from "lodash/capitalize";
   import uniqBy from "lodash/uniqBy";
+  import { onDestroy } from "svelte";
 
   import Badge from "@app/components/Badge.svelte";
   import Button from "@app/components/Button.svelte";
   import Changeset from "@app/views/repos/Changeset.svelte";
   import CheckoutButton from "@app/views/repos/Patch/CheckoutButton.svelte";
-  import CobHeader from "@app/views/repos/Cob/CobHeader.svelte";
   import CompareButton from "@app/views/repos/Patch/CompareButton.svelte";
-  import DiffStatBadge from "@app/components/DiffStatBadge.svelte";
   import Embeds from "@app/views/repos/Cob/Embeds.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import Id from "@app/components/Id.svelte";
   import InlineTitle from "@app/views/repos/components/InlineTitle.svelte";
-  import Labels from "@app/views/repos/Cob/Labels.svelte";
   import Layout from "@app/views/repos/Layout.svelte";
   import Link from "@app/components/Link.svelte";
   import Markdown from "@app/components/Markdown.svelte";
-  import NodeId from "@app/components/NodeId.svelte";
+  import PatchMetadata from "@app/views/repos/Patch/PatchMetadata.svelte";
   import Placeholder from "@app/components/Placeholder.svelte";
-
   import Reactions from "@app/components/Reactions.svelte";
-  import Reviews from "@app/views/repos/Cob/Reviews.svelte";
   import RevisionComponent from "@app/views/repos/Cob/Revision.svelte";
   import RevisionSelector from "@app/views/repos/Patch/RevisionSelector.svelte";
   import Separator from "./Separator.svelte";
@@ -140,19 +135,24 @@
     };
   }
 
-  function computeReviews(patch: Patch) {
-    const patchReviews: Record<string, { latest: boolean; review: Review }> =
-      {};
-
-    patch.revisions.forEach((rev, i) => {
-      const latest = i === patch.revisions.length - 1;
-      for (const review of rev.reviews) {
-        patchReviews[review.author.id] = { latest, review };
-      }
-    });
-
-    return patchReviews;
+  // Collapse a long patch description behind a Show more/less toggle.
+  const DESCRIPTION_MAX_HEIGHT = 300;
+  let descriptionEl: HTMLElement | undefined;
+  let descriptionExpanded = false;
+  let descriptionOverflows = false;
+  let descriptionObserver: ResizeObserver | undefined;
+  $: descriptionCollapsed = descriptionOverflows && !descriptionExpanded;
+  $: {
+    descriptionObserver?.disconnect();
+    if (descriptionEl) {
+      const el = descriptionEl;
+      descriptionObserver = new ResizeObserver(() => {
+        descriptionOverflows = el.scrollHeight > DESCRIPTION_MAX_HEIGHT;
+      });
+      descriptionObserver.observe(el);
+    }
   }
+  onDestroy(() => descriptionObserver?.disconnect());
 
   // eslint-disable-next-line no-useless-assignment
   $: revisionId =
@@ -167,8 +167,6 @@
     "content",
   );
   $: description = patch.revisions[0].description;
-  $: lastEdit = patch.revisions[0].edits.at(-1);
-  $: reviews = computeReviews(patch);
   $: timelineTuple = patch.revisions.map<
     [
       {
@@ -232,71 +230,162 @@
     ].sort((a, b) => a.timestamp - b.timestamp),
   ]);
   $: firstRevision = timelineTuple[0][0];
-  $: latestRevision = patch.revisions[patch.revisions.length - 1];
 </script>
 
 <style>
-  .patch {
-    display: flex;
-    flex: 1;
-    min-height: 100%;
-  }
   .main {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
+    max-width: 80rem;
+    margin: 0 auto;
+    padding: 1.5rem 6rem;
     min-width: 0;
-    background-color: var(--color-surface-canvas);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "title"
+      "meta"
+      "content";
+    transition:
+      max-width 200ms ease,
+      padding 200ms ease;
   }
-  .metadata {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    font: var(--txt-body-m-regular);
-    padding: 1rem;
-    border-left: 1px solid var(--color-border-subtle);
-    width: 20rem;
+  /* On the Changes/Compare views, drop the centered max-width and wide side
+     margins so the diff uses the full width. */
+  .main.wide {
+    max-width: 100%;
+    padding: 1.5rem 2rem;
   }
   .title {
-    overflow: hidden;
-    text-overflow: ellipsis;
+    grid-area: title;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    word-break: break-word;
+  }
+  .title-text {
+    min-width: 0;
+    font: var(--txt-heading-l);
+  }
+  .no-title {
+    color: var(--color-text-tertiary);
+    font: var(--txt-heading-l);
+  }
+  .meta-bar {
+    grid-area: meta;
+    margin-bottom: 1rem;
+  }
+  .content {
+    grid-area: content;
+    min-width: 0;
+  }
+  .actions {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font: var(--txt-heading-l);
+  }
+
+  /* Collapsible patch description. */
+  .patch-description {
+    position: relative;
+  }
+  .patch-description-body {
+    font: var(--txt-body-m-regular);
     word-break: break-word;
   }
-  .bottom {
-    background-color: var(--color-surface-base);
-    padding: 1rem 1rem 0.5rem 1rem;
-    height: 100%;
+  .patch-description.collapsed .patch-description-body {
+    max-height: 300px;
+    overflow: hidden;
   }
+  .patch-description.collapsed {
+    margin-bottom: 1.5rem;
+  }
+  .patch-description-toggle {
+    display: flex;
+    justify-content: center;
+    margin-top: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .patch-description.collapsed .patch-description-toggle {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    align-items: flex-end;
+    height: 6rem;
+    margin: 0;
+    padding-bottom: 0.25rem;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      var(--color-surface-base)
+    );
+    pointer-events: none;
+  }
+  .patch-description-button {
+    pointer-events: auto;
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-canvas);
+    color: var(--color-text-primary);
+    cursor: pointer;
+    box-shadow: var(--elevation-low);
+    font: var(--txt-body-m-medium);
+  }
+  .patch-description-button:hover,
+  .patch-description-button:focus-visible {
+    background-color: var(--color-surface-subtle);
+  }
+  .no-description {
+    color: var(--color-text-tertiary);
+  }
+  .description-reactions {
+    margin-bottom: 1.5rem;
+  }
+  .embeds {
+    margin-bottom: 1.5rem;
+  }
+
   .tabs {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.5rem;
     flex-wrap: wrap;
-    padding: 1rem;
+    padding: 0.5rem 0;
     border-top: 1px solid var(--color-border-subtle);
     border-bottom: 1px solid var(--color-border-subtle);
-    background-color: var(--color-surface-base);
+    margin-bottom: 1rem;
   }
-  .author-metadata {
-    color: var(--color-text-tertiary);
-    font: var(--txt-body-m-regular);
-  }
-  .revision-description {
+  .tabs-left,
+  .tabs-right {
     display: flex;
-    flex-direction: column;
+    align-items: center;
     gap: 0.5rem;
+  }
+  .tabs-right {
+    margin-left: auto;
+  }
+  .mobile-revision-selector {
     width: 100%;
+    display: flex;
+    margin-bottom: 1rem;
+  }
+  @media (max-width: 1349.98px) {
+    .main {
+      padding: 1.5rem 2rem;
+    }
   }
   @media (max-width: 719.98px) {
-    .patch {
-      display: block;
+    .main {
+      padding: 1rem;
     }
-    .bottom {
-      padding: 1rem 0 0 0;
+    .main.wide {
+      padding: 1rem 0;
     }
   }
 </style>
@@ -329,191 +418,159 @@
       </div>
     </span>
   </svelte:fragment>
-  <div class="patch">
-    <div class="main">
-      <CobHeader>
-        <svelte:fragment slot="title">
-          {#if patch.title}
-            <div class="title">
-              <InlineTitle fontSize="heading-l" content={patch.title} />
-            </div>
-          {:else}
-            <span style:color="var(--color-text-tertiary)">No title</span>
-          {/if}
-          <div class="global-flex-item">
-            <Share />
-            <div class="global-hide-on-mobile-down">
-              <CheckoutButton id={patch.id} />
-            </div>
-          </div>
-        </svelte:fragment>
-        <svelte:fragment slot="state">
-          <Badge size="tiny" variant={badgeColor(patch.state.status)}>
-            <Icon
-              name={patch.state.status === "draft"
-                ? "patch-draft"
-                : patch.state.status === "merged"
-                  ? "patch-merged"
-                  : patch.state.status === "archived"
-                    ? "patch-archived"
-                    : "patch"} />
-            {capitalize(patch.state.status)}
-          </Badge>
-          <Link
-            route={{
-              resource: "repo.patch",
-              repo: repo.rid,
-              node: baseUrl,
-              patch: patch.id,
-              view: { name: "changes", revision: latestRevision.id },
-            }}>
-            <DiffStatBadge
-              hoverable
-              insertions={stats.insertions}
-              deletions={stats.deletions} />
-          </Link>
-          <NodeId
-            {baseUrl}
-            nodeId={patch.author.id}
-            alias={patch.author.alias} />
-          opened
-          <Id id={patch.id} />
-          <span title={utils.absoluteTimestamp(patch.revisions[0].timestamp)}>
-            {utils.formatTimestamp(patch.revisions[0].timestamp)}
-          </span>
-          {#if patch.revisions[0].edits.length > 1 && lastEdit}
-            <div
-              class="author-metadata"
-              title={utils.formatEditedCaption(
-                lastEdit.author,
-                lastEdit.timestamp,
-              )}>
-              • edited
-            </div>
-          {/if}
-        </svelte:fragment>
-        <div slot="subtitle" class="global-hide-on-desktop-up">
-          <div
-            style:margin-top="2rem"
-            style="display: flex; flex-direction: column; gap: 0.5rem;">
-            <Reviews {baseUrl} {reviews} />
-            <Labels labels={patch.labels} />
-            <Embeds embeds={uniqueEmbeds} />
-          </div>
+  <svelte:fragment slot="actions">
+    <div class="actions">
+      <Share />
+      <div class="global-hide-on-mobile-down">
+        <CheckoutButton id={patch.id} />
+      </div>
+    </div>
+  </svelte:fragment>
+
+  <div
+    class="main"
+    class:wide={view.name === "changes" || view.name === "diff"}>
+    <div class="title">
+      <Badge size="tiny" variant={badgeColor(patch.state.status)}>
+        <Icon
+          name={patch.state.status === "draft"
+            ? "patch-draft"
+            : patch.state.status === "merged"
+              ? "patch-merged"
+              : patch.state.status === "archived"
+                ? "patch-archived"
+                : "patch"} />
+        {capitalize(patch.state.status)}
+      </Badge>
+      {#if patch.title}
+        <div class="title-text">
+          <InlineTitle fontSize="heading-l" content={patch.title} />
         </div>
-        <svelte:fragment slot="description">
-          <div class="revision-description">
+      {:else}
+        <span class="no-title">No title</span>
+      {/if}
+    </div>
+
+    <div class="meta-bar">
+      <PatchMetadata {baseUrl} {patch} {repo} {stats} />
+    </div>
+
+    <div class="content">
+      {#if view.name === "activity"}
+        <div class="patch-description" class:collapsed={descriptionCollapsed}>
+          <div class="patch-description-body" bind:this={descriptionEl}>
             {#if description}
               <Markdown
                 breaks
                 content={description}
                 rawPath={rawPath(patch.id)} />
             {:else}
-              <span style:color="var(--color-text-tertiary)">
-                No description available
-              </span>
-            {/if}
-            {#if firstRevision.revisionReactions.length > 0}
-              <Reactions reactions={firstRevision.revisionReactions} />
+              <span class="no-description">No description available</span>
             {/if}
           </div>
-        </svelte:fragment>
-      </CobHeader>
+          {#if descriptionOverflows}
+            <div class="patch-description-toggle">
+              <button
+                type="button"
+                class="patch-description-button"
+                on:click={() => (descriptionExpanded = !descriptionExpanded)}>
+                {descriptionExpanded ? "Show less" : "Show more"}
+                <Icon
+                  name={descriptionExpanded
+                    ? "collapse-vertical"
+                    : "expand-vertical"} />
+              </button>
+            </div>
+          {/if}
+        </div>
+        {#if firstRevision.revisionReactions.length > 0}
+          <div class="description-reactions">
+            <Reactions reactions={firstRevision.revisionReactions} />
+          </div>
+        {/if}
+        {#if uniqueEmbeds.length > 0}
+          <div class="embeds">
+            <Embeds embeds={uniqueEmbeds} />
+          </div>
+        {/if}
+      {/if}
 
       <div class="tabs">
-        {#each Object.entries(tabs) as [name, { route, icon }]}
-          <Link {route}>
-            <Button
-              variant={name === view.name ||
-              (view.name === "diff" && name === "changes")
-                ? "gray"
-                : "background"}>
-              <Icon name={icon} />
-              {capitalize(name)}
-            </Button>
-          </Link>
-        {/each}
-
-        {#if view.name === "changes"}
-          <div class="global-hide-on-mobile-down" style="margin-left: auto;">
-            <RevisionSelector {view} {baseUrl} {patch} {repo} />
-          </div>
-        {/if}
-        {#if view.name === "diff"}
-          <div class="global-hide-on-mobile-down" style="margin-left: auto;">
-            <CompareButton
-              fromCommit={view.fromCommit}
-              toCommit={view.toCommit} />
-          </div>
-        {/if}
-      </div>
-      <div class="bottom">
-        {#if view.name === "changes"}
-          <div
-            style:width="100%"
-            style:padding="0 1rem"
-            style:display="flex"
-            class="global-hide-on-small-desktop-up">
-            <RevisionSelector {view} {baseUrl} {patch} {repo} />
-          </div>
-        {/if}
-        {#if view.name === "diff"}
-          <div
-            style:width="100%"
-            style:padding="0 1rem"
-            style:display="flex"
-            class="global-hide-on-small-desktop-up">
-            <CompareButton
-              fromCommit={view.fromCommit}
-              toCommit={view.toCommit} />
-          </div>
-          <Changeset
-            {baseUrl}
-            repoId={repo.rid}
-            revision={view.toCommit}
-            files={view.files}
-            diff={view.diff} />
-        {:else if view.name === "activity"}
-          {#each timelineTuple as [revision, timelines], index}
-            {@const previousRevision =
-              index > 0 ? patch.revisions[index - 1] : undefined}
-            <RevisionComponent
-              {baseUrl}
-              {rawPath}
-              repoId={repo.rid}
-              {timelines}
-              {...revision}
-              first={index === 0}
-              patchId={patch.id}
-              patchState={patch.state}
-              initiallyExpanded={index === patch.revisions.length - 1}
-              previousRevId={previousRevision?.id}
-              previousRevBase={previousRevision?.base}
-              previousRevOid={previousRevision?.oid} />
-          {:else}
-            <div style:margin="4rem 0">
-              <Placeholder
-                iconName="no-patches"
-                caption="No activity on this patch yet" />
-            </div>
+        <div class="tabs-left">
+          {#each Object.entries(tabs) as [name, { route, icon }]}
+            <Link {route}>
+              <Button
+                variant={name === view.name ||
+                (view.name === "diff" && name === "changes")
+                  ? "gray"
+                  : "background"}>
+                <Icon name={icon} />
+                {capitalize(name)}
+              </Button>
+            </Link>
           {/each}
-        {:else if view.name === "changes"}
-          <Changeset
-            {baseUrl}
-            repoId={repo.rid}
-            revision={view.oid}
-            files={view.files}
-            diff={view.diff} />
-        {:else}
-          {utils.unreachable(view)}
-        {/if}
+        </div>
+        <div class="tabs-right global-hide-on-mobile-down">
+          {#if view.name === "changes"}
+            <RevisionSelector {view} {baseUrl} {patch} {repo} />
+          {/if}
+          {#if view.name === "diff"}
+            <CompareButton
+              fromCommit={view.fromCommit}
+              toCommit={view.toCommit} />
+          {/if}
+        </div>
       </div>
-    </div>
 
-    <div class="metadata global-hide-on-medium-desktop-down">
-      <Reviews {baseUrl} {reviews} />
-      <Labels labels={patch.labels} />
-      <Embeds embeds={uniqueEmbeds} />
+      {#if view.name === "changes"}
+        <div class="mobile-revision-selector global-hide-on-small-desktop-up">
+          <RevisionSelector {view} {baseUrl} {patch} {repo} />
+        </div>
+        <Changeset
+          {baseUrl}
+          repoId={repo.rid}
+          revision={view.oid}
+          files={view.files}
+          diff={view.diff} />
+      {:else if view.name === "diff"}
+        <div class="mobile-revision-selector global-hide-on-small-desktop-up">
+          <CompareButton
+            fromCommit={view.fromCommit}
+            toCommit={view.toCommit} />
+        </div>
+        <Changeset
+          {baseUrl}
+          repoId={repo.rid}
+          revision={view.toCommit}
+          files={view.files}
+          diff={view.diff} />
+      {:else if view.name === "activity"}
+        {#each timelineTuple as [revision, timelines], index}
+          {@const previousRevision =
+            index > 0 ? patch.revisions[index - 1] : undefined}
+          <RevisionComponent
+            {baseUrl}
+            {rawPath}
+            repoId={repo.rid}
+            {timelines}
+            {...revision}
+            first={index === 0}
+            patchId={patch.id}
+            patchState={patch.state}
+            initiallyExpanded={index === patch.revisions.length - 1}
+            previousRevId={previousRevision?.id}
+            previousRevBase={previousRevision?.base}
+            previousRevOid={previousRevision?.oid} />
+        {:else}
+          <div style:margin="4rem 0">
+            <Placeholder
+              iconName="no-patches"
+              caption="No activity on this patch yet" />
+          </div>
+        {/each}
+      {:else}
+        {utils.unreachable(view)}
+      {/if}
     </div>
   </div>
 </Layout>

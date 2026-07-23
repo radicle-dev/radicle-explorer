@@ -50,6 +50,10 @@ pub fn router(ctx: Context) -> Router {
         .route("/repos/{rid}/issues/{id}", get(issue_handler))
         .route("/repos/{rid}/patches", get(patches_handler))
         .route("/repos/{rid}/patches/{id}", get(patch_handler))
+        .route(
+            "/repos/{rid}/patches/{id}/activity",
+            get(patch_activity_handler),
+        )
         .with_state(ctx)
         .layer(DefaultBodyLimit::max(MAX_BODY_LIMIT))
 }
@@ -1003,6 +1007,42 @@ async fn patch_handler(
         &repo,
         &aliases,
     )))
+}
+
+/// Get repo patch activity (the raw operation log, used to render lifecycle
+/// events such as opening, archiving or converting a patch to a draft).
+/// `GET /repos/:rid/patches/:id/activity`
+async fn patch_activity_handler(
+    State(ctx): State<Context>,
+    Path((rid, patch_id)): Path<(RepoId, Oid)>,
+) -> impl IntoResponse {
+    let (repo, _) = ctx.repo(rid)?;
+    let aliases = ctx.profile.aliases();
+    let ops =
+        radicle::cob::store::ops(&(&*patch_id).into(), &radicle::cob::patch::TYPENAME, &repo)?;
+    let activity = ops
+        .into_iter()
+        .map(|op| {
+            let actions = op
+                .actions
+                .iter()
+                .filter_map(|action| {
+                    serde_json::from_slice::<radicle::cob::patch::Action>(action).ok()
+                })
+                .filter_map(|action| serde_json::to_value(action).ok())
+                .collect::<Vec<_>>();
+            let author =
+                api::json::Author::new(&radicle::identity::Did::from(op.author)).as_json(&aliases);
+            json!({
+                "id": op.id.to_string(),
+                "author": author,
+                "timestamp": op.timestamp.as_secs(),
+                "actions": actions,
+            })
+        })
+        .collect::<Vec<_>>();
+
+    Ok::<_, Error>(Json(activity))
 }
 
 #[cfg(test)]

@@ -100,5 +100,24 @@ export type Patch = z.infer<typeof patchSchema>;
 
 export const patchesSchema = array(patchSchema) satisfies ZodSchema<Patch[]>;
 
+// A single action from a patch operation. Only the fields the timeline needs
+// are typed; other action kinds/fields are tolerated (passthrough) so the
+// frontend keeps working as the backend adds action types.
+const patchActionSchema = object({
+  type: string(),
+  state: optional(object({ status: string() })),
+}).passthrough();
+
+export const patchActivitySchema = array(
+  object({
+    id: string(),
+    author: authorSchema,
+    timestamp: number(),
+    actions: array(patchActionSchema),
+  }),
+);
+
+export type PatchActivity = z.infer<typeof patchActivitySchema>;
+
 export type LifecycleState =
   { status: "draft" } | { status: "open" } | { status: "archived" };

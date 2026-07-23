@@ -1,7 +1,7 @@
 import type { Fetcher, RequestOptions } from "./fetcher.js";
 import type { Commit, Commits } from "./repo/commit.js";
 import type { Issue } from "./repo/issue.js";
-import type { Patch } from "./repo/patch.js";
+import type { Patch, PatchActivity } from "./repo/patch.js";
 import type { ZodSchema } from "zod";
 
 import {
@@ -25,7 +25,11 @@ import {
   diffSchema,
 } from "./repo/commit.js";
 import { issueSchema, issuesSchema } from "./repo/issue.js";
-import { patchSchema, patchesSchema } from "./repo/patch.js";
+import {
+  patchSchema,
+  patchesSchema,
+  patchActivitySchema,
+} from "./repo/patch.js";
 import { authorSchema } from "./shared.js";
 
 export type PeerRefs = {
@@ -481,6 +485,21 @@ export class Client {
         options,
       },
       patchSchema,
+    );
+  }
+
+  public async getPatchActivity(
+    rid: string,
+    patchId: string,
+    options?: RequestOptions,
+  ): Promise<PatchActivity> {
+    return this.#fetcher.fetchOk(
+      {
+        method: "GET",
+        path: `repos/${rid}/patches/${patchId}/activity`,
+        options,
+      },
+      patchActivitySchema,
     );
   }
 
