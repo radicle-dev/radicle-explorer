@@ -213,14 +213,14 @@
               <Icon name="offline" />
               <span>
                 <strong>Generated offline:</strong>
-                <span class="muted">no email, no account, no permission</span>
+                <span class="muted">no email, no account, no sign-up</span>
               </span>
             </li>
             <li>
               <Icon name="key" />
               <span>
-                <strong>Your public key is your Node ID:</strong>
-                <span class="muted">the same across every device</span>
+                <strong>Your public key is your identity:</strong>
+                <span class="muted">derived from your key, not assigned by anyone</span>
               </span>
             </li>
             <li>
