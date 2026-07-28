@@ -50,7 +50,7 @@ fn repo_activity(repo: &radicle::storage::git::Repository) -> Result<repo::Activ
         .collect();
 
     Ok(repo::Activity {
-        head: Some((*head).into()),
+        head: Some(head),
         head_committer_time: head_time,
         activity_timestamps: activity,
     })

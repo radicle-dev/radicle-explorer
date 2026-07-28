@@ -9,12 +9,12 @@ use axum::routing::get;
 use axum::{Json, Router};
 use hyper::StatusCode;
 use radicle_surf::blob::BlobRef;
-use radicle_surf::ref_format::{Qualified, RefString};
 use radicle_surf::{diff, Glob, Oid, Repository};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use radicle::cob::{issue::cache::Issues as _, patch::cache::Patches as _};
+use radicle::git::fmt::{Qualified, RefString};
 use radicle::identity::RepoId;
 use radicle::node::{Alias, AliasStore, NodeId};
 use radicle::storage::{ReadRepository, RemoteRepository};
@@ -942,12 +942,12 @@ async fn issue_handler(
     let issue = ctx
         .profile
         .issues(&repo)?
-        .get(&(&*issue_id).into())?
+        .get(&issue_id.into())?
         .ok_or(Error::NotFound)?;
     let aliases = ctx.profile.aliases();
 
     Ok::<_, Error>(Json(
-        api::json::cobs::Issue::new(&issue).as_json((&*issue_id).into(), &aliases),
+        api::json::cobs::Issue::new(&issue).as_json(issue_id.into(), &aliases),
     ))
 }
 
@@ -995,11 +995,11 @@ async fn patch_handler(
 ) -> impl IntoResponse {
     let (repo, _) = ctx.repo(rid)?;
     let patches = ctx.profile.patches(&repo)?;
-    let patch = patches.get(&(&*patch_id).into())?.ok_or(Error::NotFound)?;
+    let patch = patches.get(&patch_id.into())?.ok_or(Error::NotFound)?;
     let aliases = ctx.profile.aliases();
 
     Ok::<_, Error>(Json(api::json::cobs::Patch::new(&patch).as_json(
-        (&*patch_id).into(),
+        patch_id.into(),
         &repo,
         &aliases,
     )))
