@@ -220,7 +220,9 @@
               <Icon name="key" />
               <span>
                 <strong>Your public key is your identity:</strong>
-                <span class="muted">derived from your key, not assigned by anyone</span>
+                <span class="muted">
+                  derived from your key, not assigned by anyone
+                </span>
               </span>
             </li>
             <li>
