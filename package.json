@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "scripts": {
     "start": "vite",
+    "start:httpd": "cargo run -p radicle-httpd --release -- --listen 127.0.0.1:8080",
     "serve": "vite preview",
     "build": "vite build && scripts/copy-katex-assets && scripts/install-twemoji-assets",
     "postinstall": "scripts/copy-katex-assets && scripts/install-twemoji-assets",
