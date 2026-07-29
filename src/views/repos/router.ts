@@ -40,7 +40,7 @@ import { nodePath } from "@app/views/nodes/router";
 export const PATCHES_PER_PAGE = 10;
 export const ISSUES_PER_PAGE = 10;
 
-function peerHasBranches(peer: PeerRefs): boolean {
+export function peerHasBranches(peer: PeerRefs): boolean {
   return Object.keys(peer.refs).some(name => name.startsWith("refs/heads/"));
 }
 
@@ -55,7 +55,7 @@ function canonicalOids(
   ];
 }
 
-function remoteToPeerRefs(remote: Remote): PeerRefs {
+export function remoteToPeerRefs(remote: Remote): PeerRefs {
   if (remote.refs) {
     return {
       id: remote.id,
@@ -168,7 +168,6 @@ export type RepoLoadedRoute =
         commit: string;
         repo: Repo;
         repoId: string;
-        peers: PeerRefs[];
         peer: string | undefined;
         revision: string | undefined;
         tree: Tree;
@@ -187,7 +186,6 @@ export type RepoLoadedRoute =
         commit: string;
         repo: Repo;
         repoId: string;
-        peers: PeerRefs[];
         peer: string | undefined;
         revision: string | undefined;
         tree: Tree;
@@ -480,9 +478,6 @@ async function loadTreeView(
     nodePromise,
   ]);
 
-  const remotes = await api.repo.getAllRemotes(route.repo);
-  const peers: PeerRefs[] = remotes.map(remoteToPeerRefs);
-
   if (!repo["payloads"]["xyz.radicle.project"]) {
     throw new Error(
       `Repository ${repo.rid} does not have a xyz.radicle.project payload.`,
@@ -490,41 +485,19 @@ async function loadTreeView(
   }
 
   const project = repo["payloads"]["xyz.radicle.project"];
-  let branchMap: Record<string, string> = {
-    [project.data.defaultBranch]: project.meta.head,
-  };
-
-  for (const [refName, oid] of canonicalOids(repo.refs)) {
-    const shortName = refName.startsWith("refs/heads/")
-      ? refName.slice("refs/heads/".length)
-      : refName.startsWith("refs/tags/")
-        ? refName.slice("refs/tags/".length)
-        : refName;
-    branchMap[shortName] = oid;
-    branchMap[encodeURIComponent(shortName)] = oid;
-  }
-
-  for (const peer of peers) {
-    const tags = getTagsFromRefs(peer.refs);
-    for (const [tagName, oid] of Object.entries(tags)) {
-      branchMap[tagName] = oid;
-      branchMap[encodeURIComponent(tagName)] = oid;
-    }
-  }
+  let branchMap = canonicalBranchMap(repo);
 
   if (route.peer) {
-    const peer = peers.find(peer => peer.id === route.peer);
-    if (!peer) {
-      return {
-        resource: "notFound",
-        params: { title: `Peer ${route.peer} could not be found` },
-      };
-    } else {
-      branchMap = { ...getBranchesFromRefs(peer.refs) };
-      for (const [tagName, oid] of Object.entries(getTagsFromRefs(peer.refs))) {
-        branchMap[tagName] = oid;
-        branchMap[encodeURIComponent(tagName)] = oid;
+    try {
+      branchMap = await getPeerBranchMap(api, route.repo, route.peer);
+    } catch (e) {
+      if (e instanceof ResponseError) {
+        return {
+          resource: "notFound",
+          params: { title: `Peer ${route.peer} could not be found` },
+        };
       }
+      throw e;
     }
   }
 
@@ -552,7 +525,6 @@ async function loadTreeView(
       seedingPolicy,
       commit,
       repo,
-      peers: peers.filter(peerHasBranches),
       peer: route.peer,
       rawPath,
       revision: route.revision,
@@ -649,16 +621,9 @@ async function loadHistoryView(
     nodePromise,
   ]);
 
-  const remotes = await api.repo.getAllRemotes(route.repo);
-  const peers: PeerRefs[] = remotes.map(remoteToPeerRefs);
-
-  const branchMap = await getPeerBranches(
-    api,
-    route.repo,
-    route.peer,
-    repo,
-    peers,
-  );
+  const branchMap = route.peer
+    ? await getPeerBranchMap(api, route.repo, route.peer)
+    : canonicalBranchMap(repo);
 
   if (!repo["payloads"]["xyz.radicle.project"]) {
     throw new Error(
@@ -667,12 +632,10 @@ async function loadHistoryView(
   }
 
   const project = repo["payloads"]["xyz.radicle.project"];
-  let commitId;
-  if (route.revision && isOid(route.revision)) {
-    commitId = route.revision;
-  } else if (branchMap) {
-    commitId = branchMap[route.revision || project.data.defaultBranch];
-  }
+  const commitId =
+    route.revision && isOid(route.revision)
+      ? route.revision
+      : branchMap[route.revision || project.data.defaultBranch];
 
   if (!commitId) {
     throw new Error(
@@ -712,7 +675,6 @@ async function loadHistoryView(
       seedingPolicy,
       commit: commitId,
       repo,
-      peers: peers.filter(peerHasBranches),
       peer: route.peer,
       revision: route.revision,
       tree,
@@ -861,54 +823,48 @@ async function loadPatchView(
   };
 }
 
-async function getPeerBranches(
+// Revision names resolvable without consulting any remote: the default branch
+// plus the delegate-approved canonical refs, both already carried on the `Repo`
+// object.
+function canonicalBranchMap(repo: Repo): Record<string, string> {
+  const branchMap: Record<string, string> = {};
+
+  const project = repo.payloads["xyz.radicle.project"];
+  if (project) {
+    branchMap[project.data.defaultBranch] = project.meta.head;
+    branchMap[encodeURIComponent(project.data.defaultBranch)] =
+      project.meta.head;
+  }
+
+  for (const [refName, oid] of canonicalOids(repo.refs)) {
+    const shortName = refName.startsWith("refs/heads/")
+      ? refName.slice("refs/heads/".length)
+      : refName.startsWith("refs/tags/")
+        ? refName.slice("refs/tags/".length)
+        : refName;
+    branchMap[shortName] = oid;
+    branchMap[encodeURIComponent(shortName)] = oid;
+  }
+
+  return branchMap;
+}
+
+// Revision names published by a single remote. Fetching just that remote keeps
+// the full remote listing, which is expensive on repositories with many peers,
+// off the navigation path.
+async function getPeerBranchMap(
   api: HttpdClient,
   repoId: string,
-  peer?: string,
-  repo?: Repo,
-  loadedPeers?: PeerRefs[],
-) {
-  if (peer) {
-    const remote = await api.repo.getRemoteByPeer(repoId, peer);
-    const refs = remoteToPeerRefs(remote).refs;
-    const map: Record<string, string> = { ...getBranchesFromRefs(refs) };
-    for (const [tagName, oid] of Object.entries(getTagsFromRefs(refs))) {
-      map[tagName] = oid;
-      map[encodeURIComponent(tagName)] = oid;
-    }
-    return map;
-  } else if (repo) {
-    const branchMap: Record<string, string> = {};
-    const peers = loadedPeers ?? [];
-
-    const project = repo.payloads["xyz.radicle.project"];
-    if (project) {
-      branchMap[project.data.defaultBranch] = project.meta.head;
-      branchMap[encodeURIComponent(project.data.defaultBranch)] =
-        project.meta.head;
-    }
-
-    for (const [refName, oid] of canonicalOids(repo.refs)) {
-      const shortName = refName.startsWith("refs/heads/")
-        ? refName.slice("refs/heads/".length)
-        : refName.startsWith("refs/tags/")
-          ? refName.slice("refs/tags/".length)
-          : refName;
-      branchMap[shortName] = oid;
-      branchMap[encodeURIComponent(shortName)] = oid;
-    }
-
-    for (const p of peers) {
-      const tags = getTagsFromRefs(p.refs);
-      for (const [tagName, oid] of Object.entries(tags)) {
-        branchMap[tagName] = oid;
-        branchMap[encodeURIComponent(tagName)] = oid;
-      }
-    }
-    return branchMap;
-  } else {
-    return undefined;
+  peer: string,
+): Promise<Record<string, string>> {
+  const remote = await api.repo.getRemoteByPeer(repoId, peer);
+  const refs = remoteToPeerRefs(remote).refs;
+  const map: Record<string, string> = { ...getBranchesFromRefs(refs) };
+  for (const [tagName, oid] of Object.entries(getTagsFromRefs(refs))) {
+    map[tagName] = oid;
+    map[encodeURIComponent(tagName)] = oid;
   }
+  return map;
 }
 
 // Detects branch names and commit IDs at the start of `input` and extract it.

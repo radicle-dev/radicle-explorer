@@ -1,14 +1,30 @@
 <script lang="ts" context="module">
+  import type { BaseUrl, PeerRefs } from "@http-client";
+
+  import { HttpdClient } from "@http-client";
+  import { cached } from "@app/lib/cache";
+  import { peerHasBranches, remoteToPeerRefs } from "../router";
+
   // Cache commit counts across component remounts (tab navigation).
   const commitCountCache: Record<string, number> = {};
+
+  // The remote listing behind the peer selector is expensive on repositories
+  // with many peers. Going through `cached` shares a single request across
+  // every Header instance for the same repo, including instances that mount
+  // while the request is still in flight.
+  const getPeers = cached(
+    async (baseUrl: BaseUrl, rid: string) => {
+      const remotes = await new HttpdClient(baseUrl).repo.getAllRemotes(rid);
+      return remotes.map(remoteToPeerRefs).filter(peerHasBranches);
+    },
+    (...args) => JSON.stringify(args),
+  );
 </script>
 
 <script lang="ts">
   import type { RepoRoute } from "../router";
-  import type { BaseUrl, PeerRefs, Repo, Tree } from "@http-client";
+  import type { Repo, Tree } from "@http-client";
   import type { ComponentProps } from "svelte";
-
-  import { HttpdClient } from "@http-client";
 
   import Button from "@app/components/Button.svelte";
   import CommitButton from "../components/CommitButton.svelte";
@@ -23,7 +39,6 @@
   export let historyLinkActive: boolean;
   export let node: BaseUrl;
   export let peer: string | undefined;
-  export let peers: PeerRefs[];
   export let repo: Repo;
   export let repoId: string;
   export let baseRoute: Extract<
@@ -49,6 +64,34 @@
   }
 
   $: fetchCommitCount(repo.rid, commit);
+
+  // Enumerating remotes requires reading and verifying signed refs for every
+  // peer, which is slow on large repositories. It only feeds the peer selector
+  // dropdown, so it loads after render instead of blocking navigation.
+  let peers: PeerRefs[] | undefined = undefined;
+  let peersRid: string | undefined;
+
+  function fetchPeers(rid: string) {
+    if (peersRid === rid) {
+      return;
+    }
+    peersRid = rid;
+    peers = undefined;
+    void getPeers(node, rid)
+      .then(result => {
+        if (peersRid === rid) {
+          peers = result;
+        }
+      })
+      .catch(error => {
+        if (peersRid === rid) {
+          peersRid = undefined;
+        }
+        console.error("Failed to load repo remotes", error);
+      });
+  }
+
+  $: fetchPeers(repo.rid);
 
   let selectedBranch: string | undefined;
   let commitButtonVariant: ComponentProps<CommitButton>["variant"] | undefined;

@@ -2,7 +2,6 @@
   import type {
     BaseUrl,
     CommitHeader,
-    PeerRefs,
     Repo,
     SeedingPolicy,
     Tree,
@@ -31,7 +30,6 @@
   export let commit: string;
   export let commitHeaders: CommitHeader[];
   export let peer: string | undefined;
-  export let peers: PeerRefs[];
   export let repo: Repo;
   export let repoId: string;
   export let revision: string | undefined;
@@ -132,7 +130,6 @@
     <Header
       {baseRoute}
       {commit}
-      {peers}
       {peer}
       {repo}
       {repoId}

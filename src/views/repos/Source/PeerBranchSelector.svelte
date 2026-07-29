@@ -20,6 +20,7 @@
   import HoverPopover from "@app/components/HoverPopover.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Link from "@app/components/Link.svelte";
+  import Loading from "@app/components/Loading.svelte";
   import Peer from "./PeerBranchSelector/Peer.svelte";
   import Popover from "@app/components/Popover.svelte";
   import TextInput from "@app/components/TextInput.svelte";
@@ -31,7 +32,10 @@
   >;
   export let onCanonical: boolean;
   export let peer: string | undefined;
-  export let peers: PeerRefs[];
+  // Undefined until the remotes request resolves. Enumerating them is
+  // expensive on repositories with many peers, so the selector renders first
+  // and fills in afterwards.
+  export let peers: PeerRefs[] | undefined = undefined;
   export let repo: Repo;
   export let selectedBranch: string | undefined;
 
@@ -51,6 +55,7 @@
     type: "branch" | "tag";
   };
 
+  $: peerList = peers ?? [];
   $: canonicalBranchesMap = getBranchesFromRefs(repo.refs?.refs ?? {});
   $: canonicalTagsInfo = Object.fromEntries(
     Object.entries(repo.refs?.tags ?? {}).map(([name, info]) => [
@@ -78,7 +83,7 @@
         head,
         type: "branch",
       })),
-    ...peers.flatMap(peer => {
+    ...peerList.flatMap(peer => {
       const peerBranches = getBranchesFromRefs(peer.refs);
       return Object.entries(peerBranches).map(([name, head]) => ({
         peer: { id: peer.id, alias: peer.alias, delegate: peer.delegate },
@@ -96,7 +101,7 @@
       head: info.commit,
       type: "tag",
     })),
-    ...peers.flatMap(peer => {
+    ...peerList.flatMap(peer => {
       const peerTags = getTagsFromRefs(peer.refs);
       return Object.entries(peerTags).map(([name, head]) => ({
         peer: { id: peer.id, alias: peer.alias, delegate: peer.delegate },
@@ -108,7 +113,13 @@
   ] as SearchElement[];
 
   $: searchElements = selectedTab === "branches" ? branchElements : tagElements;
-  $: selectedPeer = peers.find(p => p.id === peer);
+  // Until the remotes load, fall back to the bare node id from the route so
+  // the toggle can render the selected peer straight away.
+  $: selectedPeer =
+    peerList.find(p => p.id === peer) ??
+    (peer !== undefined
+      ? { id: peer, alias: undefined, delegate: false }
+      : undefined);
   $: searchResults = fuzzysort.go(searchInput, searchElements, {
     keys: ["peer.alias", "revision"],
     scoreFn: r =>
@@ -131,13 +142,13 @@
   );
   $: hasTags =
     Object.keys(canonicalTagsInfo).length > 0 ||
-    peers.some(p => Object.keys(getTagsFromRefs(p.refs)).length > 0);
+    peerList.some(p => Object.keys(getTagsFromRefs(p.refs)).length > 0);
 
   $: selectedTag = (() => {
     if (!selectedBranch) return undefined;
 
     if (peer) {
-      const p = peers.find(x => x.id === peer);
+      const p = peerList.find(x => x.id === peer);
       if (!p) return undefined;
       const peerTags = getTagsFromRefs(p.refs);
       for (const [tagName, oid] of Object.entries(peerTags)) {
@@ -167,8 +178,14 @@
   $: selectedTagPeer = selectedTag?.peer;
 
   let lastSelectedBranch: string | undefined;
+  // A tag belonging to a peer is only recognized once the remotes arrive, so
+  // the selected tag is tracked too rather than the branch alone.
+  let lastSelectedTagName: string | undefined;
   $: {
-    if (selectedBranch !== lastSelectedBranch) {
+    if (
+      selectedBranch !== lastSelectedBranch ||
+      selectedTagName !== lastSelectedTagName
+    ) {
       if (selectedTagName) {
         selectedTab = "tags";
       } else if (!selectedBranch) {
@@ -176,12 +193,19 @@
       }
       // eslint-disable-next-line no-useless-assignment
       lastSelectedBranch = selectedBranch;
+      // eslint-disable-next-line no-useless-assignment
+      lastSelectedTagName = selectedTagName;
     }
   }
 
   $: if (!hasTags && selectedTab === "tags") {
     selectedTab = "branches";
   }
+
+  // The absence of tags is only certain once the nodes have loaded, since any
+  // of them may carry tags of its own. Until then the tab stays available
+  // rather than claiming there are none.
+  $: tagsTabDisabled = !hasTags && peers !== undefined;
 
   $: isSelectedBranchCanonical = (() => {
     if (onCanonical) return true;
@@ -241,6 +265,13 @@
     align-items: center;
     gap: 0.5rem;
   }
+  .tags-tab {
+    display: flex;
+  }
+  /* Let the hover fall through to the wrapper, which carries the tooltip. */
+  .tags-tab.disabled > :global(button) {
+    pointer-events: none;
+  }
   .sticky-header {
     position: sticky;
     top: -0.25rem;
@@ -268,6 +299,16 @@
     width: 1rem;
     height: 1rem;
   }
+  .loading-peers {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    grid-column: span 2;
+    padding: 0.5rem 0.375rem;
+    font: var(--txt-body-m-regular);
+    color: var(--color-text-tertiary);
+  }
   .tag-message {
     margin: 0;
     white-space: pre-wrap;
@@ -294,8 +335,7 @@
       styleBorderRadius="var(--border-radius-sm) 0 0 var(--border-radius-sm)"
       styleWidth="100%"
       on:click={toggle}
-      title={hasTags ? "Change branch or tag" : "Change branch"}
-      disabled={!peers}>
+      title={hasTags ? "Change branch or tag" : "Change branch"}>
       {@const displayPeer = selectedPeer || selectedTagPeer}
       {#if displayPeer}
         <div class="global-flex-item">
@@ -341,19 +381,25 @@
 
     <div slot="popover" class="dropdown" let:toggle>
       <div class="sticky-header">
-        {#if hasTags}
-          <div class="tabs">
-            <Button
-              variant={selectedTab === "branches" ? "selected" : "background"}
-              on:click={() => {
-                selectedTab = "branches";
-                searchInput = "";
-              }}>
-              <Icon name="branch" />
-              Branches
-            </Button>
+        <div class="tabs">
+          <Button
+            variant={selectedTab === "branches" ? "selected" : "background"}
+            on:click={() => {
+              selectedTab = "branches";
+              searchInput = "";
+            }}>
+            <Icon name="branch" />
+            Branches
+          </Button>
+          <!-- The tooltip sits on the wrapper because a disabled button
+               receives no pointer events of its own. -->
+          <span
+            class="tags-tab"
+            class:disabled={tagsTabDisabled}
+            title={tagsTabDisabled ? "This repository has no tags" : undefined}>
             <Button
               variant={selectedTab === "tags" ? "selected" : "background"}
+              disabled={tagsTabDisabled}
               on:click={() => {
                 selectedTab = "tags";
                 searchInput = "";
@@ -361,36 +407,27 @@
               <Icon name="label" />
               Tags
             </Button>
-            <div class="global-hide-on-mobile-down" style:flex="1">
-              <TextInput
-                size="small"
-                showKeyHint={false}
-                placeholder={selectedTab === "branches"
-                  ? "Filter branches"
-                  : "Filter tags"}
-                bind:value={searchInput} />
-            </div>
-          </div>
-        {:else}
-          <div style="margin-bottom: 0.5rem;">
+          </span>
+          <div class="global-hide-on-mobile-down" style:flex="1">
             <TextInput
-              showKeyHint={false}
-              placeholder="Filter branches"
-              bind:value={searchInput} />
-          </div>
-        {/if}
-        {#if hasTags}
-          <div
-            class="global-hide-on-small-desktop-up"
-            style="margin-bottom: 0.5rem;">
-            <TextInput
+              size="small"
               showKeyHint={false}
               placeholder={selectedTab === "branches"
                 ? "Filter branches"
                 : "Filter tags"}
               bind:value={searchInput} />
           </div>
-        {/if}
+        </div>
+        <div
+          class="global-hide-on-small-desktop-up"
+          style="margin-bottom: 0.5rem;">
+          <TextInput
+            showKeyHint={false}
+            placeholder={selectedTab === "branches"
+              ? "Filter branches"
+              : "Filter tags"}
+            bind:value={searchInput} />
+        </div>
       </div>
       <div class="dropdown-grid">
         <div class="dropdown-header">
@@ -471,12 +508,14 @@
               </DropdownListItem>
             </Link>
           {:else}
-            <div
-              style="padding: 0.5rem 0.375rem;"
-              class="subgrid-item txt-body-m-regular"
-              style:color="var(--color-text-tertiary)">
-              No entries found
-            </div>
+            {#if peers !== undefined}
+              <div
+                style="padding: 0.5rem 0.375rem;"
+                class="subgrid-item txt-body-m-regular"
+                style:color="var(--color-text-tertiary)">
+                No entries found
+              </div>
+            {/if}
           {/each}
         {:else if selectedTab === "branches"}
           <Link
@@ -531,7 +570,7 @@
               </DropdownListItem>
             </Link>
           {/each}
-          {#each orderBy(peers, ["delegate", o => o.alias?.toLowerCase()], ["desc", "asc"]) as peer}
+          {#each orderBy(peerList, ["delegate", o => o.alias?.toLowerCase()], ["desc", "asc"]) as peer}
             <Peer
               {baseRoute}
               revision={selectedBranch}
@@ -605,7 +644,7 @@
               </Link>
             {/each}
           {/if}
-          {#each orderBy(peers, ["delegate", o => o.alias?.toLowerCase()], ["desc", "asc"]).filter(p => Object.keys(getTagsFromRefs(p.refs)).length > 0) as peer}
+          {#each orderBy(peerList, ["delegate", o => o.alias?.toLowerCase()], ["desc", "asc"]).filter(p => Object.keys(getTagsFromRefs(p.refs)).length > 0) as peer}
             <Peer
               {baseRoute}
               revision={selectedBranch}
@@ -616,6 +655,13 @@
                 selected: selectedTagPeer?.id === peer.id,
               }} />
           {/each}
+        {/if}
+
+        {#if peers === undefined}
+          <div class="loading-peers">
+            <Loading small noDelay />
+            Loading nodes…
+          </div>
         {/if}
       </div>
     </div>

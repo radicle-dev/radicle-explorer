@@ -1,11 +1,5 @@
 <script lang="ts">
-  import type {
-    BaseUrl,
-    PeerRefs,
-    Repo,
-    SeedingPolicy,
-    Tree,
-  } from "@http-client";
+  import type { BaseUrl, Repo, SeedingPolicy, Tree } from "@http-client";
   import type { BlobResult, RepoRoute } from "./router";
 
   import { HttpdClient } from "@http-client";
@@ -28,7 +22,6 @@
   export let commit: string;
   export let path: string;
   export let peer: string | undefined;
-  export let peers: PeerRefs[];
   export let repo: Repo;
   export let repoId: string;
   export let rawPath: (commit?: string) => string;
@@ -159,7 +152,6 @@
       node={baseUrl}
       {commit}
       {baseRoute}
-      {peers}
       {peer}
       {repo}
       {repoId}
