@@ -1,5 +1,17 @@
 # Changelog
 
+## radicle-httpd + radicle-search 0.27.0
+
+- **Commit-count endpoint**: New `/repos/{rid}/stats/commits/{sha}` counts reachable commits from the commit-graph, avoiding the full history walk of `/stats/tree`
+- **Diff-stats endpoint**: New `/repos/{rid}/diff/{base}/{oid}/stats` returns line counts without building hunks, 6–15x faster than `/diff`; it skips rename detection, so counts can differ slightly on renamed or copied files
+- **Faster file browsing**: Blob requests no longer walk the whole history to find a file's last commit, which took seconds to minutes on large repositories
+- **Repository reads off the async workers**: Synchronous libgit2 and COB reads run on the blocking pool, so one slow read no longer stalls queued requests
+- **Repo aliases in the JSON and raw APIs**: `--alias` path segments resolve there too, not just on the git routes, and the repo endpoint exposes an optional `alias` field
+- **Higher open-file limit**: Raised at startup, fixing spurious "missing object" errors in storage with thousands of packfiles
+- **Empty job COBs excluded**: Job listings omit jobs with no runs
+- **`RUST_LOG` in the default logger**: Honoured without the `logfmt` feature, defaulting to `info`
+- Updated radicle crates, cargo dependencies and the Rust toolchain (1.97.1)
+
 ## radicle-httpd + radicle-search 0.26.0
 
 - **Repository search**: New optional `radicle-search` indexing daemon backs a `/repos/search?q=…` endpoint for typo-tolerant search over repo names and descriptions, plus faster `/repos?sort=activity|seeding` listings; httpd falls back to its built-in storage walk when the daemon is absent, so existing behavior is unchanged
