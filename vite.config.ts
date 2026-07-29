@@ -1,4 +1,5 @@
 import config from "config";
+import fs from "node:fs";
 import path from "node:path";
 import { defineConfig } from "vitest/config";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
@@ -51,6 +52,22 @@ export default defineConfig({
             },
           ];
         }
+      },
+    },
+    {
+      name: "inject-analytics",
+      apply: "build",
+      transformIndexHtml(html) {
+        const file = path.resolve("./local/analytics.html");
+        if (!fs.existsSync(file)) {
+          return;
+        }
+        const snippet = fs.readFileSync(file, "utf8").trim();
+        if (snippet === "") {
+          return;
+        }
+        const indented = snippet.split("\n").join("\n    ");
+        return html.replace("</head>", `  ${indented}\n  </head>`);
       },
     },
   ],

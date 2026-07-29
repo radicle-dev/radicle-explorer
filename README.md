@@ -102,6 +102,27 @@ The structure of the runtime `config.json` must match the shape of the
 application's base configuration defined in `config/default.json`.
 
 
+### Analytics
+
+To add an analytics snippet to a self-hosted deployment, create a file called
+`local/analytics.html` containing the markup to inject, for example:
+
+```html
+<script
+  defer
+  data-domain="example.com"
+  src="https://plausible.io/js/script.js"></script>
+```
+
+Its contents are inserted at the end of the `<head>` of `index.html` during
+`npm run build`. If the file doesn't exist, nothing is injected, and the
+snippet is never added to the dev server.
+
+The `local/` directory is ignored by Git, so a self-hosted deployment can keep
+its snippet in place while pulling new versions of the explorer without
+running into merge conflicts.
+
+
 ### Homepage
 
 The `nodes.homepage` key controls what is rendered at the root URL (`/`):
