@@ -12,7 +12,6 @@
 
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import Link from "@app/components/Link.svelte";
   import SeedButton from "@app/views/repos/Header/SeedButton.svelte";
 
   export let baseUrl: BaseUrl;
@@ -101,24 +100,24 @@
 </style>
 
 <div class="container">
-  <Link
-    route={{
+  <a
+    href={routeToPath({
       resource: "repo.source",
       repo: repoId,
       node: baseUrl,
       path: "/",
-    }}>
+    })}>
     <Button variant={activeTab === "source" ? "gray" : "background"}>
       <Icon name="chevron-left-right" />
       Source
     </Button>
-  </Link>
-  <Link
-    route={{
+  </a>
+  <a
+    href={routeToPath({
       resource: "repo.issues",
       repo: repoId,
       node: baseUrl,
-    }}>
+    })}>
     <Button let:hover variant={activeTab === "issues" ? "gray" : "background"}>
       <Icon name="issue" />
       <div class="title-counter">
@@ -131,14 +130,14 @@
         </span>
       </div>
     </Button>
-  </Link>
+  </a>
 
-  <Link
-    route={{
+  <a
+    href={routeToPath({
       resource: "repo.patches",
       repo: repoId,
       node: baseUrl,
-    }}>
+    })}>
     <Button let:hover variant={activeTab === "patches" ? "gray" : "background"}>
       <Icon name="patch" />
       <div class="title-counter">
@@ -151,7 +150,7 @@
         </span>
       </div>
     </Button>
-  </Link>
+  </a>
 
   <div class="spacer"></div>
 

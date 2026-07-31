@@ -4,7 +4,7 @@
 
   import { onDestroy } from "svelte";
 
-  import * as router from "@app/lib/router";
+  import { pageError } from "@app/lib/error";
   import {
     fetchRepoInfos,
     sortRepoInfosByActivity,
@@ -246,6 +246,6 @@
       </div>
     {/if}
   {:catch error}
-    {router.push(handleError(error, baseUrl))}
+    {pageError.set(handleError(error, baseUrl))}
   {/await}
 </div>

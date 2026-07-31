@@ -7,17 +7,18 @@
   } from "@http-client";
 
   import { onDestroy, onMount } from "svelte";
+  import { pushState, replaceState } from "$app/navigation";
   import { toHtml } from "hast-util-to-html";
 
   import * as Syntax from "@app/lib/syntax";
   import { isImagePath, isSvgPath } from "@app/lib/utils";
+  import { routeToPath } from "@app/lib/router";
 
   import Badge from "@app/components/Badge.svelte";
   import File from "@app/components/File.svelte";
   import FilePath from "@app/components/FilePath.svelte";
   import IconButton from "@app/components/IconButton.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import Link from "@app/components/Link.svelte";
   import Loading from "@app/components/Loading.svelte";
   import Placeholder from "@app/components/Placeholder.svelte";
   import Radio from "@app/components/Radio.svelte";
@@ -218,15 +219,15 @@
 
   function updateHash(newHash: string) {
     if (newHash !== "") {
-      window.location.hash = newHash;
+      pushState(`#${newHash}`, {});
     } else {
-      window.history.replaceState(
-        window.history.state,
-        "",
-        window.location.pathname + window.location.search,
-      );
-      selection = undefined;
+      replaceState(window.location.pathname + window.location.search, {});
     }
+    // Unlike assigning `location.hash`, `pushState`/`replaceState` don't emit
+    // `hashchange`. Every mounted file diff resyncs its line selection from
+    // the fragment on that event, so emit it manually — otherwise a
+    // previously selected file keeps its stale highlight.
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
   }
 
   function hunkHeaderSelected(selection: Selection | undefined, hunk: number) {
@@ -428,25 +429,28 @@
               styleBorderRadius="0"
               variant={preview ? "selected" : "not-selected"}
               on:click={() => {
-                window.location.hash = "";
+                replaceState(
+                  window.location.pathname + window.location.search,
+                  {},
+                );
                 preview = true;
               }}>
               <Icon name="eye" />Preview
             </Button>
           </Radio>
         {/if}
-        <Link
-          route={{
+        <a
+          href={routeToPath({
             resource: "repo.source",
             repo: repoId,
             node: baseUrl,
             path: filePath,
             revision,
-          }}>
+          })}>
           <IconButton title="View file at this commit">
             <Icon name="chevron-left-right" />
           </IconButton>
-        </Link>
+        </a>
       </div>
     {/if}
   </svelte:fragment>

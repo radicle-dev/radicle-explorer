@@ -22,14 +22,14 @@
 </script>
 
 <script lang="ts">
+  import type { SourceLinkContext } from "@app/lib/markdown";
+
   import dompurify from "dompurify";
   import { afterUpdate } from "svelte";
   import { toDom } from "hast-util-to-dom";
 
-  import * as router from "@app/lib/router";
   import * as modal from "@app/lib/modal";
   import ErrorModal from "@app/modals/ErrorModal.svelte";
-  import { activeUnloadedRouteStore } from "@app/lib/router";
   import { highlight } from "@app/lib/syntax";
   import { mimes } from "@app/lib/file";
   import {
@@ -47,6 +47,10 @@
   export let rawPath: string;
   // If true, add <br> on a single line break
   export let breaks: boolean = false;
+  // When set (i.e. when rendering a document in the repo source browser),
+  // relative links in the document resolve to source paths relative to the
+  // document itself.
+  export let sourceLinkContext: SourceLinkContext | undefined = undefined;
 
   let container: HTMLElement;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -79,35 +83,6 @@
     }
   }
 
-  /**
-   * Do internal navigation for clicks on anchor elements if possible
-   */
-  function navigateInternalOnAnchor(event: MouseEvent) {
-    if (router.useDefaultNavigation(event)) {
-      return;
-    }
-
-    let url: URL;
-    if (!(event.target instanceof HTMLAnchorElement)) {
-      return;
-    }
-    const href = event.target?.getAttribute("href");
-    if (href === null || href.startsWith("#")) {
-      return;
-    }
-
-    try {
-      url = new URL(href, window.location.href);
-    } catch {
-      return;
-    }
-
-    if (url.origin === window.origin) {
-      event.preventDefault();
-      void router.navigateToUrl("push", url);
-    }
-  }
-
   function render(content: string): string {
     return dompurify.sanitize(
       markdown({
@@ -116,7 +91,7 @@
         footnotes: true,
         linkify: true,
       }).parse(content, {
-        renderer: new Renderer($activeUnloadedRouteStore),
+        renderer: new Renderer(sourceLinkContext),
         breaks,
       }) as string,
       sanitizeConfig,
@@ -597,13 +572,6 @@
   </div>
 {/if}
 
-<!-- The click handler only handles bubbling events from anchor tags -->
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-<!-- svelte-ignore a11y-no-static-element-interactions -->
-<div
-  class="markdown"
-  bind:this={container}
-  use:twemoji={{ exclude: ["21a9"] }}
-  on:click={navigateInternalOnAnchor}>
+<div class="markdown" bind:this={container} use:twemoji={{ exclude: ["21a9"] }}>
   {@html render(content)}
 </div>

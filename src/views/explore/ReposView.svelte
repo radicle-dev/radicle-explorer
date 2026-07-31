@@ -2,7 +2,11 @@
   import type { BaseUrl, NodeStats } from "@http-client";
   import type { ExploreReposSort } from "./router";
 
-  import * as router from "@app/lib/router";
+  import { goto } from "$app/navigation";
+
+  import { exploreReposPath } from "./router";
+  import { pageError } from "@app/lib/error";
+  import { routeToPath } from "@app/lib/router";
   import { fetchRepoInfos } from "@app/components/RepoCard";
   import { handleError } from "@app/views/nodes/error";
 
@@ -10,7 +14,6 @@
   import DropdownListItem from "@app/components/DropdownList/DropdownListItem.svelte";
   import Header from "@app/components/Header.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import Link from "@app/components/Link.svelte";
   import Loading from "@app/components/Loading.svelte";
   import Placeholder from "@app/components/Placeholder.svelte";
   import Popover, { closeFocused } from "@app/components/Popover.svelte";
@@ -62,19 +65,13 @@
   }
 
   function goToPage(target: number) {
-    void router.push({
-      resource: "explore.repos",
-      params: { page: target, sort },
-    });
+    void goto(exploreReposPath(target, sort));
   }
 
   function selectSort(value: ExploreReposSort) {
     closeFocused();
     if (value === sort) return;
-    void router.push({
-      resource: "explore.repos",
-      params: { page: 0, sort: value },
-    });
+    void goto(exploreReposPath(0, value));
   }
 </script>
 
@@ -204,9 +201,9 @@
     <div class="toolbar">
       <nav class="breadcrumbs" aria-label="Breadcrumb">
         <span class="breadcrumb">
-          <Link route={{ resource: "explore", params: undefined }}>
+          <a href={routeToPath({ resource: "explore", params: undefined })}>
             Explore
-          </Link>
+          </a>
         </span>
         <Separator />
         <span class="breadcrumb breadcrumb-current">{subtitle}</span>
@@ -292,7 +289,7 @@
         </div>
       {/if}
     {:catch error}
-      {router.push(handleError(error, baseUrl))}
+      {pageError.set(handleError(error, baseUrl))}
     {/await}
   </div>
 </div>

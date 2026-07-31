@@ -26,7 +26,7 @@
   export let repoId: string;
   export let rawPath: (commit?: string) => string;
   export let revision: string | undefined;
-  export let seedingPolicy: SeedingPolicy;
+  export let seedingPolicy: SeedingPolicy | undefined = undefined;
   export let tree: Tree;
   export let nodeId: string;
   export let nodeAvatarUrl: string | undefined;
@@ -212,7 +212,14 @@
             {repoId}
             blob={blobResult.blob}
             highlighted={blobResult.highlighted}
-            rawPath={rawPath(tree.lastCommit.id)} />
+            rawPath={rawPath(tree.lastCommit.id)}
+            sourceLinkContext={{
+              node: baseUrl,
+              repo: repoId,
+              peer,
+              revision,
+              path,
+            }} />
         {:else if blobResult.error.status === 413}
           <div class="placeholder">
             <Placeholder

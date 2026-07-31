@@ -1,9 +1,6 @@
 import { describe, expect, test } from "vitest";
-import {
-  repoRouteToPath,
-  resolveRepoRoute,
-  testExports,
-} from "@app/views/repos/router";
+import { isOid, repoRouteToPath } from "@app/views/repos/router";
+import { testExports } from "@app/views/repos/loads";
 
 // Defining the window.origin value, since vitest doesn't provide one.
 window.origin = "http://localhost:3000";
@@ -13,7 +10,7 @@ describe("isOid", () => {
     { oid: "a64ae9c6d572e0ad906faa9a4a7a8d43f113278c", expected: true },
     { oid: "a64ae9c", expected: false },
   ])("isOid $oid => $expected", ({ oid, expected }) => {
-    expect(testExports.isOid(oid)).toEqual(expected);
+    expect(isOid(oid)).toEqual(expected);
   });
 });
 
@@ -25,16 +22,61 @@ describe("repo alias in routes", () => {
     { segment: "heartwood", description: "an alias" },
     { segment: rid, description: "a RID" },
   ])(
-    "preserves $description as the repo segment through the router",
+    "preserves $description as the repo segment in generated paths",
     ({ segment }) => {
-      // The segment (alias or RID) is parsed in as `route.repo` verbatim …
-      const route = resolveRepoRoute(node, segment, ["issues"], "");
-      expect(route).not.toBeNull();
-      expect(route?.repo).toEqual(segment);
-
-      // … and rendered back into the path unchanged, so in-repo links keep
-      // whichever form the user navigated in with.
-      expect(repoRouteToPath(route!)).toContain(`/${segment}/issues`);
+      // Links are built from the segment (alias or RID) the user navigated in
+      // with, so in-repo links keep whichever form was used.
+      expect(
+        repoRouteToPath({ resource: "repo.issues", node, repo: segment }),
+      ).toContain(`/${segment}/issues`);
     },
   );
+});
+
+describe("detectRevision", () => {
+  const branches = {
+    main: "a64ae9c6d572e0ad906faa9a4a7a8d43f113278c",
+    "feature/nested": "b64ae9c6d572e0ad906faa9a4a7a8d43f113278c",
+  };
+
+  test("branch only", () => {
+    expect(testExports.detectRevision("main", branches)).toEqual({
+      revision: "main",
+      path: "/",
+    });
+  });
+
+  test("branch with path", () => {
+    expect(testExports.detectRevision("main/src/lib.rs", branches)).toEqual({
+      revision: "main",
+      path: "src/lib.rs",
+    });
+  });
+
+  test("branch name containing slashes", () => {
+    expect(
+      testExports.detectRevision("feature/nested/README.md", branches),
+    ).toEqual({
+      revision: "feature/nested",
+      path: "README.md",
+    });
+  });
+
+  test("commit oid with path", () => {
+    expect(
+      testExports.detectRevision(
+        "c64ae9c6d572e0ad906faa9a4a7a8d43f113278c/src/lib.rs",
+        branches,
+      ),
+    ).toEqual({
+      revision: "c64ae9c6d572e0ad906faa9a4a7a8d43f113278c",
+      path: "src/lib.rs",
+    });
+  });
+
+  test("plain path with no matching revision", () => {
+    expect(testExports.detectRevision("src/lib.rs", branches)).toEqual({
+      path: "src/lib.rs",
+    });
+  });
 });

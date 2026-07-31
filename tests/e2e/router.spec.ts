@@ -1,7 +1,11 @@
+import * as Fs from "node:fs/promises";
+import * as Path from "node:path";
+
 import {
   aliceMainCommitCount,
   aliceMainHead,
   aliceRemote,
+  cobUrl,
   expect,
   sourceBrowsingUrl,
   test,
@@ -185,5 +189,92 @@ test.describe("repo page navigation", () => {
 
     await expectBackAndForwardNavigationWorks(`${repoTreeURL}/.hidden`, page);
     await expectUrlPersistsReload(page);
+  });
+});
+
+test.describe("deep links", () => {
+  test("trailing slash is tolerated on repo URLs", async ({ page }) => {
+    await page.goto(`${sourceBrowsingUrl}/`);
+    await expect(page.getByText(".hidden")).toBeVisible();
+    await expect(page).toHaveURL(sourceBrowsingUrl);
+  });
+
+  test("unknown top-level path renders not found", async ({ page }) => {
+    await page.goto("/foo/baz/bar");
+    await expect(page.getByText("Page not found")).toBeVisible();
+  });
+
+  test("unknown repo sub-path renders not found", async ({ page }) => {
+    await page.goto(`${sourceBrowsingUrl}/nope`);
+    await expect(page.getByText("Page not found")).toBeVisible();
+  });
+
+  test("deep link to patch changes tab", async ({ page }) => {
+    await page.goto(`${cobUrl}/patches`);
+    await page
+      .getByRole("link", { name: "Taking another stab at the README" })
+      .click();
+    await page.waitForURL(/patches\/[a-f0-9]{40}$/);
+    const patchUrl = page.url();
+
+    await page.goto(`${patchUrl}?tab=changes`);
+    await expect(
+      page.getByRole("cell", { name: "Had to push a new revision" }),
+    ).toBeVisible();
+  });
+
+  test("deep link to patch diff comparison", async ({ page }) => {
+    await page.goto(`${cobUrl}/patches`);
+    await page
+      .getByRole("link", { name: "Taking another stab at the README" })
+      .click();
+    await page.waitForURL(/patches\/[a-f0-9]{40}$/);
+    const patchUrl = page.url();
+
+    await page.goto(
+      `${patchUrl}?diff=38c225e2a0b47ba59def211f4e4825c31d9463ec..9e4feab1b2123dfa5f22bd0e4656060ec9296638`,
+    );
+    await expect(
+      page.getByRole("button", { name: "Compare 38c225..9e4fea" }),
+    ).toBeVisible();
+  });
+
+  test("deep link to closed issues", async ({ page }) => {
+    await page.goto(`${cobUrl}/issues?status=closed`);
+    await expect(page.getByText("A solved issue")).toBeVisible();
+  });
+
+  test("deep link to a file with special characters in its name", async ({
+    page,
+    peer,
+  }) => {
+    const { rid, repoFolder } = await createRepo(peer, {
+      name: "special-chars",
+    });
+    await Fs.writeFile(
+      Path.join(repoFolder, "with#hash%percent.md"),
+      "special characters content",
+    );
+    await peer.git(["add", "."], { cwd: repoFolder });
+    await peer.git(["commit", "-m", "Add file with special characters"], {
+      cwd: repoFolder,
+    });
+    await peer.git(["push", "rad"], { cwd: repoFolder });
+
+    const blobUrl = `${peer.ridUrl(rid)}/tree/main/with%23hash%25percent.md`;
+    await page.goto(blobUrl);
+    await expect(page.getByText("special characters content")).toBeVisible();
+    await expect(page).toHaveURL(blobUrl);
+
+    const seedsBlobUrl = blobUrl.replace("/nodes/", "/seeds/");
+    await page.goto(seedsBlobUrl);
+    await expect(page).toHaveURL(blobUrl);
+    await expect(page.getByText("special characters content")).toBeVisible();
+  });
+
+  test("legacy /seeds URLs redirect to /nodes", async ({ page }) => {
+    await page.goto(sourceBrowsingUrl.replace("/nodes/", "/seeds/"));
+    await expect(page).toHaveURL(sourceBrowsingUrl);
+    await expect(page.getByText(".hidden")).toBeVisible();
   });
 });

@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { ComponentProps } from "svelte";
-  import type { ErrorParam } from "@app/lib/router/definitions";
+  import type { ErrorParam } from "@app/lib/error";
 
   import config from "@app/lib/config";
   import Command from "./Command.svelte";

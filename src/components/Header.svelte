@@ -13,7 +13,11 @@
 </script>
 
 <script lang="ts">
-  import { activeRouteStore, homeRoute } from "@app/lib/router";
+  import { page } from "$app/stores";
+
+  import { homeRoute, routeToPath } from "@app/lib/router";
+  import { isRepoRouteId } from "@app/lib/routeId";
+  import { pageError } from "@app/lib/error";
   import config from "@app/lib/config";
   import { isMobile } from "@app/lib/media";
   import { determineSeed, selectedSeed } from "@app/views/nodes/SeedSelector";
@@ -23,7 +27,6 @@
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
   import IconButton from "@app/components/IconButton.svelte";
-  import Link from "@app/components/Link.svelte";
   import Logo from "@app/components/Logo.svelte";
   import Popover from "@app/components/Popover.svelte";
   import HeaderSearch from "@app/views/explore/HeaderSearch.svelte";
@@ -33,35 +36,32 @@
 
   const isNodeHomepage = config.nodes.homepage === "node";
   const isLandingDeployment = config.nodes.homepage === "landing";
-  $: hideLogo =
-    isNodeHomepage && $activeRouteStore.resource.startsWith("repo.");
-  $: isExplore =
-    $activeRouteStore.resource === "explore" ||
-    $activeRouteStore.resource === "explore.repos";
+
+  // The current error, whether raised by a route load (`$page.error`) or by a
+  // component outside of load functions (`$pageError`). Error pages use the
+  // plain full-width header regardless of which route they surfaced on.
+  $: appError = $page.error ?? $pageError?.body;
+  $: errorStatus = $pageError?.status ?? $page.status;
+
+  $: hideLogo = isNodeHomepage && !appError && isRepoRouteId($page.route.id);
   // The marketing pages carry their own calls to action, so the header's
-  // "Get started" button is hidden there.
-  $: isMarketingRoute =
-    $activeRouteStore.resource === "landing" ||
-    $activeRouteStore.resource === "learn" ||
-    $activeRouteStore.resource === "install" ||
-    $activeRouteStore.resource === "guides" ||
-    $activeRouteStore.resource === "desktop" ||
-    $activeRouteStore.resource === "cli" ||
-    $activeRouteStore.resource === "principles" ||
-    $activeRouteStore.resource === "docs";
-  // The explore and marketing routes both use the narrow, centered header
-  // layout (fixed, constrained width, inline search) instead of the full-width
-  // header used on repo and node views.
-  $: isConstrainedHeader = isExplore || isMarketingRoute;
+  // "Get started" button is hidden there. Which pages count as marketing is
+  // declared by the routes themselves via layout data.
+  $: isMarketingRoute = !appError && $page.data.marketing === true;
+  // Pages declare their header layout via layout data: the narrow, centered
+  // header (fixed, constrained width, inline search) on marketing and explore
+  // pages, and the full-width header on repo and node views. Error pages
+  // always use the full-width header.
+  $: isConstrainedHeader = !appError && $page.data.fullWidth === false;
 
   // Seed selection lives in Settings now, so the header no longer shows a
-  // general seed picker. It's kept only on error routes as an escape hatch to
-  // a working seed, using the route's seed when known and otherwise falling
+  // general seed picker. It's kept only on error pages as an escape hatch to
+  // a working seed, using the error's seed when known and otherwise falling
   // back to the currently selected one. (The notFound view renders its own
-  // inline picker, so it's excluded here.)
+  // inline picker, so 404s are excluded here.)
   $: seedPickerBaseUrl =
-    $activeRouteStore.resource === "error"
-      ? ($activeRouteStore.params.baseUrl ?? determineSeed())
+    appError && errorStatus !== 404
+      ? (appError.baseUrl ?? determineSeed())
       : undefined;
 
   // Search always queries the selected explore seed, regardless of which seed
@@ -71,10 +71,11 @@
   // The explore routes already resolved /info during load; reuse it, but only
   // when it describes the same seed we're about to search.
   $: routeSearchAvailable =
-    ($activeRouteStore.resource === "explore" ||
-      $activeRouteStore.resource === "explore.repos") &&
-    seedKey($activeRouteStore.params.baseUrl) === seedKey(searchSeed)
-      ? $activeRouteStore.params.searchAvailable
+    !appError &&
+    typeof $page.data.searchAvailable === "boolean" &&
+    $page.data.baseUrl &&
+    seedKey($page.data.baseUrl) === seedKey(searchSeed)
+      ? $page.data.searchAvailable
       : undefined;
 
   let searchAvailable = false;
@@ -218,12 +219,12 @@
   <div class="header-inner" class:constrained={isConstrainedHeader}>
     <div class="left-section">
       {#if !hideLogo}
-        <Link
-          ariaLabel="Radicle"
-          route={homeRoute()}
+        <a
+          aria-label="Radicle"
+          href={routeToPath(homeRoute())}
           style="height: 1rem; display: flex; align-items: center;">
           <span class="header-logo"><Logo /></span>
-        </Link>
+        </a>
       {/if}
       {#if $$slots.breadcrumbs && !hideLogo}
         <div class="left-divider"></div>
@@ -246,15 +247,15 @@
       {/if}
       {#if isMarketingRoute}
         <span class="get-started">
-          <Link route={{ resource: "install", params: undefined }}>
+          <a href={routeToPath({ resource: "install", params: undefined })}>
             <Button variant="foreground">Get started</Button>
-          </Link>
+          </a>
         </span>
       {:else if isLandingDeployment}
         <span class="get-started">
-          <Link route={{ resource: "install", params: undefined }}>
+          <a href={routeToPath({ resource: "install", params: undefined })}>
             <Button variant="outline">Get started</Button>
-          </Link>
+          </a>
         </span>
       {:else}
         <a

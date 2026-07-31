@@ -150,7 +150,9 @@
     padding-right: 0;
   }
 
-  .doc-inline :global(.markdown-content h2) {
+  .doc-inline :global(.markdown-content h2),
+  .doc-inline :global(.markdown-content h3),
+  .doc-inline :global(.markdown-content h4) {
     scroll-margin-top: 6rem;
   }
 

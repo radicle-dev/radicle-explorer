@@ -5,12 +5,12 @@
 
   import { PATCHES_PER_PAGE } from "./router";
   import { baseUrlToString } from "@app/lib/utils";
+  import { routeToPath } from "@app/lib/router";
 
   import Button from "@app/components/Button.svelte";
   import ErrorMessage from "@app/components/ErrorMessage.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Layout from "./Layout.svelte";
-  import Link from "@app/components/Link.svelte";
   import List from "@app/components/List.svelte";
   import Loading from "@app/components/Loading.svelte";
   import PatchTeaser from "./Patch/PatchTeaser.svelte";
@@ -112,23 +112,23 @@
 <Layout {nodeId} {nodeAvatarUrl} {baseUrl} {repo} {repoId} activeTab="patches">
   <svelte:fragment slot="breadcrumb">
     <Separator />
-    <Link
-      route={{
+    <a
+      href={routeToPath({
         resource: "repo.patches",
         repo: repoId,
         node: baseUrl,
-      }}>
+      })}>
       Patches
-    </Link>
+    </a>
   </svelte:fragment>
   <div slot="header" class="header">
-    <Link
-      route={{
+    <a
+      href={routeToPath({
         resource: "repo.patches",
         repo: repoId,
         node: baseUrl,
         search: "status=open",
-      }}>
+      })}>
       <Button variant={status === "open" ? "gray" : "background"}>
         <Icon name="patch" />
         <div class="title-counter" class:active={status === "open"}>
@@ -138,14 +138,14 @@
           </span>
         </div>
       </Button>
-    </Link>
-    <Link
-      route={{
+    </a>
+    <a
+      href={routeToPath({
         resource: "repo.patches",
         repo: repoId,
         node: baseUrl,
         search: "status=draft",
-      }}>
+      })}>
       <Button variant={status === "draft" ? "gray" : "background"}>
         <Icon name="patch-draft" />
         <div class="title-counter" class:active={status === "draft"}>
@@ -155,14 +155,14 @@
           </span>
         </div>
       </Button>
-    </Link>
-    <Link
-      route={{
+    </a>
+    <a
+      href={routeToPath({
         resource: "repo.patches",
         repo: repoId,
         node: baseUrl,
         search: "status=archived",
-      }}>
+      })}>
       <Button variant={status === "archived" ? "gray" : "background"}>
         <Icon name="patch-archived" />
         <div class="title-counter" class:active={status === "archived"}>
@@ -172,14 +172,14 @@
           </span>
         </div>
       </Button>
-    </Link>
-    <Link
-      route={{
+    </a>
+    <a
+      href={routeToPath({
         resource: "repo.patches",
         repo: repoId,
         node: baseUrl,
         search: "status=merged",
-      }}>
+      })}>
       <Button variant={status === "merged" ? "gray" : "background"}>
         <Icon name="patch-merged" />
         <div class="title-counter" class:active={status === "merged"}>
@@ -189,7 +189,7 @@
           </span>
         </div>
       </Button>
-    </Link>
+    </a>
   </div>
 
   <List items={allPatches}>

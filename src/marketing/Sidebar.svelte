@@ -1,12 +1,9 @@
 <script lang="ts">
-  import type { Route } from "@app/lib/router/definitions";
+  import type { Route } from "@app/lib/router";
 
-  import {
-    activeUnloadedRouteStore,
-    push,
-    routeToPath,
-    useDefaultNavigation,
-  } from "@app/lib/router";
+  import { page } from "$app/stores";
+
+  import { routeToPath } from "@app/lib/router";
 
   const installRoute: Route = { resource: "install", params: undefined };
   const cliRoute: Route = { resource: "cli", params: undefined };
@@ -26,7 +23,7 @@
     params: { page: "glossary" },
   };
 
-  $: pathname = routeToPath($activeUnloadedRouteStore);
+  $: pathname = $page.url.pathname;
 
   // Only show a section's sub-nav while the viewer is within that section.
   $: installOpen = ["/install", "/cli", "/desktop"].includes(pathname);
@@ -53,14 +50,6 @@
     unfurlTimeout = setTimeout(() => {
       document.documentElement.classList.remove("sidebar-unfurling");
     }, 500);
-  }
-
-  function onNav(event: MouseEvent, route: Route) {
-    if (useDefaultNavigation(event)) {
-      return;
-    }
-    event.preventDefault();
-    void push(route);
   }
 </script>
 
@@ -175,8 +164,7 @@
       <a
         href={routeToPath(installRoute)}
         class="section-header"
-        class:active={pathname === "/install"}
-        on:click={e => onNav(e, installRoute)}>
+        class:active={pathname === "/install"}>
         {#if pathname === "/install"}
           <span class="dot"></span>
         {/if}
@@ -187,8 +175,7 @@
           <a
             href={routeToPath(cliRoute)}
             class="nav-link"
-            class:active={pathname === "/cli"}
-            on:click={e => onNav(e, cliRoute)}>
+            class:active={pathname === "/cli"}>
             {#if pathname === "/cli"}
               <span class="dot"></span>
             {/if}
@@ -197,8 +184,7 @@
           <a
             href={routeToPath(desktopRoute)}
             class="nav-link"
-            class:active={pathname === "/desktop"}
-            on:click={e => onNav(e, desktopRoute)}>
+            class:active={pathname === "/desktop"}>
             {#if pathname === "/desktop"}
               <span class="dot"></span>
             {/if}
@@ -226,8 +212,7 @@
       <a
         href={routeToPath(learnRoute)}
         class="section-header"
-        class:active={pathname === "/learn"}
-        on:click={e => onNav(e, learnRoute)}>
+        class:active={pathname === "/learn"}>
         {#if pathname === "/learn"}
           <span class="dot"></span>
         {/if}
@@ -238,8 +223,7 @@
           <a
             href={routeToPath(principlesRoute)}
             class="nav-link"
-            class:active={pathname === "/principles"}
-            on:click={e => onNav(e, principlesRoute)}>
+            class:active={pathname === "/principles"}>
             {#if pathname === "/principles"}
               <span class="dot"></span>
             {/if}
@@ -248,8 +232,7 @@
           <a
             href={routeToPath(guidesRoute)}
             class="nav-link"
-            class:active={pathname.startsWith("/guides")}
-            on:click={e => onNav(e, guidesRoute)}>
+            class:active={pathname.startsWith("/guides")}>
             {#if pathname.startsWith("/guides")}
               <span class="dot"></span>
             {/if}
@@ -258,8 +241,7 @@
           <a
             href={routeToPath(faqRoute)}
             class="nav-link"
-            class:active={pathname === "/faq"}
-            on:click={e => onNav(e, faqRoute)}>
+            class:active={pathname === "/faq"}>
             {#if pathname === "/faq"}
               <span class="dot"></span>
             {/if}
@@ -268,8 +250,7 @@
           <a
             href={routeToPath(glossaryRoute)}
             class="nav-link"
-            class:active={pathname === "/glossary"}
-            on:click={e => onNav(e, glossaryRoute)}>
+            class:active={pathname === "/glossary"}>
             {#if pathname === "/glossary"}
               <span class="dot"></span>
             {/if}
@@ -280,10 +261,7 @@
     </div>
 
     <div class="external-links" style="view-transition-name: sidebar-external;">
-      <a
-        href={routeToPath(exploreRoute)}
-        class="external-link arrow-link"
-        on:click={e => onNav(e, exploreRoute)}>
+      <a href={routeToPath(exploreRoute)} class="external-link arrow-link">
         Explore <span class="link-arrow link-arrow-right">→</span>
       </a>
       <a

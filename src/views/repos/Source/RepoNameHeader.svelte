@@ -4,18 +4,18 @@
   import dompurify from "dompurify";
   import { markdown, sanitizeConfig } from "@app/lib/markdown";
   import { formatRepositoryId, twemoji } from "@app/lib/utils";
+  import { routeToPath } from "@app/lib/router";
 
   import Badge from "@app/components/Badge.svelte";
   import ContextRepo from "@app/views/repos/Sidebar/ContextRepo.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
-  import Link from "@app/components/Link.svelte";
   import RepoAvatar from "@app/components/RepoAvatar.svelte";
 
   export let repo: Repo;
   export let repoId: string;
   export let baseUrl: BaseUrl;
-  export let seedingPolicy: SeedingPolicy;
+  export let seedingPolicy: SeedingPolicy | undefined = undefined;
 
   function render(content: string): string {
     return dompurify.sanitize(
@@ -112,16 +112,16 @@
   <div class="meta">
     <div class="title">
       <span class="txt-overflow">
-        <Link
-          route={{
+        <a
+          href={routeToPath({
             resource: "repo.source",
             repo: repoId,
             node: baseUrl,
-          }}>
+          })}>
           <span class="repo-name">
             {project.data.name}
           </span>
-        </Link>
+        </a>
       </span>
       {#if repo.visibility.type === "private"}
         <Badge variant="private" size="tiny">

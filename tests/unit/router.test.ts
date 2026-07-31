@@ -1,12 +1,26 @@
-import { describe, expect, test } from "vitest";
-import { testExports, type Route } from "@app/lib/router";
+import { describe, expect, test, vi } from "vitest";
+import { extractBaseUrl, retargetSeed, routeToPath } from "@app/lib/router";
 import config from "@tests/support/config.js";
+
+// Pin the homepage mode so these tests don't depend on a gitignored
+// `config/local.json` override.
+vi.mock("@app/lib/config", async importOriginal => {
+  const original = await importOriginal<typeof import("@app/lib/config")>();
+  return {
+    default: {
+      ...original.default,
+      nodes: { ...original.default.nodes, homepage: "node" },
+    },
+  };
+});
 
 // Defining the window.origin value, since vitest doesn't provide one.
 window.origin = "http://localhost:3000";
 
-describe("route invariant when parsed", () => {
-  const origin = "http://localhost:3000";
+// URL parsing is handled by SvelteKit's file-based router (covered by the e2e
+// router spec); these tests pin down the serialization side — the link
+// builders every `<a href={routeToPath(...)}>` in the app relies on.
+describe("routeToPath", () => {
   const node = {
     hostname: "example.node.tld",
     port: 8000,
@@ -14,265 +28,258 @@ describe("route invariant when parsed", () => {
   };
 
   test("nodes", () => {
-    expectParsingInvariant({
-      resource: "nodes",
-      params: {
-        // TODO: This only works with the value 0. The value is not actually
-        // extract.
-        repoPageIndex: 0,
-        baseUrl: node,
-      },
-    });
-  });
-  test("repos.tree", () => {
-    expectParsingInvariant({
-      resource: "repo.source",
-      node,
-      repo: "rad:zKtT7DmF9H34KkvcKj9PHW19WzjT",
-      route: "",
-    });
+    expect(
+      routeToPath({
+        resource: "nodes",
+        params: { repoPageIndex: 0, baseUrl: node },
+      }),
+    ).toEqual("/nodes/example.node.tld:8000");
   });
 
-  test("repos.tree with peer", () => {
-    expectParsingInvariant({
-      resource: "repo.source",
-      node,
-      repo: "REPO",
-      peer: "PEER",
-      route: "",
-    });
+  test("nodes with default port omits the port", () => {
+    expect(
+      routeToPath({
+        resource: "nodes",
+        params: {
+          repoPageIndex: 0,
+          baseUrl: {
+            hostname: "example.node.tld",
+            port: config.nodes.defaultHttpdPort,
+            scheme: config.nodes.defaultHttpdScheme,
+          },
+        },
+      }),
+    ).toEqual("/nodes/example.node.tld");
   });
 
-  test("repos.tree with peer and revision", () => {
-    const route: Route = {
-      resource: "repo.source",
-      node,
-      repo: "REPO",
-      peer: "PEER",
-      revision: "REVISION",
-      route: "",
-    };
-    const path = testExports.routeToPath(route);
-    route.revision = undefined;
-    route.route = "REVISION";
-    expect(testExports.urlToRoute(new URL(path, origin))).toEqual(route);
+  test("users", () => {
+    expect(
+      routeToPath({ resource: "users", baseUrl: node, did: "did:key:DID" }),
+    ).toEqual("/nodes/example.node.tld:8000/users/did:key:DID");
   });
 
-  test("repos.tree with peer and revision and path", () => {
-    const route: Route = {
-      resource: "repo.source",
-      node,
-      repo: "REPO",
-      peer: "PEER",
-      path: "PATH",
-      revision: "REVISION",
-      route: "",
-    };
-    const path = testExports.routeToPath(route);
-    route.revision = undefined;
-    route.path = undefined;
-    route.route = "REVISION/PATH";
-    expect(testExports.urlToRoute(new URL(path, origin))).toEqual(route);
+  test("explore", () => {
+    expect(routeToPath({ resource: "explore", params: undefined })).toEqual(
+      "/explore",
+    );
   });
 
-  test("repos.history", () => {
-    expectParsingInvariant({
-      resource: "repo.history",
-      node,
-      repo: "REPO",
-      revision: "",
-    });
+  test("explore.repos omits default params", () => {
+    expect(
+      routeToPath({
+        resource: "explore.repos",
+        params: { page: 0, sort: "seeding" },
+      }),
+    ).toEqual("/explore/repos");
+    expect(
+      routeToPath({
+        resource: "explore.repos",
+        params: { page: 2, sort: "activity" },
+      }),
+    ).toEqual("/explore/repos?sort=activity&page=2");
   });
 
-  test("repos.history with revision", () => {
-    expectParsingInvariant({
-      resource: "repo.history",
-      node,
-      repo: "REPO",
-      revision: "REVISION",
-    });
+  test("repo.source bare", () => {
+    expect(
+      routeToPath({
+        resource: "repo.source",
+        node,
+        repo: "rad:zKtT7DmF9H34KkvcKj9PHW19WzjT",
+        route: "",
+      }),
+    ).toEqual("/nodes/example.node.tld:8000/rad:zKtT7DmF9H34KkvcKj9PHW19WzjT");
   });
 
-  test("repos.commits", () => {
-    expectParsingInvariant({
-      resource: "repo.commit",
-      node,
-      repo: "REPO",
-      commit: "COMMIT",
-    });
+  test("repo.source with peer", () => {
+    expect(
+      routeToPath({
+        resource: "repo.source",
+        node,
+        repo: "REPO",
+        peer: "PEER",
+        route: "",
+      }),
+    ).toEqual("/nodes/example.node.tld:8000/REPO/remotes/PEER");
   });
 
-  test("repos.issues", () => {
-    expectParsingInvariant({
-      resource: "repo.issues",
-      node,
-      repo: "REPO",
-    });
+  test("repo.source with revision and path", () => {
+    expect(
+      routeToPath({
+        resource: "repo.source",
+        node,
+        repo: "REPO",
+        revision: "REVISION",
+        path: "PATH",
+      }),
+    ).toEqual("/nodes/example.node.tld:8000/REPO/tree/REVISION/PATH");
   });
 
-  test("repos.issues with status", () => {
-    expectParsingInvariant({
-      resource: "repo.issues",
-      node,
-      repo: "REPO",
-      status: "closed",
-    });
+  test("repo.source with raw route remainder", () => {
+    expect(
+      routeToPath({
+        resource: "repo.source",
+        node,
+        repo: "REPO",
+        route: "REVISION/PATH",
+      }),
+    ).toEqual("/nodes/example.node.tld:8000/REPO/tree/REVISION/PATH");
   });
 
-  test("repos.issue", () => {
-    expectParsingInvariant({
-      resource: "repo.issue",
-      node,
-      repo: "REPO",
-      issue: "ISSUE",
-    });
+  test("repo.history", () => {
+    expect(
+      routeToPath({
+        resource: "repo.history",
+        node,
+        repo: "REPO",
+        revision: "",
+      }),
+    ).toEqual("/nodes/example.node.tld:8000/REPO/history");
+    expect(
+      routeToPath({
+        resource: "repo.history",
+        node,
+        repo: "REPO",
+        peer: "PEER",
+        revision: "REVISION",
+      }),
+    ).toEqual(
+      "/nodes/example.node.tld:8000/REPO/remotes/PEER/history/REVISION",
+    );
   });
 
-  test("repos.patches", () => {
-    expectParsingInvariant({
-      resource: "repo.patches",
-      node,
-      repo: "REPO",
-      search: "SEARCH",
-    });
+  test("repo.commit", () => {
+    expect(
+      routeToPath({
+        resource: "repo.commit",
+        node,
+        repo: "REPO",
+        commit: "COMMIT",
+      }),
+    ).toEqual("/nodes/example.node.tld:8000/REPO/commits/COMMIT");
   });
 
-  test("repos.patches with search", () => {
-    expectParsingInvariant({
-      resource: "repo.patches",
-      node,
-      repo: "REPO",
-      search: "SEARCH",
-    });
+  test("repo.issues", () => {
+    expect(
+      routeToPath({ resource: "repo.issues", node, repo: "REPO" }),
+    ).toEqual("/nodes/example.node.tld:8000/REPO/issues");
+    expect(
+      routeToPath({
+        resource: "repo.issues",
+        node,
+        repo: "REPO",
+        status: "closed",
+      }),
+    ).toEqual("/nodes/example.node.tld:8000/REPO/issues?status=closed");
   });
 
-  test("repos.patch default view", () => {
-    expectParsingInvariant({
+  test("repo.issue", () => {
+    expect(
+      routeToPath({ resource: "repo.issue", node, repo: "REPO", issue: "ID" }),
+    ).toEqual("/nodes/example.node.tld:8000/REPO/issues/ID");
+  });
+
+  test("repo.patches passes the search string through", () => {
+    expect(
+      routeToPath({
+        resource: "repo.patches",
+        node,
+        repo: "REPO",
+        search: "status=merged",
+      }),
+    ).toEqual("/nodes/example.node.tld:8000/REPO/patches?status=merged");
+  });
+
+  test("repo.patch views", () => {
+    const base = {
       resource: "repo.patch",
       node,
       repo: "REPO",
       patch: "PATCH",
-    });
+    } as const;
+    expect(routeToPath(base)).toEqual(
+      "/nodes/example.node.tld:8000/REPO/patches/PATCH",
+    );
+    expect(routeToPath({ ...base, view: { name: "activity" } })).toEqual(
+      "/nodes/example.node.tld:8000/REPO/patches/PATCH?tab=activity",
+    );
+    expect(
+      routeToPath({
+        ...base,
+        view: { name: "changes", revision: "REVISION" },
+      }),
+    ).toEqual(
+      "/nodes/example.node.tld:8000/REPO/patches/PATCH/REVISION?tab=changes",
+    );
+    expect(
+      routeToPath({
+        ...base,
+        view: {
+          name: "diff",
+          fromCommit: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          toCommit: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        },
+      }),
+    ).toEqual(
+      "/nodes/example.node.tld:8000/REPO/patches/PATCH?diff=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    );
   });
 
-  test("repos.patch activity", () => {
-    expectParsingInvariant({
-      resource: "repo.patch",
-      node,
-      repo: "REPO",
-      patch: "PATCH",
-      view: { name: "activity" },
-    });
+  test("marketing paths", () => {
+    expect(routeToPath({ resource: "landing", params: undefined })).toEqual(
+      "/",
+    );
+    expect(routeToPath({ resource: "learn", params: undefined })).toEqual(
+      "/learn",
+    );
+    expect(
+      routeToPath({ resource: "docs", params: { page: "guides/protocol" } }),
+    ).toEqual("/guides/protocol");
   });
-
-  test("repos.patch changes", () => {
-    expectParsingInvariant({
-      resource: "repo.patch",
-      node,
-      repo: "REPO",
-      patch: "PATCH",
-      view: { name: "changes" },
-    });
-  });
-
-  test("repos.patch changes with revision", () => {
-    expectParsingInvariant({
-      resource: "repo.patch",
-      node,
-      repo: "REPO",
-      patch: "PATCH",
-      view: { name: "changes", revision: "REVISION" },
-    });
-  });
-
-  test("repos.patch diff", () => {
-    expectParsingInvariant({
-      resource: "repo.patch",
-      node,
-      repo: "REPO",
-      patch: "PATCH",
-      view: {
-        name: "diff",
-        fromCommit: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        toCommit: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      },
-    });
-  });
-
-  function expectParsingInvariant(route: Route) {
-    const path = testExports.routeToPath(route);
-    expect(testExports.urlToRoute(new URL(path, origin))).toEqual(route);
-  }
 });
 
-describe("pathToRoute", () => {
-  test("non-existent", () => {
-    expectPathToRoute("/foo/baz/bar", null);
-  });
+describe("retargetSeed", () => {
+  const seed = {
+    hostname: "seed.example",
+    port: config.nodes.defaultHttpdPort,
+    scheme: config.nodes.defaultHttpdScheme,
+  };
 
-  test("nodes", () => {
-    expectPathToRoute("/nodes/example.node.tld", {
-      resource: "nodes",
-      params: {
-        baseUrl: {
-          hostname: "example.node.tld",
-          scheme: "http",
-          port: config.nodes.defaultHttpdPort,
-        },
-        repoPageIndex: 0,
-      },
-    });
-  });
-
-  test("repo with trailing slash", () => {
-    expectPathToRoute(
-      "/nodes/example.node.tld/rad:zKtT7DmF9H34KkvcKj9PHW19WzjT/",
-      {
-        resource: "repo.source",
-        node: {
-          hostname: "example.node.tld",
-          scheme: "http",
-          port: config.nodes.defaultHttpdPort,
-        },
-        repo: "rad:zKtT7DmF9H34KkvcKj9PHW19WzjT",
-        route: "",
-      },
-    );
-  });
-
-  test("repo without trailing slash", () => {
-    expectPathToRoute(
-      "/nodes/example.node.tld/rad:zKtT7DmF9H34KkvcKj9PHW19WzjT",
-      {
-        resource: "repo.source",
-        node: {
-          hostname: "example.node.tld",
-          scheme: "http",
-          port: config.nodes.defaultHttpdPort,
-        },
-        repo: "rad:zKtT7DmF9H34KkvcKj9PHW19WzjT",
-        route: "",
-      },
-    );
-  });
-
-  test("non-existent repo route", () => {
-    expectPathToRoute(
-      "/nodes/example.node.tld/rad:zKtT7DmF9H34KkvcKj9PHW19WzjT/nope",
-      null,
-    );
-  });
-
-  function expectPathToRoute(relativeUrl: string, route: Route | null) {
+  test("swaps the host segment on node URLs", () => {
     expect(
-      testExports.urlToRoute(new URL(relativeUrl, "http://localhost/")),
-    ).toEqual(route);
-  }
+      retargetSeed(new URL("http://localhost:3000/nodes/old.host:8000"), seed),
+    ).toEqual("/nodes/seed.example");
+  });
+
+  test("keeps the rest of the path and query", () => {
+    expect(
+      retargetSeed(
+        new URL(
+          "http://localhost:3000/nodes/old.host/REPO/issues?status=closed",
+        ),
+        seed,
+      ),
+    ).toEqual("/nodes/seed.example/REPO/issues?status=closed");
+  });
+
+  test("passes explore URLs through unchanged", () => {
+    expect(
+      retargetSeed(
+        new URL("http://localhost:3000/explore/repos?sort=activity"),
+        seed,
+      ),
+    ).toEqual("/explore/repos?sort=activity");
+  });
+
+  test("falls back to the seed's node page elsewhere", () => {
+    expect(retargetSeed(new URL("http://localhost:3000/learn"), seed)).toEqual(
+      "/nodes/seed.example",
+    );
+  });
 });
 
 describe("extractBaseUrl", () => {
   test("hostname with explicit port", () => {
-    const result = testExports.extractBaseUrl("example.com:9000");
+    const result = extractBaseUrl("example.com:9000");
     expect(result).toEqual({
       hostname: "example.com",
       port: 9000,
@@ -281,7 +288,7 @@ describe("extractBaseUrl", () => {
   });
 
   test("hostname without port uses default port and scheme", () => {
-    const result = testExports.extractBaseUrl("example.com");
+    const result = extractBaseUrl("example.com");
     expect(result).toEqual({
       hostname: "example.com",
       port: config.nodes.defaultHttpdPort,
@@ -290,7 +297,7 @@ describe("extractBaseUrl", () => {
   });
 
   test("localhost without port uses local port and http scheme", () => {
-    const result = testExports.extractBaseUrl("localhost");
+    const result = extractBaseUrl("localhost");
     expect(result).toEqual({
       hostname: "localhost",
       port: config.nodes.defaultLocalHttpdPort,
@@ -299,7 +306,7 @@ describe("extractBaseUrl", () => {
   });
 
   test("localhost with explicit port uses http scheme", () => {
-    const result = testExports.extractBaseUrl("localhost:3000");
+    const result = extractBaseUrl("localhost:3000");
     expect(result).toEqual({
       hostname: "localhost",
       port: 3000,
@@ -308,7 +315,7 @@ describe("extractBaseUrl", () => {
   });
 
   test("wildcard localhost domain without port uses local port and http scheme", () => {
-    const result = testExports.extractBaseUrl("app.localhost");
+    const result = extractBaseUrl("app.localhost");
     expect(result).toEqual({
       hostname: "app.localhost",
       port: config.nodes.defaultLocalHttpdPort,
@@ -317,7 +324,7 @@ describe("extractBaseUrl", () => {
   });
 
   test("127.0.0.1 without port uses local port and http scheme", () => {
-    const result = testExports.extractBaseUrl("127.0.0.1");
+    const result = extractBaseUrl("127.0.0.1");
     expect(result).toEqual({
       hostname: "127.0.0.1",
       port: config.nodes.defaultLocalHttpdPort,
@@ -326,7 +333,7 @@ describe("extractBaseUrl", () => {
   });
 
   test("127.0.0.1 with explicit port uses http scheme", () => {
-    const result = testExports.extractBaseUrl("127.0.0.1:8080");
+    const result = extractBaseUrl("127.0.0.1:8080");
     expect(result).toEqual({
       hostname: "127.0.0.1",
       port: 8080,
@@ -335,7 +342,7 @@ describe("extractBaseUrl", () => {
   });
 
   test("onion domain without port uses default port and http scheme", () => {
-    const result = testExports.extractBaseUrl("example.onion");
+    const result = extractBaseUrl("example.onion");
     expect(result).toEqual({
       hostname: "example.onion",
       port: config.nodes.defaultHttpdPort,
@@ -344,7 +351,7 @@ describe("extractBaseUrl", () => {
   });
 
   test("onion domain with explicit port uses http scheme", () => {
-    const result = testExports.extractBaseUrl("example.onion:9050");
+    const result = extractBaseUrl("example.onion:9050");
     expect(result).toEqual({
       hostname: "example.onion",
       port: 9050,
@@ -353,7 +360,7 @@ describe("extractBaseUrl", () => {
   });
 
   test("URL-encoded hostname is decoded", () => {
-    const result = testExports.extractBaseUrl("example.com%3A8000");
+    const result = extractBaseUrl("example.com%3A8000");
     expect(result).toEqual({
       hostname: "example.com",
       port: 8000,

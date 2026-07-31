@@ -442,6 +442,7 @@ test("only one modal can be open at a time", async ({ page }) => {
   await page.goto(sourceBrowsingUrl);
 
   await changeBranch("alice", `main ${shortAliceHead}`, page);
+  await page.waitForURL(/\/remotes\//);
 
   await page.getByText("Clone").click();
   await expect(page.getByText("Code font")).not.toBeVisible();

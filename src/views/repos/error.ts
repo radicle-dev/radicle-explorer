@@ -1,67 +1,62 @@
-import type { ErrorRoute, NotFoundRoute } from "@app/lib/router/definitions";
-import type { RepoRoute } from "@app/views/repos/router";
+import type { BaseUrl } from "@http-client";
+import type { LoadError } from "@app/lib/error";
+
+import { error } from "@sveltejs/kit";
 
 import { baseUrlToString } from "@app/lib/utils";
 import { ResponseParseError, ResponseError } from "@http-client/lib/fetcher";
 
+export type RepoErrorSubject = "Commit" | "Issue" | "Patch" | "Repository";
+
 export function handleError(
-  error: Error | ResponseParseError | ResponseError,
-  route: RepoRoute,
-): NotFoundRoute | ErrorRoute {
-  const url = baseUrlToString(route.node);
-  if (error instanceof ResponseError && error.status === 404) {
-    let subject;
+  err: unknown,
+  baseUrl: BaseUrl,
+  subject: RepoErrorSubject = "Repository",
+): LoadError {
+  const url = baseUrlToString(baseUrl);
 
-    if (route.resource === "repo.commit") {
-      subject = "Commit";
-    } else if (route.resource === "repo.issue") {
-      subject = "Issue";
-    } else if (route.resource === "repo.patch") {
-      subject = "Patch";
-    } else {
-      subject = "Repository";
-    }
-
+  if (err instanceof ResponseError && err.status === 404) {
     return {
-      resource: "notFound",
-      params: { title: `${subject} not found` },
+      status: 404,
+      body: { message: "Not Found", title: `${subject} not found` },
     };
-  } else if (error instanceof ResponseError) {
+  } else if (err instanceof ResponseError) {
     return {
-      resource: "error",
-      params: {
-        error,
+      status: 500,
+      body: {
+        message: "Load failed",
+        error: err,
         title: "Could not load this repository",
         description: `Make sure you are able to connect to the seed <a href="${url}">${url}</a>.`,
       },
     };
-  } else if (error instanceof ResponseParseError) {
+  } else if (err instanceof ResponseParseError) {
     return {
-      resource: "error",
-      params: {
-        error,
+      status: 500,
+      body: {
+        message: "Load failed",
+        error: err,
         title: "Could not parse the request",
-        description: error.description,
+        description: err.description,
       },
     };
-  } else if (
-    error instanceof TypeError &&
-    error.message === "Failed to fetch"
-  ) {
+  } else if (err instanceof TypeError && err.message === "Failed to fetch") {
     return {
-      resource: "notFound",
-      params: {
+      status: 404,
+      body: {
+        message: "Not Found",
         title: "Could not connect to",
         description:
           "The node may be offline or the address may be incorrect.\nSelect a different node to continue.",
-        baseUrl: route.node,
+        baseUrl,
       },
     };
   } else {
     return {
-      resource: "error",
-      params: {
-        error,
+      status: 500,
+      body: {
+        message: "Load failed",
+        error: err instanceof Error ? err : undefined,
         title: "Could not load this repository",
         description:
           "You stumbled on an unknown error, we aren’t exactly sure what happened.",
@@ -70,14 +65,13 @@ export function handleError(
   }
 }
 
-export function unreachableError(): NotFoundRoute | ErrorRoute {
-  return {
-    resource: "error",
-    params: {
-      error: undefined,
-      title: "Could not load this route",
-      description:
-        "You stumbled on an unknown error, we aren’t exactly sure what happened.",
-    },
-  };
+// Convert a caught load-time error into a thrown SvelteKit error, rendering
+// the nearest `+error.svelte`.
+export function raise(
+  err: unknown,
+  baseUrl: BaseUrl,
+  subject: RepoErrorSubject = "Repository",
+): never {
+  const { status, body } = handleError(err, baseUrl, subject);
+  error(status, body);
 }

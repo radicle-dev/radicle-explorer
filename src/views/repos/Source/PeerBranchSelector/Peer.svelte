@@ -8,13 +8,12 @@
     getBranchesFromRefs,
     getTagsFromRefs,
   } from "@app/lib/utils";
-  import { replace } from "@app/lib/router";
+  import { routeToPath } from "@app/lib/router";
 
   import Badge from "@app/components/Badge.svelte";
   import DropdownListItem from "@app/components/DropdownList/DropdownListItem.svelte";
   import IconButton from "@app/components/IconButton.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import Link from "@app/components/Link.svelte";
   import NodeId from "@app/components/NodeId.svelte";
 
   export let baseRoute: Extract<
@@ -67,25 +66,22 @@
 </div>
 {#if expanded}
   {#each Object.entries(refs) as [name, head]}
-    <Link
+    <!-- Branch switching replaces the history entry instead of pushing, so
+         flipping through branches doesn't pile up history. -->
+    <a
       style={subgridStyle}
-      route={{
+      href={routeToPath({
         ...baseRoute,
         peer: peer.remote.id,
         revision: type === "tags" ? encodeURIComponent(name) : name,
-      }}
-      on:afterNavigate={() => closeFocused()}>
+      })}
+      data-sveltekit-replacestate
+      on:click={() => closeFocused()}>
       <DropdownListItem
         selected={type === "tags"
           ? peer.selected &&
             (selectedTagName === name || revision === encodeURIComponent(name))
           : peer.selected && revision === name}
-        on:click={() =>
-          replace({
-            ...baseRoute,
-            peer: peer.remote.id,
-            revision: type === "tags" ? encodeURIComponent(name) : name,
-          })}
         style={`${subgridStyle} padding-left: 2.3rem;`}>
         <div class="global-flex-item">
           <Icon name={type === "branches" ? "branch" : "label"} />
@@ -99,6 +95,6 @@
           </span>
         </div>
       </DropdownListItem>
-    </Link>
+    </a>
   {/each}
 {/if}

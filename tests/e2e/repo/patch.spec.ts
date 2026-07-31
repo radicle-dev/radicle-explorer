@@ -143,6 +143,7 @@ test("commit listing ordering keeping stable on browser navigation", async ({
 
   await expectCorrectCommitListing();
   await page.getByRole("link", { name: "Rewrite subtitle to README" }).click();
+  await page.waitForURL(/\/commits\//);
   await page.goBack();
   await page.waitForLoadState("networkidle");
   await page

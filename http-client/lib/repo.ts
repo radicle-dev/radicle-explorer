@@ -207,6 +207,11 @@ export type RepoListQuery = {
   show?: "pinned" | "all";
   sort?: "rid" | "activity" | "seeding";
 };
+
+function encodePath(path: string): string {
+  return path.split("/").map(encodeURIComponent).join("/");
+}
+
 export class Client {
   #fetcher: Fetcher;
 
@@ -309,7 +314,7 @@ export class Client {
     const blob = await this.#fetcher.fetchOk(
       {
         method: "GET",
-        path: `repos/${rid}/blob/${sha}/${path}`,
+        path: `repos/${rid}/blob/${sha}/${encodePath(path)}`,
         options,
       },
       blobSchema,
@@ -326,7 +331,7 @@ export class Client {
     const tree = await this.#fetcher.fetchOk(
       {
         method: "GET",
-        path: `repos/${rid}/tree/${sha}/${path ?? ""}`,
+        path: `repos/${rid}/tree/${sha}/${path ? encodePath(path) : ""}`,
         options,
       },
       treeSchema,

@@ -11,6 +11,7 @@
   import config from "@app/lib/config";
   import { HttpdClient } from "@http-client";
   import { baseUrlToString, formatQualifiedRefname } from "@app/lib/utils";
+  import { routeToPath } from "@app/lib/router";
   import { groupCommits } from "@app/lib/commit";
 
   import Button from "@app/components/Button.svelte";
@@ -19,14 +20,13 @@
   import ErrorMessage from "@app/components/ErrorMessage.svelte";
   import Header from "./Source/Header.svelte";
   import Layout from "./Layout.svelte";
-  import Link from "@app/components/Link.svelte";
   import List from "@app/components/List.svelte";
   import Loading from "@app/components/Loading.svelte";
   import RepoNameHeader from "./Source/RepoNameHeader.svelte";
   import Separator from "./Separator.svelte";
 
   export let baseUrl: BaseUrl;
-  export let seedingPolicy: SeedingPolicy;
+  export let seedingPolicy: SeedingPolicy | undefined = undefined;
   export let commit: string;
   export let commitHeaders: CommitHeader[];
   export let peer: string | undefined;
@@ -104,14 +104,14 @@
 <Layout {nodeId} {nodeAvatarUrl} {baseUrl} {repo} {repoId} activeTab="source">
   <svelte:fragment slot="breadcrumb">
     <Separator />
-    <Link
-      route={{
+    <a
+      href={routeToPath({
         resource: "repo.history",
         repo: repoId,
         node: baseUrl,
-      }}>
+      })}>
       Commits
-    </Link>
+    </a>
   </svelte:fragment>
   <svelte:fragment slot="actions">
     <CloneButton

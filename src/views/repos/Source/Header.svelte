@@ -30,9 +30,10 @@
   import CommitButton from "../components/CommitButton.svelte";
   import Icon from "@app/components/Icon.svelte";
   import JobCob from "@app/components/JobCob.svelte";
-  import Link from "@app/components/Link.svelte";
 
   import PeerBranchSelector from "./PeerBranchSelector.svelte";
+
+  import { routeToPath } from "@app/lib/router";
 
   export let commit: string;
   export let filesLinkActive: boolean;
@@ -180,13 +181,13 @@
       commit={lastCommit}
       baseUrl={node} />
     {#if !onCanonical}
-      <Link route={baseRoute}>
+      <a href={routeToPath(baseRoute)}>
         <Button
           variant="not-selected"
           styleBorderRadius="0 var(--border-radius-sm) var(--border-radius-sm) 0">
           <Icon name="close" />
         </Button>
-      </Link>
+      </a>
     {/if}
     <div style:margin-left="0.5rem">
       <JobCob baseUrl={node} rid={repo.rid} commit={lastCommit.id} />
@@ -196,27 +197,27 @@
 
 <div class="header">
   <div style="display: flex; gap: 0.375rem;">
-    <Link
-      route={{
+    <a
+      href={routeToPath({
         resource: "repo.source",
         repo: repoId,
         node: node,
         peer,
         revision,
-      }}>
+      })}>
       <Button variant={filesLinkActive ? "gray" : "background"}>
         <Icon name="document" />Files
       </Button>
-    </Link>
+    </a>
 
-    <Link
-      route={{
+    <a
+      href={routeToPath({
         resource: "repo.history",
         repo: repoId,
         node: node,
         peer,
         revision,
-      }}>
+      })}>
       <Button variant={historyLinkActive ? "gray" : "background"}>
         <Icon name="commit" />
         <div class="title-counter">
@@ -228,7 +229,7 @@
           {/if}
         </div>
       </Button>
-    </Link>
+    </a>
   </div>
 
   <div class="branch-commit global-hide-on-mobile-down" style:gap="1px">
@@ -249,13 +250,13 @@
       commit={lastCommit}
       baseUrl={node} />
     {#if !onCanonical}
-      <Link route={baseRoute}>
+      <a href={routeToPath(baseRoute)}>
         <Button
           variant="not-selected"
           styleBorderRadius="0 var(--border-radius-sm) var(--border-radius-sm) 0">
           <Icon name="close" />
         </Button>
-      </Link>
+      </a>
     {/if}
     <div style:margin-left="0.5rem">
       <JobCob baseUrl={node} rid={repo.rid} commit={lastCommit.id} />

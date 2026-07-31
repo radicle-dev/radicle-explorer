@@ -1,7 +1,9 @@
 <script lang="ts">
   import type { BaseUrl, Blob } from "@http-client";
+  import type { SourceLinkContext } from "@app/lib/markdown";
 
   import { afterUpdate, onDestroy, onMount } from "svelte";
+  import { replaceState } from "$app/navigation";
   import { toHtml } from "hast-util-to-html";
 
   import * as Syntax from "@app/lib/syntax";
@@ -20,6 +22,7 @@
   export let baseUrl: BaseUrl;
   export let repoId: string;
   export let path: string;
+  export let sourceLinkContext: SourceLinkContext | undefined = undefined;
   export let blob: Blob;
   export let highlighted: Syntax.Root | undefined;
   export let rawPath: string;
@@ -172,7 +175,10 @@
             styleBorderRadius="0"
             variant={preview ? "selected" : "not-selected"}
             on:click={() => {
-              window.location.hash = "";
+              replaceState(
+                window.location.pathname + window.location.search,
+                {},
+              );
               // eslint-disable-next-line
               preview = true;
             }}>
@@ -204,7 +210,7 @@
   {:else if preview && blob.content}
     {#if isMarkdown}
       <div class="markdown-wrapper">
-        <Markdown content={blob.content} {rawPath} {path} />
+        <Markdown content={blob.content} {rawPath} {path} {sourceLinkContext} />
       </div>
     {:else if isSvg}
       <div style:margin="1rem 0" style:text-align="center">

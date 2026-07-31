@@ -4,7 +4,6 @@
   import DownloadPanel from "@app/marketing/DownloadPanel.svelte";
   import Meta from "@app/marketing/Meta.svelte";
   import PlatformBadges from "@app/marketing/PlatformBadges.svelte";
-  import { link } from "@app/marketing/link";
   import { slide } from "svelte/transition";
 
   let showDownloads = false;
@@ -130,7 +129,7 @@
           </p>
           <div class="card-actions">
             <CopyCommand />
-            <a href="/cli" class="product-link arrow-link" use:link>
+            <a href="/cli" class="product-link arrow-link">
               About the CLI <span class="link-arrow link-arrow-right">→</span>
             </a>
           </div>
@@ -161,7 +160,7 @@
                 </span>
               </span>
             </button>
-            <a href="/desktop" class="product-link arrow-link" use:link>
+            <a href="/desktop" class="product-link arrow-link">
               About Desktop <span class="link-arrow link-arrow-right">→</span>
             </a>
           </div>

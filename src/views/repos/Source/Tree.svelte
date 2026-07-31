@@ -5,8 +5,9 @@
 
   import File from "./Tree/File.svelte";
   import Folder from "./Tree/Folder.svelte";
-  import Link from "@app/components/Link.svelte";
   import Submodule from "./Tree/Submodule.svelte";
+
+  import { routeToPath } from "@app/lib/router";
 
   export let baseUrl: BaseUrl;
   export let fetchTree: (path: string) => Promise<Tree | undefined>;
@@ -37,17 +38,17 @@
   {:else if entry.kind === "submodule"}
     <Submodule name={entry.name} oid={entry.oid} />
   {:else}
-    <Link
-      route={{
+    <a
+      href={routeToPath({
         resource: "repo.source",
         repo: repoId,
         node: baseUrl,
         path: entry.path,
         peer,
         revision,
-      }}
-      on:afterNavigate={() => onSelect({ detail: entry.path })}>
+      })}
+      on:click={() => onSelect({ detail: entry.path })}>
       <File active={entry.path === path} name={entry.name} />
-    </Link>
+    </a>
   {/if}
 {/each}

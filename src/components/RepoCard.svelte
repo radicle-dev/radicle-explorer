@@ -11,11 +11,11 @@
     repoSegment,
     twemoji,
   } from "@app/lib/utils";
+  import { routeToPath } from "@app/lib/router";
 
   import ActivityDiagram from "@app/components/ActivityDiagram.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
-  import Link from "@app/components/Link.svelte";
   import RepoAvatar from "@app/components/RepoAvatar.svelte";
 
   export let compact = false;
@@ -152,12 +152,12 @@
   }
 </style>
 
-<Link
-  route={{
+<a
+  href={routeToPath({
     resource: "repo.source",
     repo: repoSegment(repo),
     node: baseUrl,
-  }}>
+  })}>
   <div class="repo-card" class:compact>
     <div class="headline-and-badges txt-overflow">
       <div class="icon">
@@ -225,4 +225,4 @@
       </div>
     </div>
   </div>
-</Link>
+</a>

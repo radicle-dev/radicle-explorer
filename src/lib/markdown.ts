@@ -1,6 +1,6 @@
+import type { BaseUrl } from "@http-client";
 import type { Config } from "dompurify";
 import type { MarkedExtension, Tokens } from "marked";
-import type { Route } from "@app/lib/router";
 
 import escape from "lodash/escape";
 import footnoteMarkedExtension from "marked-footnote";
@@ -78,16 +78,23 @@ export const sanitizeConfig: Config = {
   /* eslint-enable @typescript-eslint/naming-convention */
 };
 
-export class Renderer extends BaseRenderer {
-  #route: Route;
+// The source-browser location a markdown document is rendered at. When set,
+// relative links in the document resolve to repo source paths relative to the
+// document's own path.
+export interface SourceLinkContext {
+  node: BaseUrl;
+  repo: string;
+  peer?: string;
+  revision?: string;
+  path?: string;
+}
 
-  /**
-   * If `baseUrl` is provided, all hrefs attributes in anchor tags, except those
-   * starting with `#`, are resolved with respect to `baseUrl`
-   */
-  constructor(activeUnloadedRoute: Route) {
+export class Renderer extends BaseRenderer {
+  #source: SourceLinkContext | undefined;
+
+  constructor(source?: SourceLinkContext) {
     super();
-    this.#route = activeUnloadedRoute;
+    this.#source = source;
   }
   // Overwrites the rendering of heading tokens.
   // Since there are possible non ASCII characters in headings,
@@ -109,11 +116,14 @@ export class Renderer extends BaseRenderer {
     if (href.startsWith("#")) {
       // By lowercasing we avoid casing mismatches, between headings and links.
       href = href.toLowerCase();
-    } else if (this.#route.resource === "repo.source" && !isUrl(href)) {
+    } else if (this.#source && !isUrl(href)) {
       href = routeToPath({
-        ...this.#route,
-        path: canonicalize(href, this.#route.path || "README.md"),
-        route: undefined,
+        resource: "repo.source",
+        node: this.#source.node,
+        repo: this.#source.repo,
+        peer: this.#source.peer,
+        revision: this.#source.revision,
+        path: canonicalize(href, this.#source.path || "README.md"),
       });
     }
 

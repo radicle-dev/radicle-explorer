@@ -1,12 +1,9 @@
 <script lang="ts">
-  import type { Route } from "@app/lib/router/definitions";
+  import type { Route } from "@app/lib/router";
 
-  import {
-    activeUnloadedRouteStore,
-    push,
-    routeToPath,
-    useDefaultNavigation,
-  } from "@app/lib/router";
+  import { afterNavigate } from "$app/navigation";
+
+  import { routeToPath } from "@app/lib/router";
 
   import Footer from "./Footer.svelte";
 
@@ -16,22 +13,11 @@
 
   let open = false;
 
-  // Close the menu whenever the active route changes (e.g. after tapping a
-  // nav card). Depends only on the route store, so toggling `open` doesn't
-  // retrigger it.
-  $: closeOnNavigation($activeUnloadedRouteStore);
-
-  function closeOnNavigation(_route: Route) {
+  // Close the menu whenever navigation completes (e.g. after tapping a nav
+  // card).
+  afterNavigate(() => {
     open = false;
-  }
-
-  function onNav(event: MouseEvent, route: Route) {
-    if (useDefaultNavigation(event)) {
-      return;
-    }
-    event.preventDefault();
-    void push(route);
-  }
+  });
 </script>
 
 <style>
@@ -222,10 +208,7 @@
       <div class="mobile-nav-content">
         <ul class="mobile-nav-main">
           <li>
-            <a
-              href={routeToPath(installRoute)}
-              class="mobile-nav-card install"
-              on:click={e => onNav(e, installRoute)}>
+            <a href={routeToPath(installRoute)} class="mobile-nav-card install">
               <div class="mobile-nav-text">
                 <span class="mobile-nav-title">Install</span>
                 <span class="mobile-nav-description">
@@ -236,10 +219,7 @@
           </li>
 
           <li>
-            <a
-              href={routeToPath(learnRoute)}
-              class="mobile-nav-card learn"
-              on:click={e => onNav(e, learnRoute)}>
+            <a href={routeToPath(learnRoute)} class="mobile-nav-card learn">
               <div class="mobile-nav-text">
                 <span class="mobile-nav-title">Learn</span>
                 <span class="mobile-nav-description">
@@ -250,10 +230,7 @@
           </li>
 
           <li>
-            <a
-              href={routeToPath(exploreRoute)}
-              class="mobile-nav-card explore"
-              on:click={e => onNav(e, exploreRoute)}>
+            <a href={routeToPath(exploreRoute)} class="mobile-nav-card explore">
               <div class="mobile-nav-text">
                 <span class="mobile-nav-title">Explore</span>
                 <span class="mobile-nav-description">

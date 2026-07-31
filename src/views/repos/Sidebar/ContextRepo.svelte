@@ -3,15 +3,16 @@
 
   import capitalize from "lodash/capitalize";
   import HoverPopover from "@app/components/HoverPopover.svelte";
-  import Link from "@app/components/Link.svelte";
   import NodeId from "@app/components/NodeId.svelte";
   import UserAvatar from "@app/components/UserAvatar.svelte";
+
+  import { routeToPath } from "@app/lib/router";
 
   export let baseUrl: BaseUrl;
 
   export let repoThreshold: number;
   export let repoDelegates: Repo["delegates"];
-  export let seedingPolicy: SeedingPolicy;
+  export let seedingPolicy: SeedingPolicy | undefined = undefined;
 </script>
 
 <style>
@@ -60,12 +61,16 @@
     <div class="avatars">
       {#each repoDelegates as delegate}
         <HoverPopover>
-          <Link
+          <a
             slot="toggle"
             style="display: flex"
-            route={{ resource: "users", did: delegate.id, baseUrl }}>
+            href={routeToPath({
+              resource: "users",
+              did: delegate.id,
+              baseUrl,
+            })}>
             <UserAvatar nodeId={delegate.id} styleWidth="1rem" />
-          </Link>
+          </a>
           <div slot="popover" class="avatar-popover">
             <NodeId {baseUrl} nodeId={delegate.id} alias={delegate.alias} />
           </div>
@@ -82,22 +87,24 @@
       to be included in the canonical branch.
     {/if}
   </div>
-  <div class="row">
-    <span class="label txt-body-m-medium">Seeding Scope</span>
-    <span class="value txt-body-m-medium">
-      {capitalize(
-        "scope" in seedingPolicy ? seedingPolicy.scope : "not defined",
-      )}
-    </span>
-  </div>
-  <div class="description">
-    {#if seedingPolicy.policy === "block"}
-      Seeding scope only has an effect when a repository is seeded. This repo
-      isn’t seeded by the seed node.
-    {:else if seedingPolicy.scope === "all"}
-      This repository tracks changes by any peer.
-    {:else}
-      This repository tracks only peers followed by the seed node.
-    {/if}
-  </div>
+  {#if seedingPolicy}
+    <div class="row">
+      <span class="label txt-body-m-medium">Seeding Scope</span>
+      <span class="value txt-body-m-medium">
+        {capitalize(
+          "scope" in seedingPolicy ? seedingPolicy.scope : "not defined",
+        )}
+      </span>
+    </div>
+    <div class="description">
+      {#if seedingPolicy.policy === "block"}
+        Seeding scope only has an effect when a repository is seeded. This repo
+        isn’t seeded by the seed node.
+      {:else if seedingPolicy.scope === "all"}
+        This repository tracks changes by any peer.
+      {:else}
+        This repository tracks only peers followed by the seed node.
+      {/if}
+    </div>
+  {/if}
 </div>
