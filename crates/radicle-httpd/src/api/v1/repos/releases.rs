@@ -149,6 +149,7 @@ pub async fn list_handler(
     let cache = cache_db_path(ctx.profile.cobs());
     let mut releases: Vec<_> = Releases::open_cached(&repo, cache)?
         .all()?
+        .into_iter()
         .filter_map(|r| {
             let (id, release) = r.ok()?;
             (all_authors || delegates.contains(release.creator())).then_some((id, release))
@@ -216,7 +217,7 @@ mod routes {
 
     use radicle::git::Oid;
     use radicle::identity::RepoId;
-    use radicle::node::device::Device;
+    use radicle::crypto::{Seed, SigningKey};
     use radicle::storage::WriteStorage;
 
     use radicle_artifact::{Cid, Releases};
@@ -241,7 +242,7 @@ mod routes {
     /// Create a release on the seeded repo at `HEAD`, signed by `seed`, with a
     /// single artifact and location. Returns the release id string.
     fn create_release(ctx: &Context, signer_seed: [u8; 32]) -> String {
-        let signer = Device::mock_from_seed(signer_seed);
+        let signer = SigningKey::from_seed(Seed::new(signer_seed));
         let rid = RepoId::from_str(RID).unwrap();
         let repo = ctx.profile().storage.repository_mut(rid).unwrap();
         let oid = Oid::from_str(HEAD).unwrap();
@@ -364,7 +365,7 @@ mod routes {
 
         // The delegate creates a release, then redacts its own artifact.
         {
-            let signer = Device::mock_from_seed(DELEGATE_SEED);
+            let signer = SigningKey::from_seed(Seed::new(DELEGATE_SEED));
             let rid = RepoId::from_str(RID).unwrap();
             let repo = ctx.profile().storage.repository_mut(rid).unwrap();
             let oid = Oid::from_str(HEAD).unwrap();

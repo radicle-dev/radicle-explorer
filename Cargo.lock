@@ -740,21 +740,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "790eea4361631c5e7d22598ecd5723ff611904e3344ce8720784c93e3d83d40b"
 
 [[package]]
-name = "crossbeam-channel"
-version = "0.5.16"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d85363c37faeca707aef026efa9f3b34d077bce547e48f770770625c6013679e"
-dependencies = [
- "crossbeam-utils",
-]
-
-[[package]]
-name = "crossbeam-utils"
-version = "0.8.22"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "61803da095bee82a81bb1a452ecc25d3b2f1416d1897eb86430c6159ef717c17"
-
-[[package]]
 name = "crossterm"
 version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -812,12 +797,6 @@ dependencies = [
  "hybrid-array",
  "rand_core 0.10.1",
 ]
-
-[[package]]
-name = "ct-codecs"
-version = "1.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "49fb0c6640b4507ebd99ff67677009e381ba5eee1d14df78de4a3d16eb123c39"
 
 [[package]]
 name = "ctr"
@@ -1046,7 +1025,6 @@ version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bdfd533a2fc01178c738c99412ae1f7e1ad2cb37c2e14bfd87e9d4618171c825"
 dependencies = [
- "ct-codecs",
  "ed25519 1.5.3",
  "getrandom 0.2.17",
 ]
@@ -1428,29 +1406,6 @@ checksum = "f0d8a4362ccb29cb0b265253fb0a2728f592895ee6854fd9bc13f2ffda266ff1"
 dependencies = [
  "opaque-debug",
  "polyval",
-]
-
-[[package]]
-name = "git-ref-format-core"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1955ef3abddd586f24c834d28f959d610157ab5cb71f2200911932a0018d0364"
-dependencies = [
- "serde",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "git2"
-version = "0.20.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b88256088d75a56f8ecfa070513a775dd9107f6530ef14919dac831af9cfe2b"
-dependencies = [
- "bitflags",
- "libc",
- "libgit2-sys",
- "log",
- "url",
 ]
 
 [[package]]
@@ -2625,42 +2580,6 @@ checksum = "f8dcc9c7d52a811697d2151c701e0d08956f92b0e24136cf4cf27b57a6a0d9bf"
 
 [[package]]
 name = "radicle"
-version = "0.24.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c07a8a270e9b1b8064a33f0aa78b4fd39924ce4d31e0715659a923917e07b46"
-dependencies = [
- "amplify",
- "base64 0.21.7",
- "bytesize",
- "crossbeam-channel",
- "cyphernet",
- "dunce",
- "fast-glob",
- "fastrand",
- "git2 0.20.4",
- "indexmap",
- "libc",
- "log",
- "nonempty 0.9.0",
- "radicle-cob 0.20.0",
- "radicle-core 0.3.0",
- "radicle-crypto 0.17.0",
- "radicle-git-metadata",
- "radicle-git-ref-format 0.1.0",
- "radicle-localtime",
- "radicle-oid",
- "serde",
- "serde-untagged",
- "serde_json",
- "siphasher",
- "sqlite",
- "thiserror 2.0.19",
- "uds_windows",
- "unicode-normalization",
-]
-
-[[package]]
-name = "radicle"
 version = "0.25.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc23b44b518df749486358fef29c4375daa47299eeec32b3659781c1bfd207e4"
@@ -2671,18 +2590,18 @@ dependencies = [
  "dunce",
  "fast-glob",
  "fastrand",
- "git2 0.21.0",
+ "git2",
  "indexmap",
  "libc",
  "log",
  "multibase",
  "nonempty 0.9.0",
  "qcheck",
- "radicle-cob 0.21.1",
- "radicle-core 0.4.1",
- "radicle-crypto 0.19.0",
+ "radicle-cob",
+ "radicle-core",
+ "radicle-crypto",
  "radicle-git-metadata",
- "radicle-git-ref-format 0.2.0",
+ "radicle-git-ref-format",
  "radicle-localtime",
  "radicle-oid",
  "serde",
@@ -2698,9 +2617,9 @@ dependencies = [
 
 [[package]]
 name = "radicle-artifact"
-version = "0.17.0"
+version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a5c9190ab8ce5af07fddf222caee5b84755a5b2d07119e2b530ab8e17b867be9"
+checksum = "a8166746c3d6bf1618d97aebb48d8b3239c31527fc96fc235309f7c47543ba23"
 dependencies = [
  "blake3",
  "cid",
@@ -2709,7 +2628,7 @@ dependencies = [
  "indicatif",
  "inquire",
  "log",
- "radicle 0.24.0",
+ "radicle",
  "radicle-artifact-client",
  "radicle-artifact-core",
  "serde",
@@ -2721,12 +2640,12 @@ dependencies = [
 
 [[package]]
 name = "radicle-artifact-client"
-version = "0.17.0"
+version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6930262e93d9aa1ab931454fd6d8c450e5cec3872aead4581db24916e859fc3a"
+checksum = "59abfdeba1a2476c45264014ccc0e9d86cee55eb327e755506e5bc8c0d2b0153"
 dependencies = [
  "cid",
- "radicle 0.24.0",
+ "radicle",
  "radicle-artifact-core",
  "serde",
  "serde_json",
@@ -2735,9 +2654,9 @@ dependencies = [
 
 [[package]]
 name = "radicle-artifact-core"
-version = "0.17.0"
+version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be3a4620a17d934d407fd7301908a31ebdbf649aa54ecd0d366d757acdf399ac"
+checksum = "ba6ef833ec05bb0731b61854c8f39467896d593845c69c0f9437e6f6f2d7bf36"
 dependencies = [
  "blake3",
  "cid",
@@ -2746,7 +2665,7 @@ dependencies = [
  "multibase",
  "multihash",
  "postcard",
- "radicle 0.24.0",
+ "radicle",
  "serde",
  "serde_json",
  "thiserror 2.0.19",
@@ -2756,58 +2675,21 @@ dependencies = [
 
 [[package]]
 name = "radicle-cob"
-version = "0.20.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "59e5d3e54429dff785bee3f80b334d67b701f4bd66b7e825d1b4efa8435bba74"
-dependencies = [
- "fastrand",
- "git-ref-format-core",
- "git2 0.20.4",
- "log",
- "nonempty 0.9.0",
- "radicle-crypto 0.17.0",
- "radicle-dag",
- "radicle-git-metadata",
- "radicle-oid",
- "serde",
- "serde_json",
- "signature 2.2.0",
- "thiserror 2.0.19",
-]
-
-[[package]]
-name = "radicle-cob"
 version = "0.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a6b295464ff130975fc151feb8aef4d6fd22ddd1da2a5a2a561f283c7abd41e"
 dependencies = [
  "fastrand",
- "git2 0.21.0",
+ "git2",
  "log",
  "nonempty 0.9.0",
- "radicle-crypto 0.19.0",
+ "radicle-crypto",
  "radicle-dag",
  "radicle-git-metadata",
- "radicle-git-ref-format 0.2.0",
+ "radicle-git-ref-format",
  "radicle-oid",
  "serde",
  "serde_json",
- "thiserror 2.0.19",
-]
-
-[[package]]
-name = "radicle-core"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "656cf8f177c04702ac4b4702e622c75a370da0634f925c56c10cab5cadf7487f"
-dependencies = [
- "git2 0.20.4",
- "multibase",
- "radicle-crypto 0.17.0",
- "radicle-oid",
- "schemars",
- "serde",
- "sqlite",
  "thiserror 2.0.19",
 ]
 
@@ -2817,36 +2699,15 @@ version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "077e01c4da810fed233fa67ce87b94fe0dd6ffa03b6640e3b71caa9769a5ec9f"
 dependencies = [
- "git2 0.21.0",
+ "git2",
  "multibase",
  "qcheck",
- "radicle-crypto 0.19.0",
+ "radicle-crypto",
  "radicle-oid",
  "schemars",
  "serde",
  "sqlite",
  "thiserror 2.0.19",
-]
-
-[[package]]
-name = "radicle-crypto"
-version = "0.17.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "514c5e0c63134b80da4cbcca9a22f7b5cdd741ec63c6acce16ad9389b0f0cd6e"
-dependencies = [
- "amplify",
- "cyphernet",
- "ec25519",
- "git-ref-format-core",
- "multibase",
- "serde",
- "signature 2.2.0",
- "sqlite",
- "ssh-agent-lib 0.5.2",
- "ssh-key",
- "thiserror 2.0.19",
- "winpipe",
- "zeroize",
 ]
 
 [[package]]
@@ -2860,11 +2721,11 @@ dependencies = [
  "ed25519-dalek 2.2.0",
  "multibase",
  "qcheck",
- "radicle-git-ref-format 0.2.0",
+ "radicle-git-ref-format",
  "schemars",
  "serde",
  "sqlite",
- "ssh-agent-lib 0.6.0",
+ "ssh-agent-lib",
  "ssh-key",
  "thiserror 2.0.19",
  "winpipe",
@@ -2886,17 +2747,8 @@ version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "57755b5dc9d234b11bcfc4863ab3a7574d848686c0984487bd9f5395c00958bf"
 dependencies = [
- "git2 0.21.0",
+ "git2",
  "thiserror 2.0.19",
-]
-
-[[package]]
-name = "radicle-git-ref-format"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7fe7a4a8137c193d15d05a6d1eb9ef79649b52e1f659161df69ebc385bbed55c"
-dependencies = [
- "git-ref-format-core",
 ]
 
 [[package]]
@@ -2926,9 +2778,9 @@ dependencies = [
  "mime_guess",
  "nonempty 0.12.0",
  "pretty_assertions",
- "radicle 0.25.1",
+ "radicle",
  "radicle-artifact",
- "radicle-crypto 0.19.0",
+ "radicle-crypto",
  "radicle-job",
  "radicle-search",
  "radicle-surf",
@@ -2960,7 +2812,7 @@ dependencies = [
  "nonempty 0.11.0",
  "once_cell",
  "qcheck",
- "radicle 0.25.1",
+ "radicle",
  "serde",
  "serde_json",
  "thiserror 2.0.19",
@@ -2983,7 +2835,7 @@ version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a0b9a4cbe2b75f8d95a4c887836b909542da704673e708d3b85186a4664400c"
 dependencies = [
- "git2 0.21.0",
+ "git2",
  "qcheck",
  "serde",
 ]
@@ -2996,7 +2848,7 @@ dependencies = [
  "chrono",
  "lexopt",
  "meilisearch-sdk",
- "radicle 0.25.1",
+ "radicle",
  "radicle-surf",
  "serde",
  "serde_json",
@@ -3024,11 +2876,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7550a7fd8da4e66a0010c9869b54c654c20575f57d3eed102f70b1f3118ef3c0"
 dependencies = [
  "base64 0.21.7",
- "git2 0.21.0",
+ "git2",
  "log",
  "nonempty 0.9.0",
  "radicle-git-metadata",
- "radicle-git-ref-format 0.2.0",
+ "radicle-git-ref-format",
  "radicle-oid",
  "serde",
  "thiserror 1.0.69",
@@ -3721,22 +3573,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a7781d97adc13a1d5081127a9ee29afad8427f3757bd984daf814d8265267039"
 dependencies = [
  "sqlite3-src",
-]
-
-[[package]]
-name = "ssh-agent-lib"
-version = "0.5.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f3d0582e6e5724c4a5d038472976e8fad64d824b3de37210aa60c35883e3e766"
-dependencies = [
- "byteorder",
- "log",
- "secrecy",
- "signature 2.2.0",
- "ssh-encoding",
- "ssh-key",
- "subtle",
- "thiserror 2.0.19",
 ]
 
 [[package]]
