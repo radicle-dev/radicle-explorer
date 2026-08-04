@@ -44,13 +44,17 @@ There are several ways to deploy the UI publicly. Here are two common options:
 
 **Add Rewrite Rules for Client-Side Routing**
 
-The explorer is a single-page application (SPA). To ensure that all routes are handled correctly, add a rewrite rule to your web server configuration. For example:
+The explorer is a single-page application (SPA). To ensure that all routes are
+handled correctly, add a [try_files rule](try) to your web server configuration.
+For example:
 
 Caddy:
 
 ```
 example.com {
-    rewrite * /index.html
+    root * /path/to/radicle-explorer/build
+    try_files {path} /index.html
+    file_server
 }
 ```
 
@@ -212,4 +216,5 @@ The UI is distributed under the terms of GPLv3. See [LICENSE][lic] for details.
 [npm]: https://www.npmjs.com
 [pat]: https://radicle.network/nodes/iris.radicle.network/rad:z4V1sjrXqjvFdnCUbxPFqd5p4DtH5/patches
 [rad]: https://radicle.dev
+[try]: https://caddyserver.com/docs/caddyfile/patterns#single-page-apps-spas
 [zul]: https://radicle.zulipchat.com/#narrow/stream/369278-web
