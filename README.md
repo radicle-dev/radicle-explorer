@@ -50,7 +50,7 @@ Caddy:
 
 ```
 example.com {
-	try_files {path} /index.html
+    try_files {path} /index.html
 }
 ```
 
