@@ -44,13 +44,13 @@ There are several ways to deploy the UI publicly. Here are two common options:
 
 **Add Rewrite Rules for Client-Side Routing**
 
-The explorer is a single-page application (SPA). To ensure that all routes are handled correctly, add a rewrite rule to your web server configuration. For example:
+The explorer is a single-page application (SPA). To ensure that all routes are handled correctly, add a [try_files rule](https://caddyserver.com/docs/caddyfile/patterns#single-page-apps-spas) to your web server configuration. For example:
 
 Caddy:
 
 ```
 example.com {
-    rewrite * /index.html
+	try_files {path} /index.html
 }
 ```
 
