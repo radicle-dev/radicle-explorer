@@ -1,0 +1,107 @@
+# Visual snapshot tests.
+#
+# tests/visual/snapshots is gitignored, so the baselines live only in this cache
+# volume. Master updates them with --update-snapshots; every other branch
+# compares against them.
+#
+# A job does not read the volume in place: it gets a private copy at start, and
+# that copy becomes the version the next job sees if the job exits 0. So every
+# successful job is a writer, whether or not it changed a file. The two steps
+# below therefore keep exactly one writer:
+#
+#   - Master updates the snapshots and commits, serialized by `concurrency: 1`
+#     so two master builds cannot overwrite each other.
+#   - Branches compare, and always exit non-zero so their copy is thrown away.
+#     They need this even though they do not update the snapshots: without
+#     --update-snapshots the mode is `missing`, under which Playwright still
+#     writes a baseline that does not exist yet. A branch therefore needs no
+#     concurrency limit, and any number of branch builds can run at once.
+
+env:
+  CI: "true"
+
+steps:
+  - label: "📸 visual update snapshots"
+    key: visual-update-snapshots
+    branches: "master"
+    timeout_in_minutes: 30
+    # One writer at a time. Buildkite runs a concurrency group in the order the
+    # jobs were created, so the newest master build commits last.
+    concurrency: 1
+    concurrency_group: "radicle-explorer/visual-snapshots"
+    cache:
+      name: visual-snapshots
+      paths:
+        - "tests/visual/snapshots"
+    artifact_paths:
+      - "tests/artifacts/**/*.png"
+    plugins:
+      # The image ships WebKit as well as Chromium, which this suite needs: the
+      # visual-mobile project uses the iPhone 13 Mini device descriptor, whose
+      # defaultBrowserType is webkit. The tag must match @playwright/test in
+      # package.json — Playwright refuses browsers built for another version.
+      - &playwright_docker
+        docker#v5.14.0:
+          image: "mcr.microsoft.com/playwright:v1.61.1-noble"
+          # Chromium exhausts Docker's default 64MB /dev/shm.
+          ipc: host
+          # buildkite-agent annotate runs inside the container.
+          mount-buildkite-agent: true
+          environment:
+            - CI
+    commands:
+      - npm ci
+      # The image ships no decompressors: install-binaries unpacks .tar.xz
+      # releases, and the repo fixtures are .tar.bz2 archives.
+      - apt-get update -qq && apt-get install -y -qq xz-utils bzip2
+      - mkdir -p tests/artifacts
+      - ./scripts/install-binaries
+      # No `|| true` here: --update-snapshots reports a re-generated snapshot as
+      # a pass, so a non-zero exit means the run itself broke. Failing is then
+      # what we want, because only a job that exits 0 commits a volume version,
+      # and a run that died halfway would publish a half-written baseline set.
+      # The visual projects set retries: 0, so one flaky test skips the update
+      # until the next push to master.
+      - npm run test:e2e -- --project visual-desktop visual-mobile --update-snapshots
+
+  - label: "📸 visual"
+    key: visual
+    branches: "!master"
+    timeout_in_minutes: 30
+    # No concurrency limit: this job never commits a volume version.
+    #
+    # The job must always exit non-zero to discard its copy of the volume, so
+    # the exit code cannot also report whether the tests passed. Two codes carry
+    # both: 100 means no differences, and soft_fail keeps the build green.
+    # Anything else fails the build — a real difference, but also a broken
+    # npm ci or a crashed browser. 100 is a sentinel that no tool in this step
+    # produces, so only the success path below is soft.
+    soft_fail:
+      - exit_status: 100
+    cache:
+      name: visual-snapshots
+      paths:
+        - "tests/visual/snapshots"
+    artifact_paths:
+      - "tests/artifacts/**/*.png"
+    plugins:
+      - *playwright_docker
+    commands:
+      - npm ci
+      - apt-get update -qq && apt-get install -y -qq xz-utils bzip2
+      - mkdir -p tests/artifacts
+      - ./scripts/install-binaries
+      # Both paths exit non-zero, so Buildkite discards this job's copy of the
+      # volume. A zero exit would revert an update that master committed while
+      # this job ran, and would also publish any baseline this run wrote itself
+      # for a screenshot that has none yet.
+      - |
+        if npm run test:e2e -- --project visual-desktop visual-mobile; then
+          buildkite-agent annotate "📸 visual: no differences" \
+            --style success --context visual
+          exit 100
+        else
+          buildkite-agent annotate "📸 visual: differences found, see the uploaded images" \
+            --style warning --context visual
+          exit 1
+        fi

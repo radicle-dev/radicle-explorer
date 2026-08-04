@@ -1,0 +1,31 @@
+# No explicit build step: tests/support/globalSetup.ts runs `npm run build` in
+# parallel with fixture creation, and asserts the pinned rad and radicle-httpd
+# versions are on PATH.
+
+env:
+  CI: "true"
+
+steps:
+  - label: "🎭 e2e"
+    key: e2e
+    timeout_in_minutes: 30
+    artifact_paths:
+      - "tests/artifacts/**/*"
+    plugins:
+      # Ships the browsers at /ms-playwright, so nothing here installs them. The
+      # tag must match @playwright/test in package.json — Playwright refuses
+      # browsers built for another version.
+      - docker#v5.14.0:
+          image: "mcr.microsoft.com/playwright:v1.61.1-noble"
+          # Chromium exhausts Docker's default 64MB /dev/shm.
+          ipc: host
+          environment:
+            - CI
+    commands:
+      - npm ci
+      # The image ships no decompressors: install-binaries unpacks .tar.xz
+      # releases, and the repo fixtures are .tar.bz2 archives.
+      - apt-get update -qq && apt-get install -y -qq xz-utils bzip2
+      - mkdir -p tests/artifacts
+      - ./scripts/install-binaries
+      - npm run test:e2e -- --project chromium

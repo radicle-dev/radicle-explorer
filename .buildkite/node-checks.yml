@@ -1,0 +1,73 @@
+# No cache volume: cache paths are relative to the step working directory, and
+# the agent's home is not visible inside a container, so npm downloads its
+# dependencies on every run.
+
+env:
+  CI: "true"
+
+__defs:
+  # Tracks the major version in .nvmrc and the engines field in package.json.
+  node_image: &node_image
+    docker#v5.14.0:
+      image: "node:24-bookworm"
+      environment:
+        - CI
+
+  # Ships the browsers at /ms-playwright, which is why no step installs them.
+  # The tag must match @playwright/test in package.json — Playwright refuses to
+  # run against browsers built for another version.
+  playwright_image: &playwright_image
+    docker#v5.14.0:
+      image: "mcr.microsoft.com/playwright:v1.61.1-noble"
+      # Chromium exhausts Docker's default 64MB /dev/shm.
+      ipc: host
+      environment:
+        - CI
+
+steps:
+  - label: "🔎 check"
+    key: check
+    timeout_in_minutes: 10
+    plugins:
+      - *node_image
+    commands:
+      - npm ci
+      - npm run check
+
+  - label: "🧪 unit-tests"
+    key: unit-tests
+    timeout_in_minutes: 10
+    plugins:
+      - *node_image
+    commands:
+      - npm ci
+      - npm run test:unit
+
+  # The http-client suite talks to a real radicle-httpd, so it needs the pinned
+  # binaries on PATH even though it runs under vitest rather than Playwright.
+  - label: "🔌 http-client-tests"
+    key: http-client-tests
+    timeout_in_minutes: 15
+    artifact_paths:
+      - "tests/artifacts/**/*"
+    plugins:
+      - *node_image
+    commands:
+      - npm ci
+      - mkdir -p tests/artifacts
+      - ./scripts/install-binaries
+      - npm run test:http-client:unit
+
+  # playwright.buildSmoke.config.ts sets globalSetup to undefined, so this step
+  # needs a browser but no Radicle binaries or fixtures.
+  - label: "🏗 build-smoke"
+    key: build-smoke
+    timeout_in_minutes: 30
+    artifact_paths:
+      - "tests/artifacts/**/*"
+    plugins:
+      - *playwright_image
+    commands:
+      - npm ci
+      - npm run build
+      - npm run test:e2e -- --project chromium --config playwright.buildSmoke.config.ts

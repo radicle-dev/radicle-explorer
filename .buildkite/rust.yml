@@ -1,0 +1,66 @@
+# CI for the Rust workspace (crates/radicle-httpd, crates/radicle-search).
+#
+# Each step gets its own named cache volume. Clippy, test, and doc each produce a
+# different target directory, and a shared volume would let whichever step
+# commits last discard the other two, forcing a near-full rebuild every build.
+#
+# These steps run on the agent rather than in a container, so ~-rooted cache
+# paths work. The toolchain version is not pinned here: rustup reads
+# ./rust-toolchain.
+#
+# Every step needs network access to seed.radicle.dev as well as crates.io — the
+# workspace patches radicle-job to a git dependency served from a Radicle seed.
+
+env:
+  CI: "true"
+  CARGO_TERM_COLOR: "always"
+
+__defs:
+  install_rust: &install_rust |
+    export PATH="$$HOME/.cargo/bin:$$PATH"
+    export CARGO_TARGET_DIR="$$HOME/.cache/cargo-target"
+    if ! command -v rustup >/dev/null 2>&1; then
+      curl -fsSL https://sh.rustup.rs | sh -s -- -y --no-modify-path --profile minimal
+    fi
+    rustup component add rustfmt clippy
+    rustc --version
+
+  cargo_cache: &cargo_cache
+    - "~/.cargo"
+    - "~/.rustup"
+    - "~/.cache/cargo-target"
+
+steps:
+  # RUSTFLAGS is set on the build only, not on the test run.
+  - label: "🦀 test"
+    key: test
+    timeout_in_minutes: 30
+    cache:
+      name: rust-test
+      paths: *cargo_cache
+    commands:
+      - *install_rust
+      - RUSTFLAGS="-D warnings" cargo build --workspace --all-features
+      - cargo test --workspace --all-features
+      - cargo test -p radicle-httpd
+
+  - label: "📚 doc"
+    key: doc
+    timeout_in_minutes: 30
+    cache:
+      name: rust-doc
+      paths: *cargo_cache
+    commands:
+      - *install_rust
+      - RUSTDOCFLAGS="-D warnings" cargo doc --workspace --all-features
+
+  - label: "🦀 lint"
+    key: lint
+    timeout_in_minutes: 30
+    cache:
+      name: rust-lint
+      paths: *cargo_cache
+    commands:
+      - *install_rust
+      - RUSTFLAGS="-D warnings" cargo clippy --workspace --all-features --tests
+      - cargo fmt --all -- --check
