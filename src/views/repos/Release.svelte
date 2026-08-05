@@ -120,6 +120,24 @@
       ([key]) => key !== SIZE_KEY,
     );
   }
+
+  // The first web (http/https) location, used as the browser download link.
+  function downloadUrl(artifact: Artifact): string | undefined {
+    return artifact.locations.find(l => /^https?:\/\//i.test(l.url))?.url;
+  }
+
+  let copiedArtifact: string | undefined;
+  // Copy a CLI-only artifact's sole fetch location, with brief feedback keyed
+  // by the artifact's CID.
+  async function copyLocation(cid: string, url: string): Promise<void> {
+    await navigator.clipboard.writeText(url);
+    copiedArtifact = cid;
+    setTimeout(() => {
+      if (copiedArtifact === cid) {
+        copiedArtifact = undefined;
+      }
+    }, 1500);
+  }
 </script>
 
 <style>
@@ -133,7 +151,7 @@
     flex: 1;
     flex-direction: column;
     min-width: 0;
-    background-color: var(--color-surface-subtle);
+    background-color: var(--color-surface-base);
   }
   .title {
     display: flex;
@@ -145,24 +163,61 @@
   .artifacts {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-    padding: 1rem;
   }
   .filter {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     flex-wrap: wrap;
+    padding: 1rem;
+    border-bottom: 1px solid var(--color-border-subtle);
   }
-  /* Mutually exclusive author scope, kept as one tight group. */
+  .filter-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .redacted-toggle-wrap {
+    display: flex;
+    justify-content: center;
+    padding: 1rem;
+  }
+  .ghost-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: var(--button-small-height);
+    padding: 0 0.75rem;
+    border: none;
+    border-radius: var(--border-radius-sm);
+    background: transparent;
+    color: var(--color-text-secondary);
+    font: var(--txt-body-m-semibold);
+    cursor: pointer;
+  }
+  .ghost-btn:hover {
+    background-color: var(--color-surface-mid);
+  }
+  .empty-artifacts {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 4rem 1.25rem;
+    color: var(--color-text-tertiary);
+    font: var(--txt-body-m-regular);
+    text-align: center;
+  }
+  .empty-artifacts :global(svg) {
+    width: 2rem;
+    height: 2rem;
+  }
   .segmented {
     display: flex;
     align-items: center;
     gap: 0.25rem;
-  }
-  /* Independent redaction toggle, pushed away from the author segments. */
-  .redacted-toggle {
-    margin-left: auto;
   }
   .title-counter {
     display: flex;
@@ -189,17 +244,95 @@
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    padding: 1rem;
+    padding: 1.25rem;
     background-color: var(--color-surface-canvas);
-    border: 1px solid var(--color-border-subtle);
-    border-radius: var(--border-radius-sm);
+    border-bottom: 1px solid var(--color-border-subtle);
   }
   .artifact-name {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 0.5rem;
-    font: var(--txt-body-m-bold);
+    font: var(--txt-body-m-regular);
     word-break: break-word;
+  }
+  .name {
+    font: var(--txt-body-m-regular);
+  }
+  .cid {
+    margin-top: -0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .provenance {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    color: var(--color-text-tertiary);
+    font: var(--txt-body-m-regular);
+  }
+  .attested {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+  .attestor {
+    display: inline-flex;
+    align-items: center;
+  }
+  .metadata {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    font: var(--txt-body-m-regular);
+  }
+  .meta-item {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+  .meta-key {
+    color: var(--color-text-secondary);
+  }
+  .meta-value {
+    color: var(--color-text-tertiary);
+  }
+  .artifact-actions {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .size {
+    color: var(--color-text-tertiary);
+  }
+  /* Matches Button variant="gray" size="regular". */
+  .download {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: var(--button-small-height);
+    padding: 0 0.75rem;
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-mid);
+    color: var(--color-text-primary);
+    font: var(--txt-body-m-semibold);
+    text-decoration: none;
+    white-space: nowrap;
+    box-sizing: border-box;
+  }
+  .download:hover {
+    background-color: var(--color-surface-strong);
+  }
+  .download.disabled {
+    cursor: not-allowed;
+    color: var(--color-text-disabled);
+  }
+  .download.disabled:hover {
+    background-color: var(--color-surface-mid);
   }
   .field {
     display: flex;
@@ -207,13 +340,22 @@
     gap: 0.5rem;
     font: var(--txt-body-m-regular);
   }
+  .divider {
+    width: 100%;
+    height: 0;
+    margin: 0.75rem 0;
+    border: none;
+    border-top: 1px solid var(--color-border-subtle);
+  }
   .field-label {
     color: var(--color-text-tertiary);
-    font: var(--txt-body-s-regular);
+    font: var(--txt-body-m-regular);
   }
-  /* Break the full CID so it wraps within its container. */
-  .cid :global(.txt-id) {
-    word-break: break-all;
+  .delegate {
+    display: inline-flex;
+    align-items: center;
+    margin-left: -0.25rem;
+    color: var(--color-text-tertiary);
   }
   .row {
     display: flex;
@@ -221,33 +363,68 @@
     gap: 0.5rem;
     flex-wrap: wrap;
   }
+  .locations-accordion summary {
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    width: fit-content;
+    list-style: none;
+  }
+  .locations-accordion summary::-webkit-details-marker {
+    display: none;
+  }
+  .chevron {
+    display: inline-flex;
+    color: var(--color-text-tertiary);
+    transition: transform 0.1s ease;
+  }
+  .locations-accordion[open] .chevron {
+    transform: rotate(90deg);
+  }
   .locations {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 1rem;
+    margin-top: 0.75rem;
   }
   .location-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+  .location-node {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .url {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    font: var(--txt-body-m-regular);
+  }
+  .url :global(.container) {
+    display: block;
+    max-width: 100%;
+  }
+  .url :global(.txt-id) {
+    display: block !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap !important;
+  }
+  .redaction {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
     gap: 0.5rem;
-  }
-  .url {
-    word-break: break-all;
-    font: var(--txt-body-m-regular);
-  }
-  .redaction {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    color: var(--color-feedback-warning-text);
+    color: var(--color-feedback-error-text);
   }
   .reason {
     color: var(--color-text-tertiary);
     word-break: break-word;
-  }
-  .empty {
-    color: var(--color-text-tertiary);
   }
 </style>
 
@@ -310,49 +487,43 @@
 
       <div class="artifacts">
         <div class="filter">
-          <div class="segmented">
-            <Button
-              variant={!showAllAuthors ? "gray" : "background"}
-              on:click={() => (showAllAuthors = false)}>
-              <Icon name="binary" />
-              <div class="title-counter">
-                Delegates
-                <span class="counter" class:selected={!showAllAuthors}>
-                  {delegateCount}
-                </span>
-              </div>
-            </Button>
-            <Button
-              let:hover
-              variant={showAllAuthors ? "gray" : "background"}
-              on:click={() => (showAllAuthors = true)}>
-              <Icon name="binary" />
-              <div class="title-counter">
-                All authors
-                <span
-                  class="counter"
-                  class:selected={showAllAuthors}
-                  class:hover={hover && !showAllAuthors}>
-                  {allCount}
-                </span>
-              </div>
-            </Button>
-          </div>
-          {#if redactedCount > 0}
-            <div class="redacted-toggle">
+          <div class="filter-controls">
+            <div class="segmented">
               <Button
-                variant={showRedacted ? "gray" : "outline"}
-                on:click={() => (showRedacted = !showRedacted)}>
-                <Icon name={showRedacted ? "eye" : "eye-slash"} />
-                {showRedacted ? "Hide redacted" : "Show redacted"}
-                ({redactedCount})
+                let:hover
+                variant={showAllAuthors ? "gray" : "background"}
+                on:click={() => (showAllAuthors = true)}>
+                <Icon name="avatar-incognito" />
+                <div class="title-counter">
+                  All
+                  <span
+                    class="counter"
+                    class:selected={showAllAuthors}
+                    class:hover={hover && !showAllAuthors}>
+                    {allCount}
+                  </span>
+                </div>
+              </Button>
+              <Button
+                variant={!showAllAuthors ? "gray" : "background"}
+                on:click={() => (showAllAuthors = false)}>
+                <Icon name="badge" />
+                <div class="title-counter">
+                  Delegates
+                  <span class="counter" class:selected={!showAllAuthors}>
+                    {delegateCount}
+                  </span>
+                </div>
               </Button>
             </div>
-          {/if}
+          </div>
         </div>
 
         {#if shownArtifacts.length === 0}
-          <span class="empty">No artifacts</span>
+          <div class="empty-artifacts">
+            <Icon name="attach" />
+            No artifacts
+          </div>
         {/if}
 
         {#each shownArtifacts as artifact (artifact.cid)}
@@ -363,120 +534,172 @@
             delegateIds,
           )}
           {@const metadata = otherMetadata(artifact)}
+          {@const download = downloadUrl(artifact)}
+          {@const locationCount = locations.reduce(
+            (sum, g) => sum + g.urls.length,
+            0,
+          )}
+          {@const cliOnly = !download && locationCount > 0}
+          {@const soleLocationUrl =
+            locationCount === 1 ? locations[0]?.urls[0] : undefined}
+          {@const redactedBy = artifact.redactions
+            .map(r => r.node.alias ?? utils.truncateId(r.node.id))
+            .join(", ")}
           <div class="artifact">
             <div class="artifact-name">
-              <Icon name="binary" />
-              <span>{artifact.name}</span>
-              {#if size}
-                <Badge size="tiny" variant="neutral">{size}</Badge>
-              {/if}
-              {#if artifact.attestations.length > 0}
-                <Badge size="tiny" variant="positive">
-                  <Icon name="checkmark" />
-                  {artifact.attestations.length}
-                </Badge>
-              {/if}
+              <span class="name">{artifact.name}</span>
               {#if artifact.redactions.length > 0}
-                <Badge size="tiny" variant="negative">
+                <Badge
+                  size="tiny"
+                  variant="negative"
+                  title="Redacted by {redactedBy}">
                   <Icon name="warning" />
-                  {artifact.redactions.length}
+                  Redacted
                 </Badge>
               {/if}
-            </div>
-
-            <div class="field cid">
-              <span class="field-label">CID</span>
-              <Id id={artifact.cid} shorten={false} />
-            </div>
-
-            <div class="field">
-              <span class="field-label">Added by</span>
-              <div class="row">
-                <NodeId
-                  {baseUrl}
-                  nodeId={artifact.author.id}
-                  alias={artifact.author.alias} />
-                {#if delegateIds.has(artifact.author.id)}
-                  <Badge size="tiny" variant="delegate" round title="Delegate">
-                    <Icon name="badge" />
-                  </Badge>
+              <div class="artifact-actions">
+                {#if size}
+                  <span class="size">{size}</span>
+                {/if}
+                {#if download}
+                  <a
+                    class="download"
+                    href={download}
+                    target="_blank"
+                    rel="noreferrer"
+                    download>
+                    <Icon name="download" />
+                    Download
+                  </a>
+                {:else if soleLocationUrl}
+                  <button
+                    type="button"
+                    class="download"
+                    title="Copy the CLI fetch location"
+                    on:click={() => copyLocation(artifact.cid, soleLocationUrl)}>
+                    <Icon
+                      name={copiedArtifact === artifact.cid
+                        ? "checkmark"
+                        : "copy"} />
+                    {copiedArtifact === artifact.cid ? "Copied" : "Copy"}
+                  </button>
+                {:else if locationCount > 1}
+                  <span
+                    class="download disabled"
+                    title="Served over the radicle-artifact protocol. Fetch it with the rad-artifact CLI.">
+                    <Icon name="code" />
+                    CLI only
+                  </span>
+                {:else}
+                  <span
+                    class="download disabled"
+                    title="No download source is currently available for this artifact">
+                    Unavailable
+                  </span>
                 {/if}
               </div>
             </div>
 
-            <div class="field">
-              <span class="field-label">Locations</span>
-              {#if locations.length === 0}
-                <span class="empty">No locations</span>
-              {:else}
-                <div class="locations">
-                  {#each locations as group (group.node.id)}
-                    <div class="location-group">
-                      <NodeId
-                        {baseUrl}
-                        nodeId={group.node.id}
-                        alias={group.node.alias} />
-                      {#if delegateIds.has(group.node.id)}
-                        <Badge
-                          size="tiny"
-                          variant="delegate"
-                          round
-                          title="Delegate">
+            <div class="cid">
+              <Id id={artifact.cid}>{utils.truncateId(artifact.cid)}</Id>
+            </div>
+
+            <div class="provenance">
+              <NodeId
+                {baseUrl}
+                nodeId={artifact.author.id}
+                alias={artifact.author.alias} />
+              {#if delegateIds.has(artifact.author.id)}
+                <span class="delegate" title="Delegate">
+                  <Icon name="badge" />
+                </span>
+              {/if}
+              {#if artifact.attestations.length > 0}
+                <span class="attested">
+                  attested by
+                  {#each delegatesFirst(artifact.attestations, n => n.id, delegateIds) as node, i (node.id)}
+                    <span class="attestor">
+                      <NodeId {baseUrl} nodeId={node.id} alias={node.alias} />
+                      {#if delegateIds.has(node.id)}
+                        <span class="delegate" title="Delegate">
                           <Icon name="badge" />
-                        </Badge>
-                      {/if}
-                      {#each group.urls as url}
-                        <span class="url">{url}</span>
-                      {/each}
-                    </div>
+                        </span>
+                      {/if}{#if i < artifact.attestations.length - 1},{/if}
+                    </span>
                   {/each}
-                </div>
+                </span>
               {/if}
             </div>
 
-            {#if artifact.attestations.length > 0}
-              <div class="field">
-                <span class="field-label">Attestations</span>
-                {#each delegatesFirst(artifact.attestations, n => n.id, delegateIds) as node (node.id)}
-                  <div class="row">
-                    <Icon name="checkmark" />
-                    <NodeId {baseUrl} nodeId={node.id} alias={node.alias} />
-                    {#if delegateIds.has(node.id)}
-                      <Badge
-                        size="tiny"
-                        variant="delegate"
-                        round
-                        title="Delegate">
-                        <Icon name="badge" />
-                      </Badge>
-                    {/if}
-                  </div>
+            {#if metadata.length > 0}
+              <div class="metadata">
+                {#each metadata as [key, value] (key)}
+                  <span class="meta-item">
+                    <span class="meta-key">{key}</span>
+                    <span class="meta-value">
+                      {typeof value === "string"
+                        ? value
+                        : JSON.stringify(value)}
+                    </span>
+                  </span>
                 {/each}
+              </div>
+            {/if}
+
+            {#if locationCount > 1}
+              <hr class="divider" />
+              <div class="field">
+                <details class="locations-accordion" open={cliOnly}>
+                  <summary>
+                    <span class="field-label">
+                      {locationCount} location{locationCount === 1 ? "" : "s"}
+                    </span>
+                    <span class="chevron"><Icon name="chevron-right" /></span>
+                  </summary>
+                  <div class="locations">
+                    {#each locations as group (group.node.id)}
+                      <div class="location-group">
+                        <div class="location-node">
+                          <NodeId
+                            {baseUrl}
+                            nodeId={group.node.id}
+                            alias={group.node.alias} />
+                          {#if delegateIds.has(group.node.id)}
+                            <span class="delegate" title="Delegate">
+                              <Icon name="badge" />
+                            </span>
+                          {/if}
+                        </div>
+                        {#each group.urls as url}
+                          <span class="url"><Id id={url}>{url}</Id></span>
+                        {/each}
+                      </div>
+                    {/each}
+                  </div>
+                </details>
               </div>
             {/if}
 
             {#if artifact.redactions.length > 0}
               <div class="field">
-                <span class="field-label">Redactions</span>
                 {#each delegatesFirst(artifact.redactions, r => r.node.id, delegateIds) as redaction (redaction.node.id)}
                   <div class="redaction">
-                    <div class="row">
-                      <Icon name="warning" />
+                    <Icon name="warning" />
+                    {#if redaction.node.id !== artifact.author.id}
+                      Redacted by
                       <NodeId
                         {baseUrl}
                         nodeId={redaction.node.id}
                         alias={redaction.node.alias} />
                       {#if delegateIds.has(redaction.node.id)}
-                        <Badge
-                          size="tiny"
-                          variant="delegate"
-                          round
-                          title="Delegate">
+                        <span class="delegate" title="Delegate">
                           <Icon name="badge" />
-                        </Badge>
+                        </span>
                       {/if}
-                    </div>
-                    {#if redaction.reason}
+                      {#if redaction.reason}
+                        <span class="reason">· {redaction.reason}</span>
+                      {/if}
+                    {:else if redaction.reason}
                       <span class="reason">{redaction.reason}</span>
                     {/if}
                   </div>
@@ -484,23 +707,21 @@
               </div>
             {/if}
 
-            {#if metadata.length > 0}
-              <div class="field">
-                <span class="field-label">Metadata</span>
-                {#each metadata as [key, value] (key)}
-                  <div class="row">
-                    <span class="field-label">{key}</span>
-                    <span>
-                      {typeof value === "string"
-                        ? value
-                        : JSON.stringify(value)}
-                    </span>
-                  </div>
-                {/each}
-              </div>
-            {/if}
           </div>
         {/each}
+
+        {#if redactedCount > 0}
+          <div class="redacted-toggle-wrap">
+            <button
+              type="button"
+              class="ghost-btn"
+              on:click={() => (showRedacted = !showRedacted)}>
+              <Icon name="warning" />
+              {showRedacted ? "Hide redacted" : "Show redacted"}
+              <span class="counter">{redactedCount}</span>
+            </button>
+          </div>
+        {/if}
       </div>
     </div>
   </div>

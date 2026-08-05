@@ -87,7 +87,7 @@
       </span>
       <div class="right">
         <span class="counter" title="Artifacts">
-          <Icon name="binary" />
+          <Icon name="attach" />
           {release.artifacts.length}
         </span>
       </div>

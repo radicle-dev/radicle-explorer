@@ -33,6 +33,14 @@
     page = 0;
   }
 
+  $: delegateIds = new Set(repo.delegates.map(d => d.id));
+  // The delegate count isn't in repo metadata; derive it from the loaded list.
+  // In the all-authors view we filter for delegates; otherwise the loaded list
+  // already is the delegate set.
+  $: delegateReleaseCount = allAuthors
+    ? allReleases.filter(r => delegateIds.has(r.creator.id)).length
+    : allReleases.length;
+
   const api = new HttpdClient(baseUrl);
 
   async function loadReleases(): Promise<void> {
@@ -111,17 +119,16 @@
 <Layout {nodeId} {nodeAvatarUrl} {baseUrl} {repo} activeTab="releases">
   <div slot="header" class="header">
     <Link route={{ resource: "repo.releases", repo: repo.rid, node: baseUrl }}>
-      <Button variant={!allAuthors ? "gray" : "background"}>
-        <Icon name="parcel" />
+      <Button let:hover variant={!allAuthors ? "gray" : "background"}>
+        <Icon name="badge" />
         <div class="title-counter">
           Delegates
-          <!-- The delegate count isn't in repo metadata; derive it from the
-          loaded list while this view is active, appending "+" if more remain. -->
-          {#if !allAuthors}
-            <span class="counter selected">
-              {allReleases.length}{showMoreButton ? "+" : ""}
-            </span>
-          {/if}
+          <span
+            class="counter"
+            class:selected={!allAuthors}
+            class:hover={hover && allAuthors}>
+            {delegateReleaseCount}{showMoreButton ? "+" : ""}
+          </span>
         </div>
       </Button>
     </Link>
@@ -133,9 +140,9 @@
         allAuthors: true,
       }}>
       <Button let:hover variant={allAuthors ? "gray" : "background"}>
-        <Icon name="parcel" />
+        <Icon name="avatar-incognito" />
         <div class="title-counter">
-          All authors
+          All
           <!-- Only the full (all-authors) count is in repo metadata; absent on
           older nodes. -->
           {#if repo.payloads["xyz.radicle.project"].meta.releases !== undefined}
