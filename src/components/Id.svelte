@@ -12,6 +12,9 @@
   export let ariaLabel: string | undefined = undefined;
   export let styleWidth: string | undefined = undefined;
   export let title: string | undefined = undefined;
+  // Keep a long id on one line and end it with an ellipsis instead of
+  // wrapping, for ids shown in a width-constrained column.
+  export let truncate: boolean = false;
 
   let icon: ComponentProps<Icon>["name"] = "copy";
   const text = "Click to copy";
@@ -43,6 +46,15 @@
     position: relative;
     display: inline-block;
   }
+  .container.truncate {
+    display: block;
+    max-width: 100%;
+  }
+  .txt-id.truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .popover {
     position: absolute;
     left: 1rem;
@@ -64,10 +76,10 @@
   }
 </style>
 
-<div class="container" style:width={styleWidth} {title}>
+<div class="container" class:truncate style:width={styleWidth} {title}>
   <!-- svelte-ignore a11y-click-events-have-key-events -->
   <div
-    style:display="inline-flex"
+    style:display={truncate ? "block" : "inline-flex"}
     style:flex-wrap="wrap"
     on:mouseenter={() => {
       setVisible(true);
@@ -76,6 +88,7 @@
       setVisible(false);
     }}
     class="txt-id"
+    class:truncate
     style:cursor="copy"
     aria-label={ariaLabel}
     on:click|preventDefault|stopPropagation={async () => {

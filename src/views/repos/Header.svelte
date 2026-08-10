@@ -1,10 +1,6 @@
 <script lang="ts" context="module">
   export type ActiveTab =
-    | "source"
-    | "issues"
-    | "patches"
-    | "releases"
-    | undefined;
+    "source" | "issues" | "patches" | "releases" | undefined;
 </script>
 
 <script lang="ts">

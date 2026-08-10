@@ -135,7 +135,7 @@
   // Copy the CLI command that downloads a CLI-only artifact, with brief
   // feedback keyed by the artifact's CID.
   async function copyDownloadCommand(cid: string): Promise<void> {
-    await navigator.clipboard.writeText(
+    await utils.toClipboard(
       `rad-artifact --repository ${repo.rid} download --cid ${cid}`,
     );
     copiedArtifact = cid;
@@ -178,12 +178,6 @@
     flex-wrap: wrap;
     padding: 1rem;
     border-bottom: 1px solid var(--color-border-subtle);
-  }
-  .filter-controls {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
   }
   .redacted-toggle-wrap {
     display: flex;
@@ -263,9 +257,6 @@
     font: var(--txt-body-m-regular);
     word-break: break-word;
   }
-  .name {
-    font: var(--txt-body-m-regular);
-  }
   .cid {
     margin-top: -0.5rem;
     margin-bottom: 0.5rem;
@@ -313,33 +304,6 @@
   }
   .size {
     color: var(--color-text-tertiary);
-  }
-  /* Matches Button variant="gray" size="regular". */
-  .download {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    height: var(--button-small-height);
-    padding: 0 0.75rem;
-    cursor: pointer;
-    border: 1px solid transparent;
-    border-radius: var(--border-radius-sm);
-    background-color: var(--color-surface-mid);
-    color: var(--color-text-primary);
-    font: var(--txt-body-m-semibold);
-    text-decoration: none;
-    white-space: nowrap;
-    box-sizing: border-box;
-  }
-  .download:hover {
-    background-color: var(--color-surface-strong);
-  }
-  .download.disabled {
-    cursor: not-allowed;
-    color: var(--color-text-disabled);
-  }
-  .download.disabled:hover {
-    background-color: var(--color-surface-mid);
   }
   .field {
     display: flex;
@@ -405,22 +369,6 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-  }
-  .url {
-    display: block;
-    min-width: 0;
-    max-width: 100%;
-    font: var(--txt-body-m-regular);
-  }
-  .url :global(.container) {
-    display: block;
-    max-width: 100%;
-  }
-  .url :global(.txt-id) {
-    display: block !important;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap !important;
   }
   .redaction {
     display: flex;
@@ -500,35 +448,33 @@
 
       <div class="artifacts">
         <div class="filter">
-          <div class="filter-controls">
-            <div class="segmented">
-              <Button
-                let:hover
-                variant={showAllAuthors ? "gray" : "background"}
-                on:click={() => (showAllAuthors = true)}>
-                <Icon name="avatar-incognito" />
-                <div class="title-counter">
-                  All
-                  <span
-                    class="counter"
-                    class:selected={showAllAuthors}
-                    class:hover={hover && !showAllAuthors}>
-                    {allCount}
-                  </span>
-                </div>
-              </Button>
-              <Button
-                variant={!showAllAuthors ? "gray" : "background"}
-                on:click={() => (showAllAuthors = false)}>
-                <Icon name="badge" />
-                <div class="title-counter">
-                  Delegates
-                  <span class="counter" class:selected={!showAllAuthors}>
-                    {delegateCount}
-                  </span>
-                </div>
-              </Button>
-            </div>
+          <div class="segmented">
+            <Button
+              let:hover
+              variant={showAllAuthors ? "gray" : "background"}
+              on:click={() => (showAllAuthors = true)}>
+              <Icon name="avatar-incognito" />
+              <div class="title-counter">
+                All
+                <span
+                  class="counter"
+                  class:selected={showAllAuthors}
+                  class:hover={hover && !showAllAuthors}>
+                  {allCount}
+                </span>
+              </div>
+            </Button>
+            <Button
+              variant={!showAllAuthors ? "gray" : "background"}
+              on:click={() => (showAllAuthors = false)}>
+              <Icon name="badge" />
+              <div class="title-counter">
+                Delegates
+                <span class="counter" class:selected={!showAllAuthors}>
+                  {delegateCount}
+                </span>
+              </div>
+            </Button>
           </div>
         </div>
 
@@ -548,17 +494,20 @@
           )}
           {@const metadata = otherMetadata(artifact)}
           {@const webDownload = webDownloadUrl(artifact, delegateIds)}
-          {@const locationCount = locations.reduce(
-            (sum, g) => sum + g.urls.length,
-            0,
-          )}
+          {@const locationCount = artifact.locations.length}
           {@const cliOnly = !webDownload && locationCount > 0}
           {@const redactedBy = artifact.redactions
             .map(r => r.node.alias ?? utils.truncateId(r.node.id))
             .join(", ")}
+          <!-- Only reasons are listed; the badge already names every redactor. -->
+          {@const redactions = delegatesFirst(
+            artifact.redactions.filter(r => r.reason),
+            r => r.node.id,
+            delegateIds,
+          )}
           <div class="artifact">
             <div class="artifact-name">
-              <span class="name">{artifact.name}</span>
+              <span>{artifact.name}</span>
               {#if artifact.redactions.length > 0}
                 <Badge
                   size="tiny"
@@ -574,18 +523,18 @@
                 {/if}
                 {#if webDownload}
                   <a
-                    class="download"
                     href={webDownload}
                     target="_blank"
                     rel="noreferrer"
                     download>
-                    <Icon name="download" />
-                    Download
+                    <Button variant="gray">
+                      <Icon name="download" />
+                      Download
+                    </Button>
                   </a>
                 {:else if cliOnly}
-                  <button
-                    type="button"
-                    class="download"
+                  <Button
+                    variant="gray"
                     title="Served over the radicle-artifact protocol. Copy the rad-artifact download command."
                     on:click={() => copyDownloadCommand(artifact.cid)}>
                     <Icon
@@ -595,13 +544,14 @@
                     {copiedArtifact === artifact.cid
                       ? "Copied"
                       : "Copy CLI command"}
-                  </button>
+                  </Button>
                 {:else}
-                  <span
-                    class="download disabled"
+                  <Button
+                    variant="gray"
+                    disabled
                     title="No download source is currently available for this artifact">
                     Unavailable
-                  </span>
+                  </Button>
                 {/if}
               </div>
             </div>
@@ -654,41 +604,37 @@
 
             {#if locationCount > 1}
               <hr class="divider" />
-              <div class="field">
-                <details class="locations-accordion" open={cliOnly}>
-                  <summary>
-                    <span class="field-label">
-                      {locationCount} location{locationCount === 1 ? "" : "s"}
-                    </span>
-                    <span class="chevron"><Icon name="chevron-right" /></span>
-                  </summary>
-                  <div class="locations">
-                    {#each locations as group (group.node.id)}
-                      <div class="location-group">
-                        <div class="location-node">
-                          <NodeId
-                            {baseUrl}
-                            nodeId={group.node.id}
-                            alias={group.node.alias} />
-                          {#if delegateIds.has(group.node.id)}
-                            <span class="delegate" title="Delegate">
-                              <Icon name="badge" />
-                            </span>
-                          {/if}
-                        </div>
-                        {#each group.urls as url}
-                          <span class="url"><Id id={url}>{url}</Id></span>
-                        {/each}
+              <details class="locations-accordion" open={cliOnly}>
+                <summary>
+                  <span class="field-label">{locationCount} locations</span>
+                  <span class="chevron"><Icon name="chevron-right" /></span>
+                </summary>
+                <div class="locations">
+                  {#each locations as group (group.node.id)}
+                    <div class="location-group">
+                      <div class="location-node">
+                        <NodeId
+                          {baseUrl}
+                          nodeId={group.node.id}
+                          alias={group.node.alias} />
+                        {#if delegateIds.has(group.node.id)}
+                          <span class="delegate" title="Delegate">
+                            <Icon name="badge" />
+                          </span>
+                        {/if}
                       </div>
-                    {/each}
-                  </div>
-                </details>
-              </div>
+                      {#each group.urls as url}
+                        <Id id={url} truncate>{url}</Id>
+                      {/each}
+                    </div>
+                  {/each}
+                </div>
+              </details>
             {/if}
 
-            {#if artifact.redactions.length > 0}
+            {#if redactions.length > 0}
               <div class="field">
-                {#each delegatesFirst(artifact.redactions, r => r.node.id, delegateIds) as redaction (redaction.node.id)}
+                {#each redactions as redaction (redaction.node.id)}
                   <div class="redaction">
                     <Icon name="warning" />
                     {#if redaction.node.id !== artifact.author.id}
@@ -702,10 +648,8 @@
                           <Icon name="badge" />
                         </span>
                       {/if}
-                      {#if redaction.reason}
-                        <span class="reason">· {redaction.reason}</span>
-                      {/if}
-                    {:else if redaction.reason}
+                      <span class="reason">· {redaction.reason}</span>
+                    {:else}
                       <span class="reason">{redaction.reason}</span>
                     {/if}
                   </div>
