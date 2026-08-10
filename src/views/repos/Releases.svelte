@@ -116,22 +116,14 @@
   }
 </style>
 
-<Layout {nodeId} {nodeAvatarUrl} {baseUrl} {repo} activeTab="releases">
+<Layout
+  {nodeId}
+  {nodeAvatarUrl}
+  {baseUrl}
+  {repo}
+  repoId={repo.rid}
+  activeTab="releases">
   <div slot="header" class="header">
-    <Link route={{ resource: "repo.releases", repo: repo.rid, node: baseUrl }}>
-      <Button let:hover variant={!allAuthors ? "gray" : "background"}>
-        <Icon name="badge" />
-        <div class="title-counter">
-          Delegates
-          <span
-            class="counter"
-            class:selected={!allAuthors}
-            class:hover={hover && allAuthors}>
-            {delegateReleaseCount}{showMoreButton ? "+" : ""}
-          </span>
-        </div>
-      </Button>
-    </Link>
     <Link
       route={{
         resource: "repo.releases",
@@ -153,6 +145,20 @@
               {repo.payloads["xyz.radicle.project"].meta.releases}
             </span>
           {/if}
+        </div>
+      </Button>
+    </Link>
+    <Link route={{ resource: "repo.releases", repo: repo.rid, node: baseUrl }}>
+      <Button let:hover variant={!allAuthors ? "gray" : "background"}>
+        <Icon name="badge" />
+        <div class="title-counter">
+          Delegates
+          <span
+            class="counter"
+            class:selected={!allAuthors}
+            class:hover={hover && allAuthors}>
+            {delegateReleaseCount}{showMoreButton ? "+" : ""}
+          </span>
         </div>
       </Button>
     </Link>

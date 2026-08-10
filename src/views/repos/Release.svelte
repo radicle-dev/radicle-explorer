@@ -433,7 +433,13 @@
   }
 </style>
 
-<Layout {baseUrl} {nodeId} {nodeAvatarUrl} {repo} activeTab="releases">
+<Layout
+  {baseUrl}
+  {nodeId}
+  {nodeAvatarUrl}
+  {repo}
+  repoId={repo.rid}
+  activeTab="releases">
   <svelte:fragment slot="breadcrumb">
     <Separator />
     <Link
@@ -581,7 +587,8 @@
                     type="button"
                     class="download"
                     title="Copy the CLI fetch location"
-                    on:click={() => copyLocation(artifact.cid, soleLocationUrl)}>
+                    on:click={() =>
+                      copyLocation(artifact.cid, soleLocationUrl)}>
                     <Icon
                       name={copiedArtifact === artifact.cid
                         ? "checkmark"
@@ -711,7 +718,6 @@
                 {/each}
               </div>
             {/if}
-
           </div>
         {/each}
 
