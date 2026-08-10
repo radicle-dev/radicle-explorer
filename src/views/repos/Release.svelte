@@ -121,9 +121,14 @@
     );
   }
 
-  // The first web (http/https) location, used as the browser download link.
-  function downloadUrl(artifact: Artifact): string | undefined {
-    return artifact.locations.find(l => /^https?:\/\//i.test(l.url))?.url;
+  // The web (http/https) location used as the browser download link,
+  // preferring one contributed by a delegate.
+  function downloadUrl(
+    artifact: Artifact,
+    delegates: Set<string>,
+  ): string | undefined {
+    const web = artifact.locations.filter(l => /^https?:\/\//i.test(l.url));
+    return (web.find(l => delegates.has(l.node.id)) ?? web[0])?.url;
   }
 
   let copiedArtifact: string | undefined;
@@ -534,7 +539,7 @@
             delegateIds,
           )}
           {@const metadata = otherMetadata(artifact)}
-          {@const download = downloadUrl(artifact)}
+          {@const download = downloadUrl(artifact, delegateIds)}
           {@const locationCount = locations.reduce(
             (sum, g) => sum + g.urls.length,
             0,
