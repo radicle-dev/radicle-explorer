@@ -116,6 +116,7 @@ interface RepoReleaseRoute {
   node: BaseUrl;
   repo: string;
   release: string;
+  allAuthors?: boolean;
 }
 
 interface RepoIssueRoute {
@@ -290,6 +291,7 @@ export type RepoLoadedRoute =
         baseUrl: BaseUrl;
         repo: Repo;
         release: Release;
+        allAuthors: boolean;
         nodeId: string;
         nodeAvatarUrl: string | undefined;
       };
@@ -544,6 +546,7 @@ async function loadReleaseView(
   route: RepoReleaseRoute,
 ): Promise<RepoLoadedRoute | NotFoundRoute> {
   const api = new HttpdClient(route.node);
+  const allAuthors = route.allAuthors || false;
 
   const [repo, releaseResult, node] = await Promise.all([
     api.repo.getByRid(route.repo),
@@ -567,6 +570,7 @@ async function loadReleaseView(
       baseUrl: route.node,
       repo,
       release: releaseResult.release,
+      allAuthors,
       nodeId: node.id,
       nodeAvatarUrl: node.avatarUrl,
     },
@@ -1100,18 +1104,18 @@ export function resolveRepoRoute(
     return resolvePatchesRoute(node, repo, segments, urlSearch);
   } else if (content === "releases") {
     const release = segments.shift();
+    const allAuthors =
+      new URLSearchParams(sanitizeQueryString(urlSearch)).get("allAuthors") ===
+      "true";
     if (release) {
       return {
         resource: "repo.release",
         node,
         repo,
         release,
+        allAuthors,
       };
     } else {
-      const allAuthors =
-        new URLSearchParams(sanitizeQueryString(urlSearch)).get(
-          "allAuthors",
-        ) === "true";
       return {
         resource: "repo.releases",
         node,
@@ -1247,7 +1251,11 @@ export function repoRouteToPath(route: RepoRoute): string {
     }
     return url;
   } else if (route.resource === "repo.release") {
-    return [...pathSegments, "releases", route.release].join("/");
+    let url = [...pathSegments, "releases", route.release].join("/");
+    if (route.allAuthors) {
+      url += "?allAuthors=true";
+    }
+    return url;
   } else {
     return unreachable(route);
   }

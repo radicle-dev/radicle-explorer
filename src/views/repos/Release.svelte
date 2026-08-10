@@ -17,6 +17,7 @@
   export let baseUrl: BaseUrl;
   export let release: Release;
   export let repo: Repo;
+  export let allAuthors: boolean;
   export let nodeId: string;
   export let nodeAvatarUrl: string | undefined;
 
@@ -24,9 +25,6 @@
 
   $: title = release.title || release.tagName || release.id;
 
-  // Scope artifacts to delegate authors by default; the endpoint returns all
-  // of them, so filtering happens client-side.
-  let showAllAuthors = false;
   // An artifact redacted by its own author or a delegate is hidden by default.
   let showRedacted = false;
 
@@ -52,7 +50,9 @@
   $: delegateArtifacts = release.artifacts.filter(a =>
     delegateIds.has(a.author.id),
   );
-  $: authorArtifacts = showAllAuthors ? release.artifacts : delegateArtifacts;
+  // Artifacts are scoped to delegate authors by default; the endpoint returns
+  // all of them, so filtering happens client-side.
+  $: authorArtifacts = allAuthors ? release.artifacts : delegateArtifacts;
   $: shownArtifacts = visible(authorArtifacts, showRedacted, delegateIds);
 
   // Segment counts reflect what each choice would actually show; the redacted
@@ -464,32 +464,47 @@
       <div class="artifacts">
         <div class="filter">
           <div class="segmented">
-            <Button
-              let:hover
-              variant={showAllAuthors ? "gray" : "background"}
-              on:click={() => (showAllAuthors = true)}>
-              <Icon name="avatar-incognito" />
-              <div class="title-counter">
-                All
-                <span
-                  class="counter"
-                  class:selected={showAllAuthors}
-                  class:hover={hover && !showAllAuthors}>
-                  {allCount}
-                </span>
-              </div>
-            </Button>
-            <Button
-              variant={!showAllAuthors ? "gray" : "background"}
-              on:click={() => (showAllAuthors = false)}>
-              <Icon name="badge" />
-              <div class="title-counter">
-                Delegates
-                <span class="counter" class:selected={!showAllAuthors}>
-                  {delegateCount}
-                </span>
-              </div>
-            </Button>
+            <Link
+              route={{
+                resource: "repo.release",
+                repo: repo.rid,
+                node: baseUrl,
+                release: release.id,
+                allAuthors: true,
+              }}>
+              <Button let:hover variant={allAuthors ? "gray" : "background"}>
+                <Icon name="avatar-incognito" />
+                <div class="title-counter">
+                  All
+                  <span
+                    class="counter"
+                    class:selected={allAuthors}
+                    class:hover={hover && !allAuthors}>
+                    {allCount}
+                  </span>
+                </div>
+              </Button>
+            </Link>
+            <Link
+              route={{
+                resource: "repo.release",
+                repo: repo.rid,
+                node: baseUrl,
+                release: release.id,
+              }}>
+              <Button let:hover variant={!allAuthors ? "gray" : "background"}>
+                <Icon name="badge" />
+                <div class="title-counter">
+                  Delegates
+                  <span
+                    class="counter"
+                    class:selected={!allAuthors}
+                    class:hover={hover && allAuthors}>
+                    {delegateCount}
+                  </span>
+                </div>
+              </Button>
+            </Link>
           </div>
         </div>
 
