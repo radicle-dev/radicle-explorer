@@ -1,55 +1,98 @@
-import * as Fs from "node:fs/promises";
-import * as Path from "node:path";
-
-import { test, expect } from "@tests/support/fixtures.js";
-import { createRepo } from "@tests/support/repo.js";
+import { test, cobUrl, expect } from "@tests/support/fixtures.js";
+import {
+  createRepo,
+  radArtifact,
+  registerArtifact,
+} from "@tests/support/repo.js";
 import { useLocalHttpd } from "@tests/support/support.js";
 
-test("browse releases and open a release", async ({ page, peer }) => {
-  test.skip(
-    !useLocalHttpd,
-    "the release read API only exists in the local httpd build",
-  );
+const releaseApiOnlyLocal =
+  "the release read API only exists in the local httpd build";
 
-  const { rid, repoFolder } = await createRepo(peer, { name: "releases" });
-  const { stdout: head } = await peer.git(["rev-parse", "HEAD"], {
-    cwd: repoFolder,
+// Release fixtures need several rad-artifact commands, which takes longer than
+// the default per-test budget.
+test.describe.configure({ timeout: 30_000 });
+
+test("navigate release listing", async ({ page, peer }) => {
+  test.skip(!useLocalHttpd, releaseApiOnlyLocal);
+
+  const { rid, repoFolder } = await createRepo(peer, {
+    name: "release-listing",
   });
+  await registerArtifact(peer, repoFolder, { name: "binary" });
 
-  // Register an artifact from a local file so the CID is computed for us.
-  const artifactPath = Path.join(repoFolder, "artifact.bin");
-  await Fs.writeFile(artifactPath, "hello release\n");
+  await page.goto(`${peer.uiUrl()}/${rid}`);
+  await page.getByRole("link", { name: "Releases 1" }).click();
+  await expect(page).toHaveURL(`${peer.uiUrl()}/${rid}/releases`);
 
-  const { stdout: receipt } = await peer.spawn(
-    "rad-artifact",
-    ["--no-announce", "--no-input", "create", head, "--json"],
-    { cwd: repoFolder },
-  );
-  const { releaseId } = JSON.parse(receipt);
-  await peer.spawn(
-    "rad-artifact",
-    [
-      "--no-announce",
-      "--no-input",
-      "register",
-      artifactPath,
-      "--release",
-      releaseId,
-      "--name",
-      "binary",
-    ],
-    { cwd: repoFolder },
-  );
+  // The release COB has no title; it falls back to the commit summary.
+  await expect(
+    page.locator(".release-teaser").getByText("initial commit"),
+  ).toBeVisible();
+});
+
+test("filter releases by author", async ({ page, peer }) => {
+  test.skip(!useLocalHttpd, releaseApiOnlyLocal);
+
+  const { rid, repoFolder } = await createRepo(peer, {
+    name: "release-authors",
+  });
+  await registerArtifact(peer, repoFolder, { name: "binary" });
 
   await page.goto(`${peer.uiUrl()}/${rid}/releases`);
-  await page.waitForLoadState("networkidle");
+  await page.getByRole("link", { name: "All 1" }).click();
+  await expect(page).toHaveURL(
+    `${peer.uiUrl()}/${rid}/releases?allAuthors=true`,
+  );
 
-  // The teaser shows the release title, resolved from the commit summary.
-  const teaser = page.getByText("initial commit");
-  await expect(teaser).toBeVisible();
+  await page.getByRole("link", { name: "Delegates 1" }).click();
+  await expect(page).toHaveURL(`${peer.uiUrl()}/${rid}/releases`);
+});
 
-  // Opening it navigates to the release page, which lists the artifact.
-  await teaser.click();
-  await expect(page).toHaveURL(`${peer.uiUrl()}/${rid}/releases/${releaseId}`);
-  await expect(page.getByText("binary")).toBeVisible();
+test("empty release listing", async ({ page, peer }) => {
+  test.skip(!useLocalHttpd, releaseApiOnlyLocal);
+
+  const { rid } = await createRepo(peer, { name: "no-releases" });
+
+  await page.goto(`${peer.uiUrl()}/${rid}/releases`);
+  await expect(page.getByText("No releases")).toBeVisible();
+});
+
+test("hide fully redacted releases", async ({ page, peer }) => {
+  test.skip(!useLocalHttpd, releaseApiOnlyLocal);
+
+  const { rid, repoFolder } = await createRepo(peer, {
+    name: "redacted-release",
+  });
+  const { releaseId, cid } = await registerArtifact(peer, repoFolder, {
+    name: "binary",
+  });
+  await radArtifact(peer, repoFolder, [
+    "redact",
+    "--release",
+    releaseId,
+    "--cid",
+    cid,
+    "--reason",
+    "Compromised build",
+  ]);
+
+  await page.goto(`${peer.uiUrl()}/${rid}/releases`);
+  await expect(page.getByText("No releases")).toBeVisible();
+
+  // The tab counter comes from the repo metadata, which counts every release
+  // COB, redacted or not.
+  await expect(page.getByRole("button", { name: "Releases 1" })).toBeVisible();
+});
+
+test("releases are unavailable on older nodes", async ({ page }) => {
+  test.skip(useLocalHttpd, "older nodes are the pre-built httpd release");
+
+  await page.goto(cobUrl);
+  await expect(page.getByRole("button", { name: /^Releases/ })).toBeHidden();
+
+  await page.goto(`${cobUrl}/releases`);
+  await expect(
+    page.getByText("Releases are not available on this node"),
+  ).toBeVisible();
 });
