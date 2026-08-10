@@ -36,7 +36,7 @@
   // delegate), mirroring the backend's default-hidden rule.
   function redactedByTrusted(artifact: Artifact, delegates: Set<string>) {
     return artifact.redactions.some(
-      r => r.node.id === artifact.author.id || delegates.has(r.node.id),
+      r => r.user.id === artifact.author.id || delegates.has(r.user.id),
     );
   }
 
@@ -89,14 +89,14 @@
     const order: string[] = [];
     const groups: Record<
       string,
-      { node: Artifact["locations"][number]["node"]; urls: string[] }
+      { user: Artifact["locations"][number]["user"]; urls: string[] }
     > = {};
-    for (const { node, url } of artifact.locations) {
-      if (!groups[node.id]) {
-        groups[node.id] = { node, urls: [] };
-        order.push(node.id);
+    for (const { user, url } of artifact.locations) {
+      if (!groups[user.id]) {
+        groups[user.id] = { user, urls: [] };
+        order.push(user.id);
       }
-      groups[node.id].urls.push(url);
+      groups[user.id].urls.push(url);
     }
     return order.map(id => groups[id]);
   }
@@ -121,27 +121,44 @@
     );
   }
 
-  // The web (http/https) location used as the browser download link,
-  // preferring one contributed by a delegate.
+  // Whether the browser can fetch the location itself, as opposed to it being
+  // served over the radicle-artifact protocol.
+  function isWebUrl(url: string): boolean {
+    return /^https?:\/\//i.test(url);
+  }
+
+  // The web location used as the browser download link, preferring one
+  // contributed by a delegate.
   function webDownloadUrl(
     artifact: Artifact,
     delegates: Set<string>,
   ): string | undefined {
-    const web = artifact.locations.filter(l => /^https?:\/\//i.test(l.url));
-    return (web.find(l => delegates.has(l.node.id)) ?? web[0])?.url;
+    const web = artifact.locations.filter(l => isWebUrl(l.url));
+    return (web.find(l => delegates.has(l.user.id)) ?? web[0])?.url;
   }
 
+  // Brief copy feedback, keyed by the artifact's CID.
   let copiedArtifact: string | undefined;
-  // Copy the CLI command that downloads a CLI-only artifact, with brief
-  // feedback keyed by the artifact's CID.
+  let failedArtifact: string | undefined;
+
+  // Copy the CLI command that downloads a CLI-only artifact. The clipboard
+  // is unavailable over plain http and when the user denies permission, so
+  // report a failure rather than leaving the button silent.
   async function copyDownloadCommand(cid: string): Promise<void> {
-    await utils.toClipboard(
-      `rad-artifact --repository ${repo.rid} download --cid ${cid}`,
-    );
-    copiedArtifact = cid;
+    try {
+      await utils.toClipboard(
+        `rad-artifact --repository ${repo.rid} download --cid ${cid}`,
+      );
+      copiedArtifact = cid;
+    } catch {
+      failedArtifact = cid;
+    }
     setTimeout(() => {
       if (copiedArtifact === cid) {
         copiedArtifact = undefined;
+      }
+      if (failedArtifact === cid) {
+        failedArtifact = undefined;
       }
     }, 1500);
   }
@@ -183,22 +200,6 @@
     display: flex;
     justify-content: center;
     padding: 1rem;
-  }
-  .ghost-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    height: var(--button-small-height);
-    padding: 0 0.75rem;
-    border: none;
-    border-radius: var(--border-radius-sm);
-    background: transparent;
-    color: var(--color-text-secondary);
-    font: var(--txt-body-m-semibold);
-    cursor: pointer;
-  }
-  .ghost-btn:hover {
-    background-color: var(--color-surface-mid);
   }
   .empty-artifacts {
     display: flex;
@@ -370,6 +371,20 @@
     align-items: center;
     gap: 0.5rem;
   }
+  .location-url {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+  .open-url {
+    display: inline-flex;
+    flex-shrink: 0;
+    color: var(--color-text-tertiary);
+  }
+  .open-url:hover {
+    color: var(--color-text-primary);
+  }
   .redaction {
     display: flex;
     align-items: center;
@@ -489,7 +504,7 @@
           {@const size = artifactSize(artifact)}
           {@const locations = delegatesFirst(
             locationsByNode(artifact),
-            g => g.node.id,
+            g => g.user.id,
             delegateIds,
           )}
           {@const metadata = otherMetadata(artifact)}
@@ -497,12 +512,12 @@
           {@const locationCount = artifact.locations.length}
           {@const cliOnly = !webDownload && locationCount > 0}
           {@const redactedBy = artifact.redactions
-            .map(r => r.node.alias ?? utils.truncateId(r.node.id))
+            .map(r => r.user.alias ?? utils.truncateId(r.user.id))
             .join(", ")}
           <!-- Only reasons are listed; the badge already names every redactor. -->
           {@const redactions = delegatesFirst(
             artifact.redactions.filter(r => r.reason),
-            r => r.node.id,
+            r => r.user.id,
             delegateIds,
           )}
           <div class="artifact">
@@ -537,13 +552,16 @@
                     variant="gray"
                     title="Served over the radicle-artifact protocol. Copy the rad-artifact download command."
                     on:click={() => copyDownloadCommand(artifact.cid)}>
-                    <Icon
-                      name={copiedArtifact === artifact.cid
-                        ? "checkmark"
-                        : "copy"} />
-                    {copiedArtifact === artifact.cid
-                      ? "Copied"
-                      : "Copy CLI command"}
+                    {#if copiedArtifact === artifact.cid}
+                      <Icon name="checkmark" />
+                      Copied
+                    {:else if failedArtifact === artifact.cid}
+                      <Icon name="warning" />
+                      Copy failed
+                    {:else}
+                      <Icon name="copy" />
+                      Copy CLI command
+                    {/if}
                   </Button>
                 {:else}
                   <Button
@@ -602,29 +620,43 @@
               </div>
             {/if}
 
-            {#if locationCount > 1}
+            {#if locationCount > 0}
               <hr class="divider" />
               <details class="locations-accordion" open={cliOnly}>
                 <summary>
-                  <span class="field-label">{locationCount} locations</span>
+                  <span class="field-label">
+                    {locationCount} location{locationCount === 1 ? "" : "s"}
+                  </span>
                   <span class="chevron"><Icon name="chevron-right" /></span>
                 </summary>
                 <div class="locations">
-                  {#each locations as group (group.node.id)}
+                  {#each locations as group (group.user.id)}
                     <div class="location-group">
                       <div class="location-node">
                         <NodeId
                           {baseUrl}
-                          nodeId={group.node.id}
-                          alias={group.node.alias} />
-                        {#if delegateIds.has(group.node.id)}
+                          nodeId={group.user.id}
+                          alias={group.user.alias} />
+                        {#if delegateIds.has(group.user.id)}
                           <span class="delegate" title="Delegate">
                             <Icon name="badge" />
                           </span>
                         {/if}
                       </div>
                       {#each group.urls as url}
-                        <Id id={url} truncate>{url}</Id>
+                        <div class="location-url">
+                          <Id id={url} truncate>{url}</Id>
+                          {#if isWebUrl(url)}
+                            <a
+                              class="open-url"
+                              href={url}
+                              target="_blank"
+                              rel="noreferrer"
+                              title="Open in a new tab">
+                              <Icon name="open-external" />
+                            </a>
+                          {/if}
+                        </div>
                       {/each}
                     </div>
                   {/each}
@@ -634,16 +666,16 @@
 
             {#if redactions.length > 0}
               <div class="field">
-                {#each redactions as redaction (redaction.node.id)}
+                {#each redactions as redaction (redaction.user.id)}
                   <div class="redaction">
                     <Icon name="warning" />
-                    {#if redaction.node.id !== artifact.author.id}
+                    {#if redaction.user.id !== artifact.author.id}
                       Redacted by
                       <NodeId
                         {baseUrl}
-                        nodeId={redaction.node.id}
-                        alias={redaction.node.alias} />
-                      {#if delegateIds.has(redaction.node.id)}
+                        nodeId={redaction.user.id}
+                        alias={redaction.user.alias} />
+                      {#if delegateIds.has(redaction.user.id)}
                         <span class="delegate" title="Delegate">
                           <Icon name="badge" />
                         </span>
@@ -661,14 +693,13 @@
 
         {#if redactedCount > 0}
           <div class="redacted-toggle-wrap">
-            <button
-              type="button"
-              class="ghost-btn"
+            <Button
+              variant="background"
               on:click={() => (showRedacted = !showRedacted)}>
               <Icon name="warning" />
               {showRedacted ? "Hide redacted" : "Show redacted"}
               <span class="counter">{redactedCount}</span>
-            </button>
+            </Button>
           </div>
         {/if}
       </div>

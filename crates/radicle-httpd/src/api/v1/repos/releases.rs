@@ -44,15 +44,15 @@ fn artifact_hidden(
 }
 
 /// Serialize a single artifact. Locations are flattened across contributors
-/// into `{ node, url }` entries; attestations are the attesting nodes;
-/// redactions carry the flagging node and its reason.
+/// into `{ user, url }` entries; attestations are the attesting nodes;
+/// redactions carry the flagging user and its reason.
 fn artifact_json(cid: &Cid, artifact: &Artifact, aliases: &impl AliasStore) -> Value {
     let locations = artifact
         .locations()
         .iter()
         .flat_map(|(did, urls)| {
             urls.iter()
-                .map(move |url| json!({ "node": Author::new(did).as_json(aliases), "url": url }))
+                .map(move |url| json!({ "user": Author::new(did).as_json(aliases), "url": url }))
         })
         .collect::<Vec<_>>();
     let attestations = artifact
@@ -63,7 +63,7 @@ fn artifact_json(cid: &Cid, artifact: &Artifact, aliases: &impl AliasStore) -> V
     let redactions = artifact
         .redactions()
         .iter()
-        .map(|(did, reason)| json!({ "node": Author::new(did).as_json(aliases), "reason": reason }))
+        .map(|(did, reason)| json!({ "user": Author::new(did).as_json(aliases), "reason": reason }))
         .collect::<Vec<_>>();
 
     json!({
@@ -301,7 +301,7 @@ mod routes {
                     "name": "linux-amd64",
                     "author": { "id": DID, "alias": "seed" },
                     "locations": [
-                        { "node": { "id": DID, "alias": "seed" }, "url": LOCATION }
+                        { "user": { "id": DID, "alias": "seed" }, "url": LOCATION }
                     ],
                     "attestations": [],
                     "redactions": [],

@@ -4,14 +4,14 @@ import * as z from "zod";
 import { authorSchema } from "../shared.js";
 
 export const locationSchema = z.object({
-  node: authorSchema,
+  user: authorSchema,
   url: z.string(),
 });
 
 export type Location = z.infer<typeof locationSchema>;
 
 export const redactionSchema = z.object({
-  node: authorSchema,
+  user: authorSchema,
   reason: z.string(),
 });
 

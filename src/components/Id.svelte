@@ -48,6 +48,7 @@
   }
   .container.truncate {
     display: block;
+    min-width: 0;
     max-width: 100%;
   }
   .txt-id.truncate {
