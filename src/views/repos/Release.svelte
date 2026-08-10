@@ -123,7 +123,7 @@
 
   // The web (http/https) location used as the browser download link,
   // preferring one contributed by a delegate.
-  function downloadUrl(
+  function webDownloadUrl(
     artifact: Artifact,
     delegates: Set<string>,
   ): string | undefined {
@@ -132,10 +132,12 @@
   }
 
   let copiedArtifact: string | undefined;
-  // Copy a CLI-only artifact's sole fetch location, with brief feedback keyed
-  // by the artifact's CID.
-  async function copyLocation(cid: string, url: string): Promise<void> {
-    await navigator.clipboard.writeText(url);
+  // Copy the CLI command that downloads a CLI-only artifact, with brief
+  // feedback keyed by the artifact's CID.
+  async function copyDownloadCommand(cid: string): Promise<void> {
+    await navigator.clipboard.writeText(
+      `rad-artifact --repository ${repo.rid} download --cid ${cid}`,
+    );
     copiedArtifact = cid;
     setTimeout(() => {
       if (copiedArtifact === cid) {
@@ -545,14 +547,12 @@
             delegateIds,
           )}
           {@const metadata = otherMetadata(artifact)}
-          {@const download = downloadUrl(artifact, delegateIds)}
+          {@const webDownload = webDownloadUrl(artifact, delegateIds)}
           {@const locationCount = locations.reduce(
             (sum, g) => sum + g.urls.length,
             0,
           )}
-          {@const cliOnly = !download && locationCount > 0}
-          {@const soleLocationUrl =
-            locationCount === 1 ? locations[0]?.urls[0] : undefined}
+          {@const cliOnly = !webDownload && locationCount > 0}
           {@const redactedBy = artifact.redactions
             .map(r => r.node.alias ?? utils.truncateId(r.node.id))
             .join(", ")}
@@ -572,36 +572,30 @@
                 {#if size}
                   <span class="size">{size}</span>
                 {/if}
-                {#if download}
+                {#if webDownload}
                   <a
                     class="download"
-                    href={download}
+                    href={webDownload}
                     target="_blank"
                     rel="noreferrer"
                     download>
                     <Icon name="download" />
                     Download
                   </a>
-                {:else if soleLocationUrl}
+                {:else if cliOnly}
                   <button
                     type="button"
                     class="download"
-                    title="Copy the CLI fetch location"
-                    on:click={() =>
-                      copyLocation(artifact.cid, soleLocationUrl)}>
+                    title="Served over the radicle-artifact protocol. Copy the rad-artifact download command."
+                    on:click={() => copyDownloadCommand(artifact.cid)}>
                     <Icon
                       name={copiedArtifact === artifact.cid
                         ? "checkmark"
                         : "copy"} />
-                    {copiedArtifact === artifact.cid ? "Copied" : "Copy"}
+                    {copiedArtifact === artifact.cid
+                      ? "Copied"
+                      : "Copy CLI command"}
                   </button>
-                {:else if locationCount > 1}
-                  <span
-                    class="download disabled"
-                    title="Served over the radicle-artifact protocol. Fetch it with the rad-artifact CLI.">
-                    <Icon name="code" />
-                    CLI only
-                  </span>
                 {:else}
                   <span
                     class="download disabled"
