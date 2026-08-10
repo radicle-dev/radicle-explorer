@@ -215,9 +215,9 @@ mod routes {
     use pretty_assertions::assert_eq;
     use serde_json::json;
 
+    use radicle::crypto::{Seed, SigningKey};
     use radicle::git::Oid;
     use radicle::identity::RepoId;
-    use radicle::crypto::{Seed, SigningKey};
     use radicle::storage::WriteStorage;
 
     use radicle_artifact::{Cid, Releases};
