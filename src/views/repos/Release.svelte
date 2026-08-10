@@ -315,9 +315,8 @@
   .divider {
     width: 100%;
     height: 0;
-    margin: 0.75rem 0;
+    margin: 0.5rem 0;
     border: none;
-    border-top: 1px solid var(--color-border-subtle);
   }
   .field-label {
     color: var(--color-text-tertiary);
