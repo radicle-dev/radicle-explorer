@@ -21,6 +21,14 @@ use crate::axum_extra::{Path, Query};
 /// Default number of releases returned per page.
 const DEFAULT_PER_PAGE: usize = 30;
 
+/// Whether an artifact was redacted by its own author or by a delegate.
+fn redacted_by_trusted(artifact: &Artifact, delegates: &Delegates) -> bool {
+    artifact
+        .redactions()
+        .keys()
+        .any(|did| did == artifact.author() || delegates.contains(did))
+}
+
 /// Whether an artifact is hidden under the default (delegate-scoped) view.
 ///
 /// Hidden when redacted by its author or a delegate (unless `show_redacted`),
@@ -31,16 +39,21 @@ fn artifact_hidden(
     all_authors: bool,
     show_redacted: bool,
 ) -> bool {
-    if !show_redacted {
-        let redacted_by_trusted = artifact
-            .redactions()
-            .keys()
-            .any(|did| did == artifact.author() || delegates.contains(did));
-        if redacted_by_trusted {
-            return true;
-        }
+    if !show_redacted && redacted_by_trusted(artifact, delegates) {
+        return true;
     }
     !all_authors && !delegates.contains(artifact.author())
+}
+
+/// Whether every artifact of a release was redacted by a trusted party. A
+/// release without artifacts is not redacted; it has nothing to redact.
+fn release_redacted(release: &Release, delegates: &Delegates) -> bool {
+    let artifacts = release.artifacts();
+
+    !artifacts.is_empty()
+        && artifacts
+            .values()
+            .all(|artifact| redacted_by_trusted(artifact, delegates))
 }
 
 /// Serialize a single artifact. Locations are flattened across contributors
@@ -124,7 +137,8 @@ fn release_json(
 ///
 /// Scoped to releases created by a delegate and artifacts authored by a
 /// delegate (hiding those redacted by a trusted party) unless widened with
-/// `allAuthors=true` / `showRedacted=true`.
+/// `allAuthors=true` / `showRedacted=true`. A release whose artifacts were all
+/// redacted is hidden with them.
 pub async fn list_handler(
     State(ctx): State<Context>,
     Path(rid): Path<RepoId>,
@@ -152,7 +166,10 @@ pub async fn list_handler(
         .into_iter()
         .filter_map(|r| {
             let (id, release) = r.ok()?;
-            (all_authors || delegates.contains(release.creator())).then_some((id, release))
+            let visible = (all_authors || delegates.contains(release.creator()))
+                && (show_redacted || !release_redacted(&release, delegates));
+
+            visible.then_some((id, release))
         })
         .collect();
     releases.sort_by_key(|(_, release)| std::cmp::Reverse(release.timestamp()));
@@ -381,11 +398,10 @@ mod routes {
         }
         let app = app(ctx);
 
-        // Redacted by a trusted party, the artifact is hidden by default; the
-        // release still lists, with an empty artifacts set.
+        // With its only artifact redacted by a trusted party, the release has
+        // nothing left to show and is hidden too.
         let response = get(&app, format!("/repos/{RID}/releases")).await;
-        let body = response.json().await;
-        assert_eq!(body[0]["artifacts"], json!([]));
+        assert_eq!(response.json().await, json!([]));
 
         // `showRedacted=true` surfaces it, carrying the redaction reason.
         let response = get(&app, format!("/repos/{RID}/releases?showRedacted=true")).await;
