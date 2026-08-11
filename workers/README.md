@@ -37,7 +37,8 @@ cards degrade: specific item -> repo -> node -> home.
   (http.user_agent contains "WhatsApp") or
   (http.user_agent contains "Pinterestbot") or
   (http.user_agent contains "ZulipURLPreview") or
-  (http.user_agent contains "Bluesky Cardyb")
+  (http.user_agent contains "Bluesky Cardyb") or
+  (http.user_agent contains "Mastodon")
 )
 ```
 
