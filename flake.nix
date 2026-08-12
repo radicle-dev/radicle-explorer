@@ -81,13 +81,6 @@
       packages = {
         default = self.packages.${system}.radicle-explorer;
 
-        twemoji-assets = pkgs.fetchFromGitHub {
-          owner = "twitter";
-          repo = "twemoji";
-          rev = "v14.0.2";
-          hash = "sha256-YoOnZ5uVukzi/6bLi22Y8U5TpplPzB7ji42l+/ys5xI=";
-        };
-
         radicle-explorer = pkgs.callPackage ({
           lib,
           buildNpmPackage,
@@ -97,12 +90,9 @@
             pname = "radicle-explorer";
             version = (builtins.fromJSON (builtins.readFile ./package.json)).version;
             src = ./.;
-            npmDepsHash = "sha256-RC+QQXtvXC48uM0oOAFA0ni5AU/l9m8k1LgrxykSu5M=";
+            npmDepsHash = "sha256-pUyB56EJjuMYU//oMaFNV27Fg+Ga5jD0HQOB/v+gHa8=";
             postPatch = ''
               patchShebangs --build ./scripts
-              mkdir -p "public/twemoji"
-              cp -t public/twemoji -r -- ${self.packages.${system}.twemoji-assets}/assets/svg/*
-              : >scripts/install-twemoji-assets
             '';
             dontConfigure = true;
 

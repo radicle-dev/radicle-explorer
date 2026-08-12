@@ -18,7 +18,6 @@ steps:
       paths:
         - ".npm-cache"
         - "tests/tmp/bin"
-        - "public/twemoji"
     artifact_paths:
       - "tests/artifacts/**/*"
     plugins:

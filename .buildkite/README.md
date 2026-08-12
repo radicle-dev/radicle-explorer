@@ -66,4 +66,4 @@ paths it uses, so the content accumulates. When two concurrent steps add
 something, one version wins and the next build adds the rest.
 
 The `visual.yml` steps hold the baselines in their one volume slot, so
-`visual-snapshots` carries the other three paths too.
+`visual-snapshots` carries the other two paths too.

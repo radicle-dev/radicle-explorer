@@ -3,6 +3,8 @@ import path from "node:path";
 import { defineConfig } from "vitest/config";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 
+import { assets } from "./vite-plugin-assets";
+
 export default defineConfig({
   define: {
     buildTimeConfig: JSON.stringify(config.util.toObject()),
@@ -13,6 +15,7 @@ export default defineConfig({
     reporters: "verbose",
   },
   plugins: [
+    assets(),
     svelte({
       extensions: [".svelte", ".md"],
       // Reference: https://github.com/sveltejs/vite-plugin-svelte/issues/270#issuecomment-1033190138

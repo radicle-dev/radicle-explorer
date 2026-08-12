@@ -5,8 +5,8 @@
 # compares against them.
 #
 # A step can attach only one volume, so these two steps cannot also read the
-# `deps` volume from node-checks.yml. This volume carries the npm cache, the
-# Radicle binaries, and the Twemoji assets as well as the baselines.
+# `deps` volume from node-checks.yml. This volume carries the npm cache and the
+# Radicle binaries as well as the baselines.
 #
 # A job does not read the volume in place: it gets a private copy at start, and
 # that copy becomes the version the next job sees if the job exits 0. So every
@@ -39,7 +39,6 @@ steps:
         - "tests/visual/snapshots"
         - ".npm-cache"
         - "tests/tmp/bin"
-        - "public/twemoji"
     artifact_paths:
       - "tests/artifacts/**/*.png"
     plugins:

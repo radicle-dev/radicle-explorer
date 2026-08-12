@@ -8,7 +8,7 @@
 # and the next build adds the rest again.
 #
 # Stale content is safe. The npm cache is content-addressed, and install-binaries
-# and install-twemoji-assets key their download on the pinned version.
+# keys its download on the pinned version.
 
 env:
   CI: "true"
@@ -44,7 +44,6 @@ __defs:
     paths:
       - ".npm-cache"
       - "tests/tmp/bin"
-      - "public/twemoji"
 
 steps:
   - label: "🔎 check"
