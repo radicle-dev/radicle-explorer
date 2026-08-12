@@ -6,6 +6,9 @@
 # suite lands in this single build. Keep cache volume names distinct across the
 # uploaded files: volumes are scoped to the pipeline, and a step that commits a
 # volume version discards what a concurrent step wrote to the same volume.
+#
+# Superseded builds are not cancelled. Buildkite has no YAML equivalent of the
+# GitHub Actions cancel-in-progress.
 
 steps:
   - label: ":pipeline: upload"

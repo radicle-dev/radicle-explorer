@@ -8,6 +8,7 @@
 
 env:
   CI: "true"
+  NPM_CONFIG_CACHE: ".npm-cache"
 
 steps:
   - label: "🎭 e2e"
@@ -18,6 +19,8 @@ steps:
       paths:
         - ".npm-cache"
         - "tests/tmp/bin"
+        - ".eslintcache"
+        - ".prettiercache"
     artifact_paths:
       - "tests/artifacts/**/*"
     plugins:
@@ -33,8 +36,9 @@ steps:
             - "/cache/bkcache:/cache/bkcache"
           environment:
             - CI
+            - NPM_CONFIG_CACHE
     commands:
-      - npm ci --cache .npm-cache
+      - npm ci
       # The image ships no decompressors: install-binaries unpacks .tar.xz
       # releases, and the repo fixtures are .tar.bz2 archives.
       - apt-get update -qq && apt-get install -y -qq xz-utils bzip2

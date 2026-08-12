@@ -31,11 +31,14 @@ async function copyKatexAssets(publicDir: string) {
 
 // Emoji URLs are built at runtime, so the SVGs cannot be bundled and must be
 // in the public directory. The version stamp skips the copy of ~3700 files
-// when the assets are already installed.
-async function copyTwemojiAssets(publicDir: string) {
+// when the assets are already installed. It lives outside the public directory
+// because Vite copies that directory into the build as it is. node_modules is
+// the right place for it: an install is what changes the package, and it is
+// also what discards the stamp.
+async function copyTwemojiAssets(root: string, publicDir: string) {
   const version = packageVersion("@twemoji/svg");
   const target = path.join(publicDir, "twemoji");
-  const stamp = path.join(target, ".version");
+  const stamp = path.join(root, "node_modules", ".cache", "twemoji-version");
 
   const installed = await fs.readFile(stamp, "utf8").catch(() => undefined);
   if (installed === version) {
@@ -48,6 +51,7 @@ async function copyTwemojiAssets(publicDir: string) {
     // The package also holds a readme, a license and package.json.
     filter: entry => entry === source || entry.endsWith(".svg"),
   });
+  await fs.mkdir(path.dirname(stamp), { recursive: true });
   await fs.writeFile(stamp, version);
 }
 
@@ -60,7 +64,7 @@ export function assets(): Plugin {
     // resolved, so the assets have to be in place before that.
     async configResolved(config) {
       await copyKatexAssets(config.publicDir);
-      await copyTwemojiAssets(config.publicDir);
+      await copyTwemojiAssets(config.root, config.publicDir);
     },
   };
 }

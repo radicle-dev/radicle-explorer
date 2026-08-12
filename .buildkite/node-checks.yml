@@ -9,9 +9,17 @@
 #
 # Stale content is safe. The npm cache is content-addressed, and install-binaries
 # keys its download on the pinned version.
+#
+# One consequence of last-writer-wins: only the steps that call install-binaries
+# put anything under tests/tmp/bin, so the binaries persist only while one of
+# those steps is the last to finish. That holds today because e2e takes far
+# longer than check and unit-tests. If it stops holding, the binaries are
+# downloaded again on every build. Nothing breaks, and nothing reports it either.
 
 env:
   CI: "true"
+  # Applies to every npm and npx call in the step, not just to `npm ci`.
+  NPM_CONFIG_CACHE: ".npm-cache"
 
 __defs:
   # Tracks the major version in .nvmrc and the engines field in package.json.
@@ -23,6 +31,7 @@ __defs:
         - "/cache/bkcache:/cache/bkcache"
       environment:
         - CI
+        - NPM_CONFIG_CACHE
 
   # Ships the browsers at /ms-playwright, which is why no step installs them.
   # The tag must match @playwright/test in package.json — Playwright refuses to
@@ -36,6 +45,7 @@ __defs:
         - "/cache/bkcache:/cache/bkcache"
       environment:
         - CI
+        - NPM_CONFIG_CACHE
 
   # Keep this list the same in every step that attaches the volume, here and in
   # e2e.yml.
@@ -44,6 +54,10 @@ __defs:
     paths:
       - ".npm-cache"
       - "tests/tmp/bin"
+      # scripts/check writes these two. They are outside node_modules so that
+      # `npm ci` cannot delete them before the linters read them.
+      - ".eslintcache"
+      - ".prettiercache"
 
 steps:
   - label: "🔎 check"
@@ -53,7 +67,7 @@ steps:
     plugins:
       - *node_image
     commands:
-      - npm ci --cache .npm-cache
+      - npm ci
       - npm run check
 
   - label: "🧪 unit-tests"
@@ -63,7 +77,7 @@ steps:
     plugins:
       - *node_image
     commands:
-      - npm ci --cache .npm-cache
+      - npm ci
       - npm run test:unit
 
   # The http-client suite talks to a real radicle-httpd, so it needs the pinned
@@ -77,7 +91,7 @@ steps:
     plugins:
       - *node_image
     commands:
-      - npm ci --cache .npm-cache
+      - npm ci
       - mkdir -p tests/artifacts
       - ./scripts/install-binaries
       - npm run test:http-client:unit
@@ -93,6 +107,6 @@ steps:
     plugins:
       - *playwright_image
     commands:
-      - npm ci --cache .npm-cache
+      - npm ci
       - npm run build
       - npm run test:e2e -- --project chromium --config playwright.buildSmoke.config.ts

@@ -20,9 +20,15 @@
 #     --update-snapshots the mode is `missing`, under which Playwright still
 #     writes a baseline that does not exist yet. A branch therefore needs no
 #     concurrency limit, and any number of branch builds can run at once.
+#
+# The cost of that trick is that a branch build never adds to this volume, and
+# so never warms the npm cache it shares with the baselines. A branch that
+# changes package-lock.json therefore downloads the full dependency set on every
+# build until it lands on master.
 
 env:
   CI: "true"
+  NPM_CONFIG_CACHE: ".npm-cache"
 
 steps:
   - label: "📸 visual update snapshots"
@@ -59,8 +65,9 @@ steps:
             - "/cache/bkcache:/cache/bkcache"
           environment:
             - CI
+            - NPM_CONFIG_CACHE
     commands:
-      - npm ci --cache .npm-cache
+      - npm ci
       # The image ships no decompressors: install-binaries unpacks .tar.xz
       # releases, and the repo fixtures are .tar.bz2 archives.
       - apt-get update -qq && apt-get install -y -qq xz-utils bzip2
@@ -94,7 +101,7 @@ steps:
     plugins:
       - *playwright_docker
     commands:
-      - npm ci --cache .npm-cache
+      - npm ci
       - apt-get update -qq && apt-get install -y -qq xz-utils bzip2
       - mkdir -p tests/artifacts
       - ./scripts/install-binaries
