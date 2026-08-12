@@ -1,8 +1,7 @@
 /build/
 node_modules/
 .npm-cache/
-.eslintcache
-.prettiercache
+.lintcache/
 NOTES
 config/local*
 crates/radicle-httpd/build/artifacts

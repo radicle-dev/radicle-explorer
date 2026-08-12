@@ -19,8 +19,7 @@ steps:
       paths:
         - ".npm-cache"
         - "tests/tmp/bin"
-        - ".eslintcache"
-        - ".prettiercache"
+        - ".lintcache"
     artifact_paths:
       - "tests/artifacts/**/*"
     plugins:

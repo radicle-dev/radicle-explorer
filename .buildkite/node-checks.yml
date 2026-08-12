@@ -54,10 +54,10 @@ __defs:
     paths:
       - ".npm-cache"
       - "tests/tmp/bin"
-      # scripts/check writes these two. They are outside node_modules so that
-      # `npm ci` cannot delete them before the linters read them.
-      - ".eslintcache"
-      - ".prettiercache"
+      # The eslint and prettier caches, which scripts/check keeps here rather
+      # than under node_modules so that `npm ci` cannot delete them. A cache
+      # path is always a directory, so the two files share one.
+      - ".lintcache"
 
 steps:
   - label: "🔎 check"
