@@ -1,5 +1,7 @@
 /build/
 node_modules/
+.npm-cache/
+.lintcache/
 NOTES
 config/local*
 crates/radicle-httpd/build/artifacts
@@ -12,8 +14,8 @@ KaTeX_**.ttf
 KaTeX_**.woff
 KaTeX_**.woff2
 
-# Twemoji Assets
-public/twemoji/*.svg
+# Twemoji Assets, copied in by vite-plugin-assets
+public/twemoji/
 
 # Integration Tests
 tests/tmp/**/*

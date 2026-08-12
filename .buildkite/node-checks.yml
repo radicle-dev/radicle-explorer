@@ -1,17 +1,38 @@
-# No cache volume: cache paths are relative to the step working directory, and
-# the agent's home is not visible inside a container, so npm downloads its
-# dependencies on every run.
+# One `deps` cache volume serves every step here and the e2e step in e2e.yml.
+# The volume is mounted at /cache/bkcache on the agent, and the configured paths
+# become links into it. A container step must therefore mount that directory, or
+# every link dangles and the job persists nothing.
+#
+# A job does not write the volume in place. It gets a private copy at start, and
+# that copy becomes the version the next job sees if the job exits 0. Concurrent
+# jobs are never merged: the last one to exit 0 publishes its whole copy, and
+# whatever a job that finished earlier committed is gone.
+#
+# check therefore runs first, and is the only step that writes content no other
+# step produces: the lint caches, and the pinned binaries. The four steps that
+# follow all copy its version and add nothing unique to it — `npm ci` against the
+# same lockfile fetches the same tarballs, and install-binaries does nothing once
+# the pinned version is there. Whichever of them commits last keeps everything.
+#
+# Stale content is safe. The npm cache is content-addressed, and install-binaries
+# keys its download on the pinned version.
 
 env:
   CI: "true"
+  # Applies to every npm and npx call in the step, not just to `npm ci`.
+  NPM_CONFIG_CACHE: ".npm-cache"
 
 __defs:
   # Tracks the major version in .nvmrc and the engines field in package.json.
   node_image: &node_image
     docker#v5.14.0:
       image: "node:24-bookworm"
+      # Without this the cache volume links point at nothing.
+      volumes:
+        - "/cache/bkcache:/cache/bkcache"
       environment:
         - CI
+        - NPM_CONFIG_CACHE
 
   # Ships the browsers at /ms-playwright, which is why no step installs them.
   # The tag must match @playwright/test in package.json — Playwright refuses to
@@ -21,22 +42,44 @@ __defs:
       image: "mcr.microsoft.com/playwright:v1.61.1-noble"
       # Chromium exhausts Docker's default 64MB /dev/shm.
       ipc: host
+      volumes:
+        - "/cache/bkcache:/cache/bkcache"
       environment:
         - CI
+        - NPM_CONFIG_CACHE
+
+  # Keep this list the same in every step that attaches the volume, here and in
+  # e2e.yml.
+  deps_cache: &deps_cache
+    name: deps
+    paths:
+      - ".npm-cache"
+      - "tests/tmp/bin"
+      # The eslint and prettier caches, which scripts/check keeps here rather
+      # than under node_modules so that `npm ci` cannot delete them. A cache
+      # path is always a directory, so the two files share one.
+      - ".lintcache"
 
 steps:
   - label: "🔎 check"
     key: check
     timeout_in_minutes: 10
+    cache: *deps_cache
     plugins:
       - *node_image
     commands:
       - npm ci
+      # check does not use the binaries. It installs them while it is the only
+      # writer of the volume, so that no later step has to win a race to keep
+      # them. The node image ships curl and xz, so nothing is installed first.
+      - ./scripts/install-binaries
       - npm run check
 
   - label: "🧪 unit-tests"
     key: unit-tests
+    depends_on: check
     timeout_in_minutes: 10
+    cache: *deps_cache
     plugins:
       - *node_image
     commands:
@@ -47,7 +90,9 @@ steps:
   # binaries on PATH even though it runs under vitest rather than Playwright.
   - label: "🔌 http-client-tests"
     key: http-client-tests
+    depends_on: check
     timeout_in_minutes: 15
+    cache: *deps_cache
     artifact_paths:
       - "tests/artifacts/**/*"
     plugins:
@@ -62,7 +107,9 @@ steps:
   # needs a browser but no Radicle binaries or fixtures.
   - label: "🏗 build-smoke"
     key: build-smoke
+    depends_on: check
     timeout_in_minutes: 30
+    cache: *deps_cache
     artifact_paths:
       - "tests/artifacts/**/*"
     plugins:

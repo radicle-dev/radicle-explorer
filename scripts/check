@@ -3,5 +3,10 @@ set -e
 
 npx tsc --noEmit
 npx svelte-check --tsconfig tsconfig.json --config ./vite.config.ts --fail-on-warnings --compiler-warnings options_missing_custom_element:ignore
-npx eslint --cache --cache-location node_modules/.cache/eslint --max-warnings 0 .
-npx prettier "**/*.@(ts|js|svelte|json|css|html|yml)" --ignore-path .gitignore --ignore-path .prettierignore --check --cache
+# Both caches sit outside node_modules, which `npm ci` deletes, and both are
+# keyed on file contents rather than mtimes, which a fresh checkout changes.
+# CI can then carry them between builds. They share one directory because a
+# Buildkite cache path is always a directory, never a file.
+mkdir -p .lintcache
+npx eslint --cache --cache-location .lintcache/eslint --cache-strategy content --max-warnings 0 .
+npx prettier "**/*.@(ts|js|svelte|json|css|html|yml)" --ignore-path .gitignore --ignore-path .prettierignore --check --cache --cache-location .lintcache/prettier

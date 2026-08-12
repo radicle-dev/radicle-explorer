@@ -161,6 +161,7 @@ export default [
   {
     ignores: [
       "node_modules/**/*",
+      ".npm-cache/**/*",
       "build/**/*",
       "public/**/*",
       "radicle-httpd/**/*",

@@ -4,6 +4,10 @@
 # volume. Master updates them with --update-snapshots; every other branch
 # compares against them.
 #
+# A step can attach only one volume, so these two steps cannot also read the
+# `deps` volume from node-checks.yml. This volume carries the npm cache and the
+# Radicle binaries as well as the baselines.
+#
 # A job does not read the volume in place: it gets a private copy at start, and
 # that copy becomes the version the next job sees if the job exits 0. So every
 # successful job is a writer, whether or not it changed a file. The two steps
@@ -16,9 +20,15 @@
 #     --update-snapshots the mode is `missing`, under which Playwright still
 #     writes a baseline that does not exist yet. A branch therefore needs no
 #     concurrency limit, and any number of branch builds can run at once.
+#
+# The cost of that trick is that a branch build never adds to this volume, and
+# so never warms the npm cache it shares with the baselines. A branch that
+# changes package-lock.json therefore downloads the full dependency set on every
+# build until it lands on master.
 
 env:
   CI: "true"
+  NPM_CONFIG_CACHE: ".npm-cache"
 
 steps:
   - label: "📸 visual update snapshots"
@@ -29,10 +39,12 @@ steps:
     # jobs were created, so the newest master build commits last.
     concurrency: 1
     concurrency_group: "radicle-explorer/visual-snapshots"
-    cache:
+    cache: &visual_cache
       name: visual-snapshots
       paths:
         - "tests/visual/snapshots"
+        - ".npm-cache"
+        - "tests/tmp/bin"
     artifact_paths:
       - "tests/artifacts/**/*.png"
     plugins:
@@ -47,8 +59,13 @@ steps:
           ipc: host
           # buildkite-agent annotate runs inside the container.
           mount-buildkite-agent: true
+          # Without this the cache volume links point at nothing, which is why
+          # the baselines never persisted before.
+          volumes:
+            - "/cache/bkcache:/cache/bkcache"
           environment:
             - CI
+            - NPM_CONFIG_CACHE
     commands:
       - npm ci
       # The image ships no decompressors: install-binaries unpacks .tar.xz
@@ -78,10 +95,7 @@ steps:
     # produces, so only the success path below is soft.
     soft_fail:
       - exit_status: 100
-    cache:
-      name: visual-snapshots
-      paths:
-        - "tests/visual/snapshots"
+    cache: *visual_cache
     artifact_paths:
       - "tests/artifacts/**/*.png"
     plugins:

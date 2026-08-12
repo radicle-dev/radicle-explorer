@@ -27,8 +27,8 @@ WORKDIR /work
 # Playwright version in package-lock.json so the baked browser matches the
 # @playwright/test that npm ci installs into the volume at runtime. Copying
 # only the lockfiles keeps this layer cached across source changes.
-# --ignore-scripts: the repo's postinstall (copy-katex/twemoji assets) needs
-# scripts/ which isn't in this layer; those run at runtime instead.
+# --ignore-scripts: this layer only warms the browser cache, so dependency
+# install scripts are not necessary.
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts \
     && npx playwright install --with-deps chromium \

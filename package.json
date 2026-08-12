@@ -6,8 +6,7 @@
     "start": "vite",
     "start:httpd": "cargo run -p radicle-httpd --release -- --listen 127.0.0.1:8080",
     "serve": "vite preview",
-    "build": "vite build && scripts/copy-katex-assets && scripts/install-twemoji-assets",
-    "postinstall": "scripts/copy-katex-assets && scripts/install-twemoji-assets",
+    "build": "vite build",
     "check": "scripts/check",
     "check:radicle-httpd": "cargo clippy --all --tests && cargo fmt --all --check",
     "format": "npx prettier '**/*.@(ts|js|svelte|json|css|html|yml)' --write",
@@ -63,6 +62,7 @@
     "wait-on": "^9.0.10"
   },
   "dependencies": {
+    "@twemoji/svg": "^15.0.0",
     "@wooorm/starry-night": "^3.10.0",
     "async-mutex": "^0.5.0",
     "baconjs": "^3.0.23",
