@@ -1,5 +1,6 @@
 /build/
 node_modules/
+.npm-cache/
 NOTES
 config/local*
 crates/radicle-httpd/build/artifacts
@@ -14,6 +15,7 @@ KaTeX_**.woff2
 
 # Twemoji Assets
 public/twemoji/*.svg
+public/twemoji/.version
 
 # Integration Tests
 tests/tmp/**/*

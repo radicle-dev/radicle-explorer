@@ -20,6 +20,9 @@ the actual, expected, and diff images that a failed comparison writes. The two
 cannot be swapped: a volume is not visible in the UI, and an artifact does not
 persist as an input to the next build.
 
+A step can attach **one** volume only. This is why each volume holds every
+input its steps need, rather than one volume per kind of input.
+
 ## One writer per volume
 
 A job does not read its volume in place. It gets a private copy at start. That
@@ -51,7 +54,16 @@ Two images cover all Node steps:
   `@playwright/test` in `package.json`. Playwright refuses browsers built for
   another version.
 
-Node steps use no cache volume. Cache paths are relative to the step working
-directory, and the agent home is not visible inside a container, so npm
-downloads its dependencies on every run. The Rust steps run on the agent
-instead, so their `~`-rooted paths work.
+Cache paths are relative to the step working directory, which the docker plugin
+mounts into the container. A `~`-rooted path does not work, because the agent
+home is not visible inside a container. The Rust steps run on the agent instead,
+so their `~`-rooted paths work.
+
+## Node dependencies
+
+All the Node steps share `deps` and need no ordering. A step only adds to the
+paths it uses, so the content accumulates. When two concurrent steps add
+something, one version wins and the next build adds the rest.
+
+The `visual.yml` steps hold the baselines in their one volume slot, so
+`visual-snapshots` carries the other three paths too.

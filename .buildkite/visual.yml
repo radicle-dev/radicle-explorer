@@ -4,6 +4,10 @@
 # volume. Master updates them with --update-snapshots; every other branch
 # compares against them.
 #
+# A step can attach only one volume, so these two steps cannot also read the
+# `deps` volume from node-checks.yml. This volume carries the npm cache, the
+# Radicle binaries, and the Twemoji assets as well as the baselines.
+#
 # A job does not read the volume in place: it gets a private copy at start, and
 # that copy becomes the version the next job sees if the job exits 0. So every
 # successful job is a writer, whether or not it changed a file. The two steps
@@ -29,10 +33,13 @@ steps:
     # jobs were created, so the newest master build commits last.
     concurrency: 1
     concurrency_group: "radicle-explorer/visual-snapshots"
-    cache:
+    cache: &visual_cache
       name: visual-snapshots
       paths:
         - "tests/visual/snapshots"
+        - ".npm-cache"
+        - "tests/tmp/bin"
+        - "public/twemoji"
     artifact_paths:
       - "tests/artifacts/**/*.png"
     plugins:
@@ -47,10 +54,14 @@ steps:
           ipc: host
           # buildkite-agent annotate runs inside the container.
           mount-buildkite-agent: true
+          # Without this the cache volume links point at nothing, which is why
+          # the baselines never persisted before.
+          volumes:
+            - "/cache/bkcache:/cache/bkcache"
           environment:
             - CI
     commands:
-      - npm ci
+      - npm ci --cache .npm-cache
       # The image ships no decompressors: install-binaries unpacks .tar.xz
       # releases, and the repo fixtures are .tar.bz2 archives.
       - apt-get update -qq && apt-get install -y -qq xz-utils bzip2
@@ -78,16 +89,13 @@ steps:
     # produces, so only the success path below is soft.
     soft_fail:
       - exit_status: 100
-    cache:
-      name: visual-snapshots
-      paths:
-        - "tests/visual/snapshots"
+    cache: *visual_cache
     artifact_paths:
       - "tests/artifacts/**/*.png"
     plugins:
       - *playwright_docker
     commands:
-      - npm ci
+      - npm ci --cache .npm-cache
       - apt-get update -qq && apt-get install -y -qq xz-utils bzip2
       - mkdir -p tests/artifacts
       - ./scripts/install-binaries

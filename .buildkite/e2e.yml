@@ -1,6 +1,10 @@
 # No explicit build step: tests/support/globalSetup.ts runs `npm run build` in
 # parallel with fixture creation, and asserts the pinned rad and radicle-httpd
 # versions are on PATH.
+#
+# This step shares the `deps` volume with the steps in node-checks.yml. Keep the
+# cache paths the same as the ones there, and see that file for how the volume
+# works.
 
 env:
   CI: "true"
@@ -9,6 +13,12 @@ steps:
   - label: "🎭 e2e"
     key: e2e
     timeout_in_minutes: 30
+    cache:
+      name: deps
+      paths:
+        - ".npm-cache"
+        - "tests/tmp/bin"
+        - "public/twemoji"
     artifact_paths:
       - "tests/artifacts/**/*"
     plugins:
@@ -19,10 +29,13 @@ steps:
           image: "mcr.microsoft.com/playwright:v1.61.1-noble"
           # Chromium exhausts Docker's default 64MB /dev/shm.
           ipc: host
+          # Without this the cache volume links point at nothing.
+          volumes:
+            - "/cache/bkcache:/cache/bkcache"
           environment:
             - CI
     commands:
-      - npm ci
+      - npm ci --cache .npm-cache
       # The image ships no decompressors: install-binaries unpacks .tar.xz
       # releases, and the repo fixtures are .tar.bz2 archives.
       - apt-get update -qq && apt-get install -y -qq xz-utils bzip2
