@@ -480,6 +480,27 @@ pub async fn get(app: &Router, path: impl ToString) -> Response {
     )
 }
 
+pub async fn get_with_headers<'a>(
+    app: &Router,
+    path: impl ToString,
+    headers: impl IntoIterator<Item = (&'a str, &'a str)>,
+) -> Response {
+    let mut request = Request::builder()
+        .method(Method::GET)
+        .uri(path.to_string())
+        .header("Content-Type", "application/json");
+    for (name, value) in headers {
+        request = request.header(name, value);
+    }
+
+    Response(
+        app.clone()
+            .oneshot(request.body(Body::empty()).unwrap())
+            .await
+            .unwrap(),
+    )
+}
+
 fn request(path: impl ToString, method: Method, body: Option<Body>) -> Request<Body> {
     let request = Request::builder()
         .method(method)

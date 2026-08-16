@@ -111,9 +111,22 @@ async fn git_http_backend(
     tracing::debug!("remote: {:?}", remote);
 
     let mut cmd = Command::new("git");
+
     if let Some(nid) = nid {
         cmd.env("GIT_NAMESPACE", nid.to_string());
     }
+
+    if let Some(value) = headers.get("Git-Protocol") {
+        match value.to_str() {
+            Ok(git_protocol) => {
+                cmd.env("GIT_PROTOCOL", git_protocol);
+            }
+            Err(err) => tracing::debug!(
+                "Value of 'Git-Protocol' header could not be converted to a string and will not be passed to Git: {err}"
+            ),
+        }
+    }
+
     let mut child = cmd
         // This is a workaround to allow fetching particular commits by their OID.
         // Otherwise, the client errors with "Server does not allow request for unadvertised object"
@@ -197,7 +210,7 @@ mod routes {
     use axum_listener::DualAddr;
     use radicle::identity::RepoId;
 
-    use crate::test::{self, get, RID};
+    use crate::test::{self, get, get_with_headers, RID};
 
     #[tokio::test]
     async fn test_info_request() {
@@ -210,6 +223,77 @@ mod routes {
         let response = get(&app, format!("/{RID}.git/info/refs")).await;
 
         assert_eq!(response.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn test_info_refs_advertises_protocol_v2() {
+        let tmp = tempfile::tempdir().unwrap();
+        let ctx = test::seed(tmp.path());
+        let app = super::router(ctx.profile().to_owned(), Arc::new(HashMap::new())).layer(
+            MockConnectInfo(DualAddr::Tcp(SocketAddr::from(([0, 0, 0, 0], 8080)))),
+        );
+
+        let response = get_with_headers(
+            &app,
+            format!("/{RID}.git/info/refs?service=git-upload-pack"),
+            [("Git-Protocol", "version=2")],
+        )
+        .await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.body().await;
+        assert!(
+            body.starts_with(b"000eversion 2\n"),
+            "expected a version 2 advertisement, got: {:?}",
+            String::from_utf8_lossy(&body[..body.len().min(64)])
+        );
+    }
+
+    #[tokio::test]
+    async fn test_info_refs_defaults_to_protocol_v0() {
+        let tmp = tempfile::tempdir().unwrap();
+        let ctx = test::seed(tmp.path());
+        let app = super::router(ctx.profile().to_owned(), Arc::new(HashMap::new())).layer(
+            MockConnectInfo(DualAddr::Tcp(SocketAddr::from(([0, 0, 0, 0], 8080)))),
+        );
+
+        let response = get(
+            &app,
+            format!("/{RID}.git/info/refs?service=git-upload-pack"),
+        )
+        .await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.body().await;
+        assert!(
+            body.starts_with(b"001e# service=git-upload-pack\n"),
+            "expected a version 0 advertisement, got: {:?}",
+            String::from_utf8_lossy(&body[..body.len().min(64)])
+        );
+    }
+
+    #[tokio::test]
+    async fn test_info_refs_with_undecodable_protocol_header() {
+        let tmp = tempfile::tempdir().unwrap();
+        let ctx = test::seed(tmp.path());
+        let app = super::router(ctx.profile().to_owned(), Arc::new(HashMap::new())).layer(
+            MockConnectInfo(DualAddr::Tcp(SocketAddr::from(([0, 0, 0, 0], 8080)))),
+        );
+
+        let response = get_with_headers(
+            &app,
+            format!("/{RID}.git/info/refs?service=git-upload-pack"),
+            [("Git-Protocol", "version=\u{ff}2")],
+        )
+        .await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.body().await;
+        assert!(
+            body.starts_with(b"001e# service=git-upload-pack\n"),
+            "expected a version 0 advertisement, got: {:?}",
+            String::from_utf8_lossy(&body[..body.len().min(64)])
+        );
     }
 
     #[tokio::test]
