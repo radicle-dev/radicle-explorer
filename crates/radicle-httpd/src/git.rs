@@ -111,9 +111,21 @@ async fn git_http_backend(
     tracing::debug!("remote: {:?}", remote);
 
     let mut cmd = Command::new("git");
+
     if let Some(nid) = nid {
         cmd.env("GIT_NAMESPACE", nid.to_string());
     }
+
+    match headers.get("Git-Protocol").map(|value| value.to_str()) {
+        None => {},
+        Some(Ok(git_protocol)) => {
+            cmd.env("GIT_PROTOCOL", git_protocol);
+        },
+        Some(Err(err)) => {
+            tracing::debug!("Value of 'Git-Protocol' header could not be converted to a string and will not be passed to Git: {err}")
+        },
+    }
+
     let mut child = cmd
         // This is a workaround to allow fetching particular commits by their OID.
         // Otherwise, the client errors with "Server does not allow request for unadvertised object"
