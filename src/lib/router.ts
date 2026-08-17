@@ -319,6 +319,8 @@ function setTitle(loadedRoute: LoadedRoute) {
     title.push("CLI", "Radicle");
   } else if (loadedRoute.resource === "principles") {
     title.push("How it works", "Radicle");
+  } else if (loadedRoute.resource === "github") {
+    title.push("GitHub uptime", "Radicle");
   } else if (loadedRoute.resource === "docs") {
     title.push(...docsTitle(loadedRoute.params.page));
   } else {
@@ -486,7 +488,8 @@ function urlToRoute(url: URL): Route | null {
     case "guides":
     case "desktop":
     case "cli":
-    case "principles": {
+    case "principles":
+    case "github": {
       // The marketing site is only served when the deployment opts in via
       // `homepage: "landing"`. On node deployments these paths are not found.
       if (config.nodes.homepage !== "landing") {
@@ -530,6 +533,8 @@ export function routeToPath(route: Route): string {
     return "/cli";
   } else if (route.resource === "principles") {
     return "/principles";
+  } else if (route.resource === "github") {
+    return "/github";
   } else if (route.resource === "docs") {
     return `/${route.params.page}`;
   } else if (

@@ -17,6 +17,7 @@ import type {
   DesktopRoute,
   DocsLoadedRoute,
   DocsRoute,
+  GithubRoute,
   GuidesRoute,
   InstallRoute,
   LandingRoute,
@@ -73,6 +74,7 @@ export type Route =
   | DesktopRoute
   | CliRoute
   | PrinciplesRoute
+  | GithubRoute
   | DocsRoute;
 
 export type LoadedRoute =
@@ -91,6 +93,7 @@ export type LoadedRoute =
   | DesktopRoute
   | CliRoute
   | PrinciplesRoute
+  | GithubRoute
   | DocsLoadedRoute;
 
 export async function loadRoute(

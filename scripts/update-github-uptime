@@ -1,0 +1,226 @@
+#!/usr/bin/env node
+
+// Regenerates src/marketing/data/github-uptime.json, the snapshot behind the
+// /github page.
+//
+// Source data is the reconstructed GitHub status history from
+// https://github.com/mrshu/github-statuses (MIT), which replays archived
+// githubstatus.com Atom feeds into merged downtime windows.
+//
+// Methodology is kept identical to that project's own "all-time uptime" chart so
+// our figures can be checked against theirs:
+//   - one point per UTC day, each reporting a trailing 90-day window
+//   - overlapping incident windows are merged, so concurrent incidents are not
+//     double counted
+//   - every impact level except "maintenance" counts as downtime
+//
+// Usage:
+//   scripts/update-github-uptime                 # fetch the latest CSV
+//   scripts/update-github-uptime --csv path.csv  # use a local copy
+
+import { writeFileSync } from "node:fs";
+import { readFile } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const CSV_URL =
+  "https://raw.githubusercontent.com/mrshu/github-statuses/master/parsed/downtime_windows.csv";
+
+const DAY_MS = 86400000;
+const WINDOW_DAYS = 90;
+const WINDOW_MS = WINDOW_DAYS * DAY_MS;
+
+// The upstream project pins its chart to this date rather than the first
+// incident, so the earliest point already has a full 90 days behind it.
+const PROJECT_START_MS = Date.UTC(2022, 5, 11);
+
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const outPath = resolve(root, "src/marketing/data/github-uptime.json");
+
+// Incident titles contain commas, so the CSV is quoted and cannot be split naively.
+function parseCsv(text) {
+  const rows = [];
+  let row = [];
+  let field = "";
+  let quoted = false;
+
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i];
+
+    if (quoted) {
+      if (char === '"') {
+        if (text[i + 1] === '"') {
+          field += '"';
+          i += 1;
+        } else {
+          quoted = false;
+        }
+      } else {
+        field += char;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      quoted = true;
+    } else if (char === ",") {
+      row.push(field);
+      field = "";
+    } else if (char === "\n") {
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = "";
+    } else if (char !== "\r") {
+      field += char;
+    }
+  }
+
+  if (field !== "" || row.length > 0) {
+    row.push(field);
+    rows.push(row);
+  }
+
+  return rows;
+}
+
+function toRecords(rows) {
+  const [header, ...body] = rows;
+  return body
+    .filter(row => row.length === header.length)
+    .map(row => Object.fromEntries(header.map((key, i) => [key, row[i]])));
+}
+
+function collectIntervals(records) {
+  return records
+    .filter(record => (record.impact || "none").trim() !== "maintenance")
+    .map(record => [
+      Date.parse(record.downtime_start),
+      Date.parse(record.downtime_end),
+    ])
+    .filter(([start, end]) => Number.isFinite(start) && Number.isFinite(end) && end > start)
+    .sort((a, b) => a[0] - b[0]);
+}
+
+// Downtime inside [windowStart, windowEnd), with overlapping windows merged.
+function mergedDowntime(intervals, windowStart, windowEnd) {
+  let downtime = 0;
+  let mergedStart = -1;
+  let mergedEnd = -1;
+
+  for (const [start, end] of intervals) {
+    if (end <= windowStart) continue;
+    if (start >= windowEnd) break;
+
+    const clipStart = Math.max(start, windowStart);
+    const clipEnd = Math.min(end, windowEnd);
+    if (clipEnd <= clipStart) continue;
+
+    if (mergedStart < 0) {
+      mergedStart = clipStart;
+      mergedEnd = clipEnd;
+    } else if (clipStart <= mergedEnd) {
+      mergedEnd = Math.max(mergedEnd, clipEnd);
+    } else {
+      downtime += mergedEnd - mergedStart;
+      mergedStart = clipStart;
+      mergedEnd = clipEnd;
+    }
+  }
+
+  if (mergedStart >= 0) {
+    downtime += mergedEnd - mergedStart;
+  }
+
+  return downtime;
+}
+
+function round(value) {
+  return Math.round(value * 100) / 100;
+}
+
+function isoDay(ms) {
+  return new Date(ms).toISOString().slice(0, 10);
+}
+
+async function readCsv() {
+  const flagIndex = process.argv.indexOf("--csv");
+  if (flagIndex !== -1) {
+    const path = process.argv[flagIndex + 1];
+    if (!path) {
+      throw new Error("--csv requires a path");
+    }
+    return readFile(resolve(process.cwd(), path), "utf8");
+  }
+
+  const response = await fetch(CSV_URL);
+  if (!response.ok) {
+    throw new Error(`${CSV_URL} responded ${response.status}`);
+  }
+  return response.text();
+}
+
+const records = toRecords(parseCsv(await readCsv()));
+const intervals = collectIntervals(records);
+
+if (intervals.length === 0) {
+  throw new Error("no downtime windows parsed; refusing to overwrite the snapshot");
+}
+
+// The final point covers the UTC day this snapshot was generated. The committed
+// data is static, so it is published as "latest", never as "today".
+const endMs = Date.UTC(
+  new Date().getUTCFullYear(),
+  new Date().getUTCMonth(),
+  new Date().getUTCDate(),
+) + DAY_MS;
+
+const series = [];
+for (let dayStart = PROJECT_START_MS; dayStart < endMs; dayStart += DAY_MS) {
+  const windowEnd = dayStart + DAY_MS;
+  const downtime = mergedDowntime(intervals, windowEnd - WINDOW_MS, windowEnd);
+  series.push({
+    day: dayStart,
+    uptime: Math.max(0, 1 - downtime / WINDOW_MS) * 100,
+  });
+}
+
+const lifetime =
+  Math.max(
+    0,
+    1 - mergedDowntime(intervals, PROJECT_START_MS, endMs) / (endMs - PROJECT_START_MS),
+  ) * 100;
+
+let best = series[0];
+let worst = series[0];
+for (const point of series) {
+  if (point.uptime > best.uptime) best = point;
+  if (point.uptime < worst.uptime) worst = point;
+}
+const latest = series[series.length - 1];
+
+const snapshot = {
+  source: "https://github.com/mrshu/github-statuses",
+  sourceLicense: "MIT",
+  generatedAt: new Date().toISOString(),
+  windowDays: WINDOW_DAYS,
+  startDay: isoDay(PROJECT_START_MS),
+  incidents: records.length,
+  countedIncidents: intervals.length,
+  lifetime: round(lifetime),
+  best: { uptime: round(best.uptime), day: isoDay(best.day) },
+  worst: { uptime: round(worst.uptime), day: isoDay(worst.day) },
+  latest: { uptime: round(latest.uptime), day: isoDay(latest.day) },
+  // One trailing-90-day figure per UTC day from startDay onwards.
+  series: series.map(point => round(point.uptime)),
+};
+
+writeFileSync(outPath, `${JSON.stringify(snapshot, null, 2)}\n`);
+
+console.log(`wrote ${outPath}`);
+console.log(`  incidents      ${snapshot.incidents} (${snapshot.countedIncidents} counted)`);
+console.log(`  span           ${snapshot.startDay} -> ${snapshot.latest.day} (${snapshot.series.length} days)`);
+console.log(`  lifetime       ${snapshot.lifetime}%`);
+console.log(`  best 90d       ${snapshot.best.uptime}% on ${snapshot.best.day}`);
+console.log(`  worst 90d      ${snapshot.worst.uptime}% on ${snapshot.worst.day}`);
+console.log(`  latest         ${snapshot.latest.uptime}%`);

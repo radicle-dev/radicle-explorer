@@ -48,6 +48,7 @@
     $activeRouteStore.resource === "desktop" ||
     $activeRouteStore.resource === "cli" ||
     $activeRouteStore.resource === "principles" ||
+    $activeRouteStore.resource === "github" ||
     $activeRouteStore.resource === "docs";
   // The explore and marketing routes both use the narrow, centered header
   // layout (fixed, constrained width, inline search) instead of the full-width

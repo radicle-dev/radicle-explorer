@@ -35,6 +35,11 @@ export interface PrinciplesRoute {
   params: undefined;
 }
 
+export interface GithubRoute {
+  resource: "github";
+  params: undefined;
+}
+
 export type DocsPage =
   | "faq"
   | "glossary"

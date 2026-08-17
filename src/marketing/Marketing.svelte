@@ -3,6 +3,7 @@
     CliRoute,
     DesktopRoute,
     DocsLoadedRoute,
+    GithubRoute,
     GuidesRoute,
     InstallRoute,
     LandingRoute,
@@ -17,6 +18,7 @@
   import Desktop from "./Desktop.svelte";
   import Docs from "./Docs.svelte";
   import Footer from "./Footer.svelte";
+  import Github from "./Github.svelte";
   import Guides from "./Guides.svelte";
   import Install from "./Install.svelte";
   import Landing from "./Landing.svelte";
@@ -31,6 +33,7 @@
     | DesktopRoute
     | CliRoute
     | PrinciplesRoute
+    | GithubRoute
     | DocsLoadedRoute;
 </script>
 
@@ -92,6 +95,8 @@
         <Cli />
       {:else if route.resource === "principles"}
         <BasicPrinciples />
+      {:else if route.resource === "github"}
+        <Github />
       {:else if route.resource === "docs"}
         <Docs page={route.params.page} component={route.params.component} />
       {/if}

@@ -9,6 +9,7 @@ export type {
   DocsLoadedRoute,
   DocsPage,
   DocsRoute,
+  GithubRoute,
   GuidesRoute,
   InstallRoute,
   LandingRoute,
@@ -58,6 +59,7 @@ export function marketingRoute(
   | { resource: "desktop"; params: undefined }
   | { resource: "cli"; params: undefined }
   | { resource: "principles"; params: undefined }
+  | { resource: "github"; params: undefined }
   | DocsRoute
   | null {
   switch (resource) {
@@ -80,6 +82,10 @@ export function marketingRoute(
     case "principles":
       return segments.length === 0
         ? { resource: "principles", params: undefined }
+        : null;
+    case "github":
+      return segments.length === 0
+        ? { resource: "github", params: undefined }
         : null;
     case "faq":
     case "glossary":

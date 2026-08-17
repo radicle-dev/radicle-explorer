@@ -82,7 +82,7 @@
   <Explore {...$activeRouteStore.params} />
 {:else if $activeRouteStore.resource === "explore.repos"}
   <ExploreRepos {...$activeRouteStore.params} />
-{:else if $activeRouteStore.resource === "landing" || $activeRouteStore.resource === "learn" || $activeRouteStore.resource === "install" || $activeRouteStore.resource === "guides" || $activeRouteStore.resource === "desktop" || $activeRouteStore.resource === "cli" || $activeRouteStore.resource === "principles" || $activeRouteStore.resource === "docs"}
+{:else if $activeRouteStore.resource === "landing" || $activeRouteStore.resource === "learn" || $activeRouteStore.resource === "install" || $activeRouteStore.resource === "guides" || $activeRouteStore.resource === "desktop" || $activeRouteStore.resource === "cli" || $activeRouteStore.resource === "principles" || $activeRouteStore.resource === "github" || $activeRouteStore.resource === "docs"}
   <Marketing route={$activeRouteStore} />
 {:else if $activeRouteStore.resource === "users"}
   <Users {...$activeRouteStore.params} />
