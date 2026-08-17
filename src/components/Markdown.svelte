@@ -37,6 +37,7 @@
     twemoji,
     scrollIntoView,
     canonicalize,
+    canonicalizeGithubImageUrl,
     isCommit,
   } from "@app/lib/utils";
   import { Renderer, markdown, sanitizeConfig } from "@app/lib/markdown";
@@ -226,10 +227,14 @@
       const imagePath = i.getAttribute("src");
       const imageClass = i.getAttribute("class");
 
-      // Make sure the source isn't a URL before trying to fetch it from the repo
       const emoji = imageClass && imageClass === "txt-emoji";
-      if (imagePath && !isUrl(imagePath) && !emoji) {
-        i.setAttribute("src", `${rawPath}/${canonicalize(imagePath, path)}`);
+      if (imagePath && !emoji) {
+        if (isUrl(imagePath)) {
+          // Rewrite GitHub "blob" URLs so the raw image content is rendered.
+          i.setAttribute("src", canonicalizeGithubImageUrl(imagePath));
+        } else {
+          i.setAttribute("src", `${rawPath}/${canonicalize(imagePath, path)}`);
+        }
       }
     }
 

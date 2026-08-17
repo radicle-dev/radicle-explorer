@@ -82,6 +82,57 @@ describe("String Assertions", () => {
   ])("isUrl $url => $expected", ({ url, expected }) => {
     expect(utils.isUrl(url)).toBe(expected);
   });
+
+  test.each([
+    {
+      url: "https://github.com/radicle-dev/radicle-explorer/blob/master/img.png",
+      expected:
+        "https://github.com/radicle-dev/radicle-explorer/blob/master/img.png?raw=true",
+    },
+    {
+      // Already has ?raw=true, leave it untouched.
+      url: "https://github.com/radicle-dev/radicle-explorer/blob/master/img.png?raw=true",
+      expected:
+        "https://github.com/radicle-dev/radicle-explorer/blob/master/img.png?raw=true",
+    },
+    {
+      // Raw content host is already correct, leave it untouched.
+      url: "https://raw.githubusercontent.com/radicle-dev/radicle-explorer/master/img.png",
+      expected:
+        "https://raw.githubusercontent.com/radicle-dev/radicle-explorer/master/img.png",
+    },
+    {
+      // An existing query string is preserved.
+      url: "https://github.com/radicle-dev/radicle-explorer/blob/master/img.png?token=abc",
+      expected:
+        "https://github.com/radicle-dev/radicle-explorer/blob/master/img.png?token=abc&raw=true",
+    },
+    {
+      // The www subdomain is handled too.
+      url: "https://www.github.com/radicle-dev/radicle-explorer/blob/master/img.png",
+      expected:
+        "https://www.github.com/radicle-dev/radicle-explorer/blob/master/img.png?raw=true",
+    },
+    {
+      // A "blob" segment that isn't in the <owner>/<repo>/blob/ position is
+      // left untouched.
+      url: "https://github.com/radicle-dev/radicle-explorer/raw/master/blob/img.png",
+      expected:
+        "https://github.com/radicle-dev/radicle-explorer/raw/master/blob/img.png",
+    },
+    {
+      // Non-GitHub URLs are returned unchanged.
+      url: "https://example.com/img.png",
+      expected: "https://example.com/img.png",
+    },
+    {
+      // Not a valid URL, returned unchanged.
+      url: "not a url",
+      expected: "not a url",
+    },
+  ])("canonicalizeGithubImageUrl $url => $expected", ({ url, expected }) => {
+    expect(utils.canonicalizeGithubImageUrl(url)).toEqual(expected);
+  });
 });
 
 describe("Parse Functions", () => {
