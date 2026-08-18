@@ -270,6 +270,14 @@ impl Indexer {
         let mut rescan_timer = tokio::time::interval(self.config.rescan_interval);
         rescan_timer.tick().await;
 
+        // Flapping peers re-announce their whole seed inventory on every
+        // reconnect. Coalesce events per repo so we don't do one meili
+        // upsert per event.
+        let mut pending = HashSet::new();
+        let mut debounce_timer = tokio::time::interval(self.config.debounce_interval);
+        debounce_timer.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+        debounce_timer.tick().await;
+
         loop {
             tokio::select! {
                 _ = shutdown.changed() => break,
@@ -295,9 +303,22 @@ impl Indexer {
                             tracing::info!("discovered new local seed: {rid}");
                         }
                     }
-                    tracing::info!("reindex {rid} (event: {})", event::event_kind(&event));
-                    if let Err(e) = self.reindex(rid).await {
-                        tracing::warn!("reindex {} failed: {e:#}", rid);
+                    if pending.insert(rid) {
+                        tracing::debug!(
+                            "queued reindex of {rid} (event: {})",
+                            event::event_kind(&event)
+                        );
+                    }
+                }
+                _ = debounce_timer.tick() => {
+                    if pending.is_empty() {
+                        continue;
+                    }
+                    tracing::info!("reindexing {} repositories (debounced)", pending.len());
+                    for rid in pending.drain().collect::<Vec<_>>() {
+                        if let Err(e) = self.reindex(rid).await {
+                            tracing::warn!("reindex {} failed: {e:#}", rid);
+                        }
                     }
                 }
                 _ = rescan_timer.tick() => {
