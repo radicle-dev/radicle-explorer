@@ -58,6 +58,19 @@ test.describe("markdown rendering basics", async () => {
     await expect(page).toHaveScreenshot();
   });
 
+  test("code and syntax highlighting with emoji", async ({ page }) => {
+    await page.goto(`${markdownUrl}/tree/main/markdown-code.md`, {
+      waitUntil: "networkidle",
+    });
+    const codeBlock = page
+      .locator("div.pre-wrapper")
+      .filter({ hasText: "cross-emoji:" });
+    await expect(codeBlock).toHaveText("// cross-emoji: ❌");
+    const clipboard = codeBlock.locator("radicle-clipboard");
+    await expect(clipboard).toBeHidden();
+    await expect(clipboard).toHaveAttribute("text", "// cross-emoji: ❌\n");
+  });
+
   test("code clipboard icon on hover", async ({ page }) => {
     await goToSection("#code", page);
     const codeBlock = page

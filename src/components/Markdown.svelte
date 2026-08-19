@@ -242,6 +242,12 @@
     for (const node of nodes) {
       const preElement = node.parentElement as HTMLElement;
       const copyButton = document.createElement("radicle-clipboard");
+      // Convert twemoji back to text
+      const images = node.getElementsByTagName("img");
+      for (const img of images) {
+        img.replaceWith(document.createTextNode(img.getAttribute("alt") || ""));
+      }
+
       copyButton.setAttribute("text", node.textContent || "");
       // Create a wrapper around the pre element,
       // so we can position the copy button that works even when scrolling horizontally.
