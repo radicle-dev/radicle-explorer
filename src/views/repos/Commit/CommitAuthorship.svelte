@@ -25,6 +25,15 @@
     white-space: nowrap;
     gap: 0.5rem;
   }
+  a.person {
+    color: inherit;
+    text-decoration: none;
+  }
+  a.person:hover {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+  }
   .avatar {
     width: 1rem;
     height: 1rem;
@@ -33,13 +42,13 @@
 
 <span class="authorship">
   {#if header.author.email === header.committer.email}
-    <div class="person">
+    <a class="person" href="mailto:{header.committer.email}">
       <img
         class="avatar"
         alt="avatar"
         src={gravatarURL(header.committer.email)} />
       {header.committer.name}
-    </div>
+    </a>
     committed
     <slot />
     <span title={absoluteTimestamp(header.committer.time)}>
@@ -47,18 +56,18 @@
     </span>
     <slot name="after-timestamp" />
   {:else}
-    <div class="person">
+    <a class="person" href="mailto:{header.author.email}">
       <img class="avatar" alt="avatar" src={gravatarURL(header.author.email)} />
       {header.author.name}
-    </div>
+    </a>
     authored and
-    <div class="person">
+    <a class="person" href="mailto:{header.committer.email}">
       <img
         class="avatar"
         alt="avatar"
         src={gravatarURL(header.committer.email)} />
       {header.committer.name}
-    </div>
+    </a>
     committed
     <slot />
     <span title={absoluteTimestamp(header.committer.time)}>
