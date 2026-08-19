@@ -31,6 +31,7 @@ const MAX_BLOB_SIZE: usize = 10_485_760;
 #[derive(Debug, Default)]
 enum ArchiveFormat {
     Tar,
+    TarZst,
     // NOTE: Even though `git archive` would use `tar` as the default format,
     // we use `tar.gz` as the default format for HTTP responses, to benefit
     // from compression when downloading large repositories. It was also used
@@ -46,6 +47,7 @@ impl ArchiveFormat {
         match self {
             ArchiveFormat::Tar => "tar",
             ArchiveFormat::TarGz => "tar.gz",
+            ArchiveFormat::TarZst => "tar.zst",
             ArchiveFormat::Zip => "zip",
         }
     }
@@ -54,6 +56,7 @@ impl ArchiveFormat {
         match self {
             ArchiveFormat::Tar => ".tar",
             ArchiveFormat::TarGz => ".tar.gz",
+            ArchiveFormat::TarZst => ".tar.zst",
             ArchiveFormat::Zip => ".zip",
         }
     }
@@ -64,6 +67,7 @@ impl ArchiveFormat {
         match self {
             ArchiveFormat::Tar => "application/x-tar",
             ArchiveFormat::TarGz => "application/gzip",
+            ArchiveFormat::TarZst => "application/zstd",
             ArchiveFormat::Zip => "application/zip",
         }
     }
@@ -78,6 +82,8 @@ impl ArchiveFormat {
             (stripped, Some(ArchiveFormat::Tar))
         } else if let Some(stripped) = s.strip_suffix(ArchiveFormat::TarGz.extension()) {
             (stripped, Some(ArchiveFormat::TarGz))
+        } else if let Some(stripped) = s.strip_suffix(ArchiveFormat::TarZst.extension()) {
+            (stripped, Some(ArchiveFormat::TarZst))
         } else if let Some(stripped) = s.strip_suffix(ArchiveFormat::Zip.extension()) {
             (stripped, Some(ArchiveFormat::Zip))
         } else {
@@ -265,6 +271,11 @@ async fn archive_by_committish(
 
     let mut command = Command::new("git");
 
+    // Git has no builtin zstd tar format, so we register one.
+    if matches!(format, ArchiveFormat::TarZst) {
+        command.arg("-c").arg("tar.tar.zst.command=zstd -T0");
+    }
+
     command
         .arg("archive")
         .arg(format!("--format={}", format.as_str()));
@@ -390,6 +401,33 @@ mod routes {
 
         let response = get(&app, format!("/{RID_PRIVATE}/head/README")).await;
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn test_archive_tar_zst() {
+        // Git shells out to zstd for this format.
+        if std::process::Command::new("zstd")
+            .arg("--version")
+            .output()
+            .is_err()
+        {
+            eprintln!("skipping test: zstd not found in PATH");
+            return;
+        }
+        let tmp = tempfile::tempdir().unwrap();
+        let ctx = test::seed(tmp.path());
+        let app = super::router(ctx.profile().to_owned(), Arc::new(HashMap::new()));
+
+        let response = get(&app, format!("/{RID}/archive/master.tar.zst")).await;
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response.headers().get("Content-Type").unwrap(),
+            "application/zstd"
+        );
+
+        // Zstd magic number.
+        let body = response.body().await;
+        assert_eq!(&body[..4], &[0x28, 0xb5, 0x2f, 0xfd]);
     }
 
     #[tokio::test]
