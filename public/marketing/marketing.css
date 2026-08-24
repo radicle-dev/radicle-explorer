@@ -205,7 +205,7 @@
 }
 
 /* On section-based pages, each top-level block rises and fades in, staggered,
-   when the page mounts. Markdown docs (FAQ, glossary, guides) are a flat list
+   when the page mounts. Markdown docs (glossary, guides) are a flat list
    of paragraphs, so they rise in as a single block instead. */
 @keyframes section-rise {
   from {
@@ -233,7 +233,7 @@
   animation-delay: 350ms;
 }
 
-/* Markdown docs (FAQ, glossary, guides) are a flat element list. Animate the
+/* Markdown docs (glossary, guides) are a flat element list. Animate the
    elements with the same timing (no stagger) so the doc rises in as one block.
    This lives on the children, not the reused .markdown-content container, so it
    replays on client-side navigation and not only on hard reload. */

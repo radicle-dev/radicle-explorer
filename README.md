@@ -112,10 +112,10 @@ The `nodes.homepage` key controls what is rendered at the root URL (`/`):
   This is the default so that a self-hosted deployment acts as a dedicated
   front-end for its own seed.
 * `"landing"` — serve the full Radicle marketing site: the landing page and
-  its `/learn`, `/install` and documentation (`/faq`, `/glossary`,
-  `/guides/*`) sub-routes. This is opt-in and intended for the canonical
-  [radicle.dev][app] deployment; the marketing sub-routes are only reachable
-  in this mode.
+  its `/learn`, `/install` and documentation (`/glossary`, `/guides/*`)
+  sub-routes. This is opt-in and intended for the canonical
+  [radicle.network][app] deployment; the marketing sub-routes are only
+  reachable in this mode.
 
 The cross-seed Explore page is always available at `/explore`, regardless of
 the `homepage` setting.

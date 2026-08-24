@@ -77,7 +77,6 @@
         Get started
       </a>
       <a href="/learn#guides" class="txt-medium-14" use:link>Guides</a>
-      <a href="/faq" class="txt-medium-14" use:link>FAQ</a>
       <a href="/glossary" class="txt-medium-14" use:link>Glossary</a>
     </div>
 

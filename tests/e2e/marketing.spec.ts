@@ -31,7 +31,7 @@ test("marketing sub-routes resolve in landing mode", async ({ page }) => {
   ).toBeVisible();
 
   // A markdown doc route renders its compiled content.
-  await page.goto("/faq", { waitUntil: "networkidle" });
+  await page.goto("/glossary", { waitUntil: "networkidle" });
   await expect(page.locator(".markdown-content")).toBeVisible();
 });
 

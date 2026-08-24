@@ -147,9 +147,10 @@ const loadExecutor = mutexExecutor.create();
 async function navigate(
   action: "push" | "replace",
   newRoute: Route,
-  // Optional URL fragment to preserve, so links like `/faq#general` land on the
-  // right section. `routeToPath` builds only the path, so the hash is appended
-  // here and picked up by `restoreScroll` below once the view has rendered.
+  // Optional URL fragment to preserve, so links like `/glossary#delegate`
+  // land on the right section. `routeToPath` builds only the path, so the
+  // hash is appended here and picked up by `restoreScroll` below once the
+  // view has rendered.
   hash: string = "",
 ): Promise<void> {
   isLoading.set(true);
@@ -480,7 +481,6 @@ function urlToRoute(url: URL): Route | null {
     }
     case "learn":
     case "install":
-    case "faq":
     case "glossary":
     case "download":
     case "guides":

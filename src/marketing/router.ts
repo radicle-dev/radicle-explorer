@@ -22,7 +22,6 @@ const docsLoaders = new Map<
   DocsPage,
   () => Promise<{ default: ComponentType }>
 >([
-  ["faq", () => import("./docs/faq.md")],
   ["glossary", () => import("./docs/glossary.md")],
   ["download", () => import("./docs/download.md")],
   ["guides/getting-started", () => import("./docs/guides/getting-started.md")],
@@ -32,7 +31,6 @@ const docsLoaders = new Map<
 ]);
 
 const docsTitles = new Map<DocsPage, string>([
-  ["faq", "FAQ"],
   ["glossary", "Glossary"],
   ["download", "Download"],
   ["guides/getting-started", "Getting started"],
@@ -81,7 +79,6 @@ export function marketingRoute(
       return segments.length === 0
         ? { resource: "principles", params: undefined }
         : null;
-    case "faq":
     case "glossary":
     case "download":
       return segments.length === 0

@@ -6,9 +6,9 @@ import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 
 // Add an id and a leading anchor link to linkable doc entries so they can be
 // deep-linked and copied: glossary term paragraphs (a bold term followed by an
-// em-dash, e.g. `**Term** — definition`) and FAQ question headings. Each
-// linkable element also gets a `term` class that drives the shared styling and
-// copy interaction in Docs.svelte.
+// em-dash, e.g. `**Term** — definition`). Each linkable element also gets a
+// `term` class that drives the shared styling and copy interaction in
+// Docs.svelte.
 function slugify(text) {
   return text
     .toLowerCase()
@@ -42,53 +42,45 @@ function addTermAnchor(node, id, label) {
 }
 
 function rehypeTermAnchors() {
-  return (tree, file) => {
-    const name = String((file && (file.filename || file.path)) || "");
-    const isFaq = name.endsWith("faq.md");
+  return tree => {
     const seen = new Map();
 
     const walk = nodes => {
       for (const node of nodes) {
-        if (node.type === "element" && Array.isArray(node.children)) {
-          // Glossary: a bold term immediately followed by an em-dash. This is
-          // pattern-based, so it never matches FAQ or guide paragraphs.
-          if (node.tagName === "p") {
-            const firstIndex = node.children.findIndex(
-              child => !(child.type === "text" && !child.value.trim()),
-            );
-            const first = node.children[firstIndex];
-            const after = node.children[firstIndex + 1];
-            const isTerm =
-              first &&
-              first.type === "element" &&
-              first.tagName === "strong" &&
-              after &&
-              after.type === "text" &&
-              /^\s*[—–-]/.test(after.value);
+        // Glossary: a bold term immediately followed by an em-dash. This is
+        // pattern-based, so it never matches guide paragraphs.
+        if (
+          node.type === "element" &&
+          node.tagName === "p" &&
+          Array.isArray(node.children)
+        ) {
+          const firstIndex = node.children.findIndex(
+            child => !(child.type === "text" && !child.value.trim()),
+          );
+          const first = node.children[firstIndex];
+          const after = node.children[firstIndex + 1];
+          const isTerm =
+            first &&
+            first.type === "element" &&
+            first.tagName === "strong" &&
+            after &&
+            after.type === "text" &&
+            /^\s*[—–-]/.test(after.value);
 
-            if (isTerm) {
-              const text = textOf(first).trim();
-              let slug = slugify(text);
-              const count = seen.get(slug) || 0;
-              seen.set(slug, count + 1);
-              if (count) {
-                slug = `${slug}-${count}`;
-              }
-              node.properties = node.properties || {};
-              node.properties.id = slug;
-              addTermAnchor(node, slug, text);
-              // Drop the em-dash separator from the rendered output, keeping just
-              // the bold term followed by its definition.
-              after.value = after.value.replace(/^\s*[—–-]\s*/, " ");
+          if (isTerm) {
+            const text = textOf(first).trim();
+            let slug = slugify(text);
+            const count = seen.get(slug) || 0;
+            seen.set(slug, count + 1);
+            if (count) {
+              slug = `${slug}-${count}`;
             }
-          } else if (
-            isFaq &&
-            node.tagName === "h3" &&
-            node.properties &&
-            node.properties.id
-          ) {
-            // FAQ: each question heading. rehype-slug has already set the id.
-            addTermAnchor(node, node.properties.id, textOf(node).trim());
+            node.properties = node.properties || {};
+            node.properties.id = slug;
+            addTermAnchor(node, slug, text);
+            // Drop the em-dash separator from the rendered output, keeping just
+            // the bold term followed by its definition.
+            after.value = after.value.replace(/^\s*[—–-]\s*/, " ");
           }
         }
         if (Array.isArray(node.children)) {

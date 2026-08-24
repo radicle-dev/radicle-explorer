@@ -20,7 +20,6 @@
   const principlesRoute: Route = { resource: "principles", params: undefined };
   const guidesRoute: Route = { resource: "guides", params: undefined };
   const exploreRoute: Route = { resource: "explore", params: undefined };
-  const faqRoute: Route = { resource: "docs", params: { page: "faq" } };
   const glossaryRoute: Route = {
     resource: "docs",
     params: { page: "glossary" },
@@ -31,7 +30,7 @@
   // Only show a section's sub-nav while the viewer is within that section.
   $: installOpen = ["/install", "/cli", "/desktop"].includes(pathname);
   $: learnOpen =
-    ["/learn", "/principles", "/faq", "/glossary"].includes(pathname) ||
+    ["/learn", "/principles", "/glossary"].includes(pathname) ||
     pathname.startsWith("/guides");
 
   // Flag the document element only when a section actually opens or closes, so
@@ -254,16 +253,6 @@
               <span class="dot"></span>
             {/if}
             Guides
-          </a>
-          <a
-            href={routeToPath(faqRoute)}
-            class="nav-link"
-            class:active={pathname === "/faq"}
-            on:click={e => onNav(e, faqRoute)}>
-            {#if pathname === "/faq"}
-              <span class="dot"></span>
-            {/if}
-            FAQ
           </a>
           <a
             href={routeToPath(glossaryRoute)}

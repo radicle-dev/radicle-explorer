@@ -97,44 +97,6 @@
     margin: 0;
   }
 
-  .faq-row {
-    --product-card-gap: 1.5rem;
-    align-items: stretch;
-  }
-
-  .faq-row .product-card {
-    position: relative;
-    display: flex;
-    padding: 1.5rem;
-    border-radius: var(--border-radius-small);
-    background: var(--color-surface-subtle);
-  }
-
-  .faq-row .product-card-text {
-    flex: 1;
-    padding-right: 0;
-  }
-
-  .faq-row .product-title {
-    font: var(--txt-bold-16);
-  }
-
-  .faq-row .product-description {
-    margin-bottom: 0;
-  }
-
-  .faq-row .product-link {
-    margin-top: auto;
-    padding-top: 1.25rem;
-  }
-
-  /* Stretch the read-more link across the card so the whole box is clickable. */
-  .faq-row .product-link::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-  }
-
   .product-link {
     font: var(--txt-bold-14);
   }
@@ -409,54 +371,6 @@
     </div>
     <a href="/guides" class="section-all product-link arrow-link" use:link>
       View all guides <span class="link-arrow link-arrow-right">→</span>
-    </a>
-  </section>
-
-  <section class="section">
-    <div class="section-header">
-      <h2 class="txt-bold-24">FAQ</h2>
-      <p class="txt-medium-16 txt-color-tertiary">
-        Answers to the most common questions about Radicle. What it is, how it
-        compares to GitHub, and the technical details behind the protocol.
-      </p>
-    </div>
-    <div class="card-row faq-row">
-      <article class="product-card">
-        <div class="product-card-text">
-          <strong class="product-title">General questions</strong>
-          <span class="product-description">
-            What is Radicle and how is it different from GitHub? Who’s building
-            it, how many people use it, and what’s the project’s history.
-          </span>
-          <a
-            href="/faq#general-questions"
-            class="product-link arrow-link"
-            use:link>
-            Read general FAQ <span class="link-arrow link-arrow-right">→</span>
-          </a>
-        </div>
-      </article>
-      <article class="product-card">
-        <div class="product-card-text">
-          <strong class="product-title">Technical questions</strong>
-          <span class="product-description">
-            What does “peer-to-peer” mean in practice? Why not just use Git
-            directly? How does identity work without accounts? The technical
-            reasoning explained.
-          </span>
-          <a
-            href="/faq#technical-questions"
-            class="product-link arrow-link"
-            use:link>
-            Read technical FAQ <span class="link-arrow link-arrow-right">
-              →
-            </span>
-          </a>
-        </div>
-      </article>
-    </div>
-    <a href="/faq" class="section-all product-link arrow-link" use:link>
-      All FAQ <span class="link-arrow link-arrow-right">→</span>
     </a>
   </section>
 

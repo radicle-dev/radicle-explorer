@@ -36,7 +36,6 @@ export interface PrinciplesRoute {
 }
 
 export type DocsPage =
-  | "faq"
   | "glossary"
   | "download"
   | "guides/getting-started"
@@ -45,7 +44,6 @@ export type DocsPage =
   | "guides/user";
 
 const docsPages: DocsPage[] = [
-  "faq",
   "glossary",
   "download",
   "guides/getting-started",
