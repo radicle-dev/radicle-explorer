@@ -10,7 +10,11 @@
 
   import config from "@app/lib/config";
   import { HttpdClient } from "@http-client";
-  import { baseUrlToString, formatQualifiedRefname } from "@app/lib/utils";
+  import {
+    baseUrlToString,
+    formatQualifiedRefname,
+    safeDecodeURIComponent,
+  } from "@app/lib/utils";
   import { groupCommits } from "@app/lib/commit";
 
   import Button from "@app/components/Button.svelte";
@@ -37,8 +41,13 @@
   export let nodeId: string;
   export let nodeAvatarUrl: string | undefined;
 
+  // The revision carries the encoded branch name after an in-app navigation,
+  // and this refname reaches the user as part of the clone popover's archive
+  // command.
   $: currentRefname = formatQualifiedRefname(
-    revision || repo.payloads["xyz.radicle.project"].data.defaultBranch,
+    revision
+      ? safeDecodeURIComponent(revision)
+      : repo.payloads["xyz.radicle.project"].data.defaultBranch,
     peer,
   );
 

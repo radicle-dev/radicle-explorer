@@ -305,6 +305,17 @@ export function formatObjectId(id: string): string {
   return id.substring(0, 7);
 }
 
+// Percent-decoding throws on a stray `%`, which branch names, tags and repo
+// aliases are all free to contain, so a segment that is not a well-formed
+// encoding is returned untouched rather than taking down whatever renders it.
+export function safeDecodeURIComponent(segment: string): string {
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return segment;
+  }
+}
+
 export function formatQualifiedRefname(
   refname: string,
   peer: string | undefined,

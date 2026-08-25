@@ -425,16 +425,6 @@ export function extractBaseUrl(hostAndPort: string): BaseUrl {
 // encoded shape never reaches link building or anything user-visible. Only
 // identifiers are decoded: revision and path segments are deliberately kept
 // encoded, because branch and tag lookups are keyed on the encoded name.
-// Decoding throws on a stray `%` in a repo alias, which is operator-supplied
-// and unvalidated, so an undecodable segment is passed through untouched.
-function decodeIdentifier(segment: string): string {
-  try {
-    return decodeURIComponent(segment);
-  } catch {
-    return segment;
-  }
-}
-
 function urlToRoute(url: URL): Route | null {
   // Normalize a trailing slash (`/guides/protocol/` → `/guides/protocol`) so
   // both the strict marketing resolver and the lenient repo resolver agree.
@@ -454,13 +444,17 @@ function urlToRoute(url: URL): Route | null {
         if (id === "users") {
           const did = segments.shift();
           if (did) {
-            return { resource: "users", baseUrl, did: decodeIdentifier(did) };
+            return {
+              resource: "users",
+              baseUrl,
+              did: utils.safeDecodeURIComponent(did),
+            };
           }
           return null;
         } else if (id) {
           return resolveRepoRoute(
             baseUrl,
-            decodeIdentifier(id),
+            utils.safeDecodeURIComponent(id),
             segments,
             url.search,
           );

@@ -438,6 +438,59 @@ test("peer and branch switching", async ({ page }) => {
   }
 });
 
+// Links to a canonical branch encode its name so a slash cannot be mistaken
+// for a path separator, which leaves the encoded form in the route after an
+// in-app navigation. The label has to show the branch name, not the encoding.
+// Only the canonical list encodes: the peer list covered above passes branch
+// names through untouched, so the branch has to be canonical to reproduce it.
+test("canonical branch with a slash in the name", async ({ page, peer }) => {
+  const { rid, repoFolder } = await createRepo(peer, {
+    name: "slash-branch",
+  });
+
+  // A branch is only resolved by delegate quorum when a canonical-ref rule
+  // matches it. Without this the branch is listed under the peer instead,
+  // where names are never encoded.
+  await peer.rad(
+    [
+      "id",
+      "update",
+      "--title",
+      "Add canonical ref rule",
+      "--description",
+      "",
+      "--payload",
+      "xyz.radicle.crefs",
+      "rules",
+      JSON.stringify({
+        "refs/heads/feature/*": {
+          allow: [`did:key:${peer.nodeId}`],
+          threshold: 1,
+        },
+      }),
+      "--no-confirm",
+    ],
+    { cwd: repoFolder },
+  );
+
+  await peer.git(["checkout", "-b", "feature/branch"], { cwd: repoFolder });
+  await peer.git(
+    ["commit", "--allow-empty", "--message", "branch off the default"],
+    { cwd: repoFolder },
+  );
+  await peer.git(["push", "rad", "feature/branch"], { cwd: repoFolder });
+
+  await page.goto(peer.ridUrl(rid));
+  const trigger = page.locator('[title="Change branch"]:visible').first();
+  await trigger.click();
+  await page.getByRole("button", { name: /feature\/branch Canonical/ }).click();
+
+  await expect(trigger).toHaveText(/feature\/branch/);
+  await expect(trigger).not.toHaveText(/%2F/);
+  // The URL keeps the encoded form; only what the user reads is decoded.
+  await expect(page).toHaveURL(/tree\/feature%2Fbranch/);
+});
+
 test("only one modal can be open at a time", async ({ page }) => {
   await page.goto(sourceBrowsingUrl);
 

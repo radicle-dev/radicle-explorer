@@ -4,7 +4,10 @@
 
   import { HttpdClient } from "@http-client";
 
-  import { formatQualifiedRefname } from "@app/lib/utils";
+  import {
+    formatQualifiedRefname,
+    safeDecodeURIComponent,
+  } from "@app/lib/utils";
 
   import BlobComponent from "./Source/Blob.svelte";
   import Button from "@app/components/Button.svelte";
@@ -48,8 +51,13 @@
     });
   };
 
+  // The revision carries the encoded branch name after an in-app navigation,
+  // and this refname reaches the user as part of the clone popover's archive
+  // command.
   $: currentRefname = formatQualifiedRefname(
-    revision || repo.payloads["xyz.radicle.project"].data.defaultBranch,
+    revision
+      ? safeDecodeURIComponent(revision)
+      : repo.payloads["xyz.radicle.project"].data.defaultBranch,
     peer,
   );
 

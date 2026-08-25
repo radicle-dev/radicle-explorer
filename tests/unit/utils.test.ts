@@ -352,3 +352,26 @@ describe("repoSegment", () => {
     expect(utils.repoSegment(repo)).toEqual(rid);
   });
 });
+
+describe("safeDecodeURIComponent", () => {
+  test("decodes an encoded branch name", () => {
+    expect(utils.safeDecodeURIComponent("releaseprep%2Fv27.1")).toEqual(
+      "releaseprep/v27.1",
+    );
+  });
+
+  test("leaves an already decoded name untouched", () => {
+    expect(utils.safeDecodeURIComponent("releaseprep/v27.1")).toEqual(
+      "releaseprep/v27.1",
+    );
+  });
+
+  // Branch names, tags and repo aliases may all contain a bare `%`, which is
+  // not a well-formed encoding and would otherwise throw.
+  test("returns an undecodable segment unchanged", () => {
+    expect(utils.safeDecodeURIComponent("100%")).toEqual("100%");
+    expect(utils.safeDecodeURIComponent("wip/50%-done")).toEqual(
+      "wip/50%-done",
+    );
+  });
+});

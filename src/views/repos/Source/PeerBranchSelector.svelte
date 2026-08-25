@@ -12,6 +12,7 @@
     getBranchesFromRefs,
     getTagsFromRefs,
     gravatarURL,
+    safeDecodeURIComponent,
   } from "@app/lib/utils";
 
   import Badge from "@app/components/Badge.svelte";
@@ -207,6 +208,14 @@
   // rather than claiming there are none.
   $: tagsTabDisabled = !hasTags && peers !== undefined;
 
+  // Links to a branch encode its name so a slash cannot be mistaken for a path
+  // separator, which leaves the encoded form in the route after an in-app
+  // navigation. Only the label is decoded: the comparisons above match against
+  // both forms and rely on the route value as it stands.
+  $: selectedBranchLabel = selectedBranch
+    ? safeDecodeURIComponent(selectedBranch)
+    : undefined;
+
   $: isSelectedBranchCanonical = (() => {
     if (onCanonical) return true;
     if (!selectedBranch || peer) return false;
@@ -368,7 +377,7 @@
       {:else if selectedBranch}
         <Icon name="branch" />
         <span class="txt-overflow">
-          {selectedBranch}
+          {selectedBranchLabel}
         </span>
         {#if isSelectedBranchCanonical}
           <Badge title="Canonical branch" variant="foreground-emphasized">
