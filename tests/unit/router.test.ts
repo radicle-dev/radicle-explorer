@@ -361,3 +361,120 @@ describe("extractBaseUrl", () => {
     });
   });
 });
+
+// Cloudflare's single-page-application fallback percent-encodes the path on a
+// fresh load or reload, so these paths are what the router actually receives
+// in production for a URL the user sees and copies in its decoded form.
+describe("percent-encoded path segments", () => {
+  const node = {
+    hostname: "example.node.tld",
+    scheme: "http",
+    port: config.nodes.defaultHttpdPort,
+  };
+
+  test("encoded repo id is decoded", () => {
+    expectPathToRoute(
+      "/nodes/example.node.tld/rad%3AzKtT7DmF9H34KkvcKj9PHW19WzjT/patches/68579c8c8c792d39522c31544ed696b6e3a607fb",
+      {
+        resource: "repo.patch",
+        node,
+        repo: "rad:zKtT7DmF9H34KkvcKj9PHW19WzjT",
+        patch: "68579c8c8c792d39522c31544ed696b6e3a607fb",
+      },
+    );
+  });
+
+  test("decoded repo id is left as is", () => {
+    expectPathToRoute(
+      "/nodes/example.node.tld/rad:zKtT7DmF9H34KkvcKj9PHW19WzjT",
+      {
+        resource: "repo.source",
+        node,
+        repo: "rad:zKtT7DmF9H34KkvcKj9PHW19WzjT",
+        route: "",
+      },
+    );
+  });
+
+  test("encoded did is decoded", () => {
+    expectPathToRoute(
+      "/nodes/example.node.tld/users/did%3Akey%3Az6MktaNvN1tVAno62rCfqvV8bBoTeAyHjuJz9YZjmpBmnCwd",
+      {
+        resource: "users",
+        baseUrl: node,
+        did: "did:key:z6MktaNvN1tVAno62rCfqvV8bBoTeAyHjuJz9YZjmpBmnCwd",
+      },
+    );
+  });
+
+  // Repo aliases are operator-supplied and unvalidated, so a segment that is
+  // not a well-formed encoding must not throw out of route parsing.
+  test("undecodable repo id is passed through", () => {
+    expectPathToRoute("/nodes/example.node.tld/100%", {
+      resource: "repo.source",
+      node,
+      repo: "100%",
+      route: "",
+    });
+  });
+
+  // Revision segments must stay encoded: branch and tag lookups are keyed on
+  // the encoded name, and decoding `%2F` here would turn a tag like
+  // `v1.0/release` into two path segments.
+  test("encoded tag name in a tree route stays encoded", () => {
+    expectPathToRoute(
+      "/nodes/example.node.tld/rad%3AzKtT7DmF9H34KkvcKj9PHW19WzjT/tree/v1.0%2Frelease",
+      {
+        resource: "repo.source",
+        node,
+        repo: "rad:zKtT7DmF9H34KkvcKj9PHW19WzjT",
+        route: "v1.0%2Frelease",
+      },
+    );
+  });
+
+  test("encoded tag name in a history route stays encoded", () => {
+    expectPathToRoute(
+      "/nodes/example.node.tld/rad%3AzKtT7DmF9H34KkvcKj9PHW19WzjT/history/v1.0%2Frelease",
+      {
+        resource: "repo.history",
+        node,
+        repo: "rad:zKtT7DmF9H34KkvcKj9PHW19WzjT",
+        revision: "v1.0%2Frelease",
+      },
+    );
+  });
+
+  test("encoded tag name under an explicit peer stays encoded", () => {
+    expectPathToRoute(
+      "/nodes/example.node.tld/rad%3AzKtT7DmF9H34KkvcKj9PHW19WzjT/remotes/z6MktaNvN1tVAno62rCfqvV8bBoTeAyHjuJz9YZjmpBmnCwd/tree/v1.0%2Frelease",
+      {
+        resource: "repo.source",
+        node,
+        repo: "rad:zKtT7DmF9H34KkvcKj9PHW19WzjT",
+        peer: "z6MktaNvN1tVAno62rCfqvV8bBoTeAyHjuJz9YZjmpBmnCwd",
+        route: "v1.0%2Frelease",
+      },
+    );
+  });
+
+  // Decoding the repo id changes what `routeToPath` emits, which is what heals
+  // the address bar and the "Copy link" button on subsequent navigation.
+  test("an encoded path round-trips to its decoded form", () => {
+    const route = testExports.urlToRoute(
+      new URL(
+        "/nodes/example.node.tld/rad%3AzKtT7DmF9H34KkvcKj9PHW19WzjT/tree/v1.0%2Frelease",
+        "http://localhost/",
+      ),
+    );
+    expect(testExports.routeToPath(route!)).toEqual(
+      "/nodes/example.node.tld/rad:zKtT7DmF9H34KkvcKj9PHW19WzjT/tree/v1.0%2Frelease",
+    );
+  });
+
+  function expectPathToRoute(relativeUrl: string, route: Route | null) {
+    expect(
+      testExports.urlToRoute(new URL(relativeUrl, "http://localhost/")),
+    ).toEqual(route);
+  }
+});

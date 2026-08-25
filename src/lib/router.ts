@@ -418,6 +418,23 @@ export function extractBaseUrl(hostAndPort: string): BaseUrl {
   };
 }
 
+// Cloudflare's static-asset handler percent-encodes the path when it serves
+// the single-page-application fallback, so a fresh load or reload arrives with
+// `rad%3Az4V1...` in place of `rad:z4V1...`. Identifier segments are decoded
+// back to their canonical form here, at the point the route is parsed, so the
+// encoded shape never reaches link building or anything user-visible. Only
+// identifiers are decoded: revision and path segments are deliberately kept
+// encoded, because branch and tag lookups are keyed on the encoded name.
+// Decoding throws on a stray `%` in a repo alias, which is operator-supplied
+// and unvalidated, so an undecodable segment is passed through untouched.
+function decodeIdentifier(segment: string): string {
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return segment;
+  }
+}
+
 function urlToRoute(url: URL): Route | null {
   // Normalize a trailing slash (`/guides/protocol/` → `/guides/protocol`) so
   // both the strict marketing resolver and the lenient repo resolver agree.
@@ -437,11 +454,16 @@ function urlToRoute(url: URL): Route | null {
         if (id === "users") {
           const did = segments.shift();
           if (did) {
-            return { resource: "users", baseUrl, did };
+            return { resource: "users", baseUrl, did: decodeIdentifier(did) };
           }
           return null;
         } else if (id) {
-          return resolveRepoRoute(baseUrl, id, segments, url.search);
+          return resolveRepoRoute(
+            baseUrl,
+            decodeIdentifier(id),
+            segments,
+            url.search,
+          );
         } else {
           return {
             resource: "nodes",

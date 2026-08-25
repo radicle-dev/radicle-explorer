@@ -163,6 +163,6 @@
       </Button>
     {/if}
     <slot name="actions" />
-    <SeedButton seedCount={repo.seeding} {repoId} />
+    <SeedButton seedCount={repo.seeding} repoId={repo.rid} />
   </div>
 </div>
