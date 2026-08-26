@@ -2456,6 +2456,7 @@ dependencies = [
  "radicle-term",
  "serde",
  "serde_json",
+ "sqlite",
  "tempfile",
  "thiserror 2.0.19",
  "tokio",

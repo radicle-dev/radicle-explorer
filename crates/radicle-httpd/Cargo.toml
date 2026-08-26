@@ -39,6 +39,9 @@ radicle-surf = { workspace = true, features = ["serde"] }
 radicle-term = { version = "0.19.1", default-features = false }
 serde.workspace = true
 serde_json = { workspace = true, features = ["preserve_order"] }
+# Same version `radicle` itself depends on, so the two share one
+# `libsqlite3-sys`. Used only to read the COB cache.
+sqlite = { version = "0.37.0" }
 thiserror.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread", "signal", "process", "io-util"] }
 tokio-util = { version = "0.7.18", default-features = false, features = ["io"] }

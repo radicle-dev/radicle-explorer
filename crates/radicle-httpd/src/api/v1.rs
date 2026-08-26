@@ -3,6 +3,7 @@ mod info;
 mod node;
 mod repos;
 mod stats;
+mod users;
 
 use axum::extract::State;
 use axum::response::{IntoResponse, Json};
@@ -23,7 +24,8 @@ pub fn router(ctx: Context) -> Router {
         .merge(node::router(ctx.clone()))
         .merge(delegates::router(ctx.clone()))
         .merge(repos::router(ctx.clone()))
-        .merge(stats::router(ctx));
+        .merge(stats::router(ctx.clone()))
+        .merge(users::router(ctx));
 
     Router::new().nest("/v1", routes)
 }
@@ -70,6 +72,21 @@ async fn root_handler(State(ctx): State<Context>) -> impl IntoResponse {
             {
                 "href": "/stats",
                 "rel": "stats",
+                "type": "GET"
+            },
+            {
+                "href": "/users/:did/repos",
+                "rel": "repos",
+                "type": "GET"
+            },
+            {
+                "href": "/users/:did/activity",
+                "rel": "activity",
+                "type": "GET"
+            },
+            {
+                "href": "/users/:did/contributions",
+                "rel": "contributions",
                 "type": "GET"
             }
         ]
