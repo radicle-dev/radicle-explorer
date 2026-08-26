@@ -155,6 +155,10 @@
      instead of being covered by its background. */
   .feed {
     position: relative;
+    /* What an icon paints over the rail. It has to be whatever the section
+       itself sits on, or the icons read as chips on a lighter background: the
+       centre column sets no background of its own, so this is the page's. */
+    --feed-bg: var(--color-surface-base);
   }
   .feed.railed {
     padding: 0.25rem 0 0.5rem;
@@ -187,7 +191,7 @@
     justify-content: center;
     flex-shrink: 0;
     padding: 0.25rem 0;
-    background-color: var(--color-surface-canvas);
+    background-color: var(--feed-bg);
   }
   .feed-item:hover .feed-icon {
     background-color: var(--color-surface-subtle);
