@@ -1,15 +1,18 @@
 <script lang="ts">
-  import type { BaseUrl, NodeIdentity, NodeStats } from "@http-client";
+  import type {
+    BaseUrl,
+    NodeIdentity,
+    NodeStats,
+    UserRepo,
+  } from "@http-client";
   import type { RepoInfo } from "@app/components/RepoCard";
 
   import { onDestroy } from "svelte";
 
   import * as router from "@app/lib/router";
   import * as utils from "@app/lib/utils";
-  import {
-    fetchRepoInfos,
-    sortRepoInfosByActivity,
-  } from "@app/components/RepoCard";
+  import { loadRepoActivity } from "@app/lib/commit";
+  import { fetchRepoInfos } from "@app/components/RepoCard";
   import { handleError } from "@app/views/nodes/error";
 
   import Badge from "@app/components/Badge.svelte";
@@ -22,10 +25,17 @@
   export let stats: NodeStats;
   export let user: NodeIdentity;
   export let did: { prefix: string; pubkey: string };
+  // The repos this user delegates or has contributed to. Undefined when the
+  // node predates the endpoint that reports contributions, in which case only
+  // the repos they delegate are listed, as before.
+  export let repos: UserRepo[] | undefined = undefined;
 
-  let sortByActivity = false;
-  let sorting = false;
-  let displayedRepos: RepoInfo[] = [];
+  // How many cards are shown before the list is collapsed. Two full rows in the
+  // two-column grid, so the activity feed below is reachable without scrolling
+  // past a long list.
+  const COLLAPSED = 4;
+
+  let expanded = false;
 
   let activityAbort: AbortController | undefined;
 
@@ -37,35 +47,70 @@
 
   onDestroy(() => activityAbort?.abort());
 
+  $: name = user.alias || utils.formatNodeId(did.pubkey);
+  // Contribution counts keyed by RID, for the badge tooltips.
+  $: contributions = new Map(
+    (repos ?? []).map(repo => [
+      repo.rid,
+      { patches: repo.patchesAuthored, issues: repo.issuesAuthored },
+    ]),
+  );
+  // Undefined on a node without the contributions endpoint, where the fallback
+  // query returns only repos this user delegates.
+  $: delegated = repos
+    ? new Set(repos.filter(repo => repo.isDelegate).map(repo => repo.rid))
+    : undefined;
+
   $: if (baseUrl || did) {
-    sortByActivity = false;
+    expanded = false;
   }
 
-  async function fetchRepos() {
-    const repos = await fetchRepoInfos(
-      baseUrl,
-      { show: "all", perPage: stats.repos.total },
-      utils.formatDid(did),
-      newActivitySession(),
-    );
-    sortByActivity = false;
-    displayedRepos = repos;
-    return repos;
+  function repoInfos(repos: UserRepo[], signal: AbortSignal): RepoInfo[] {
+    return repos
+      .filter(repo => Boolean(repo.payloads["xyz.radicle.project"]))
+      .map(repo => ({
+        repo,
+        baseUrl,
+        activity: loadRepoActivity(repo.rid, baseUrl, signal).catch(e => {
+          if (import.meta.env.DEV && (e as Error)?.name !== "AbortError") {
+            console.warn("loadRepoActivity failed for", repo.rid, e);
+          }
+          return [];
+        }),
+      }));
   }
 
-  async function toggleSortByActivity(repos: RepoInfo[]) {
-    if (sortByActivity) {
-      sortByActivity = false;
-      displayedRepos = repos;
-      return;
+  // The order is the one the node returns: most recently contributed to by this
+  // user first, with repos they only delegate last.
+  async function fetchRepos(): Promise<RepoInfo[]> {
+    const signal = newActivitySession();
+
+    return repos
+      ? repoInfos(repos, signal)
+      : await fetchRepoInfos(
+          baseUrl,
+          { show: "all", perPage: stats.repos.total },
+          utils.formatDid(did),
+          signal,
+        );
+  }
+
+  function badgeTitle(rid: string, isDelegate: boolean): string {
+    const counts = contributions.get(rid);
+    const opened =
+      counts && counts.patches + counts.issues > 0
+        ? `${counts.patches} ${utils.pluralize("patch", counts.patches)} and ${
+            counts.issues
+          } ${utils.pluralize("issue", counts.issues)} opened by ${name}`
+        : undefined;
+
+    if (isDelegate) {
+      return opened
+        ? `${name} is a delegate of this repository · ${opened}`
+        : `${name} is a delegate of this repository`;
     }
-    sorting = true;
-    try {
-      displayedRepos = await sortRepoInfosByActivity(repos);
-      sortByActivity = true;
-    } finally {
-      sorting = false;
-    }
+
+    return opened ?? `${name} has contributed to this repository`;
   }
 </script>
 
@@ -81,24 +126,44 @@
     min-height: calc(100vh - var(--global-header-height));
     font: var(--txt-body-m-regular);
   }
-  .subtitle {
-    font: var(--txt-body-m-regular);
+  /* Matches the header on the activity section below, so the two read as one
+     page rather than two stacked widgets. */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 3rem;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid var(--color-border-subtle);
+    color: var(--color-text-primary);
+  }
+  .counter {
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-mid);
     color: var(--color-text-tertiary);
-    margin: 1rem;
+    font: var(--txt-body-s-regular);
+    padding: 0 0.25rem;
+    min-width: 1.5rem;
+    text-align: center;
   }
-  .text-button {
-    background: none;
+  .expand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    min-height: 2.5rem;
+    padding: 0.375rem 1rem;
     border: none;
-    font: inherit;
-    color: inherit;
-    margin: 0;
-    padding: 0;
-  }
-  .text-button:not(:disabled) {
+    border-bottom: 1px solid var(--color-border-subtle);
+    background: none;
+    font: var(--txt-body-m-regular);
+    color: var(--color-text-secondary);
     cursor: pointer;
   }
-  .text-button:hover:not(:disabled) {
-    text-decoration: underline;
+  .expand:hover {
+    background-color: var(--color-surface-subtle);
+    color: var(--color-text-primary);
   }
 
   @media (max-width: 1010.98px) {
@@ -114,32 +179,40 @@
   </div>
 {:then repos}
   {#if repos.length > 0}
+    {@const hiddenCount = Math.max(0, repos.length - COLLAPSED)}
+    <div class="section-header">
+      <span class="txt-body-l-semibold">Repositories</span>
+      <span class="counter">{repos.length}</span>
+    </div>
     <div class="repo-grid">
-      {#each displayedRepos as repoInfo (repoInfo.repo.rid)}
+      {#each expanded ? repos : repos.slice(0, COLLAPSED) as repoInfo (repoInfo.repo.rid)}
+        {@const isDelegate = delegated?.has(repoInfo.repo.rid) ?? true}
         <RepoCard {repoInfo} {baseUrl}>
           <svelte:fragment slot="delegate">
             <Badge
-              title={`${user.alias || utils.formatNodeId(did.pubkey)} is a delegate of this repository`}
-              round
-              variant="delegate"
+              title={badgeTitle(repoInfo.repo.rid, isDelegate)}
+              variant={isDelegate ? "delegate" : "neutral"}
               size="tiny"
-              style="padding: 0 0.372rem; gap: 0.125rem;">
-              <Icon name="badge" />
+              style="padding: 0 0.375rem; gap: 0.25rem;">
+              {#if isDelegate}
+                <Icon name="badge" />
+                Delegate
+              {:else}
+                Contributor
+              {/if}
             </Badge>
           </svelte:fragment>
         </RepoCard>
       {/each}
     </div>
-    <div class="subtitle">
-      {repos.length}
-      {repos.length === 1 ? "repository" : "repositories"} ·
-      <button
-        class="text-button"
-        disabled={sorting}
-        on:click={() => toggleSortByActivity(repos)}>
-        {sortByActivity ? "Default order" : "Sort by activity"}
+    {#if hiddenCount > 0}
+      <button class="expand" on:click={() => (expanded = !expanded)}>
+        <Icon name={expanded ? "collapse-vertical" : "expand-vertical"} />
+        {expanded
+          ? "Show fewer repositories"
+          : `Show ${hiddenCount} more ${utils.pluralize("repository", hiddenCount)}`}
       </button>
-    </div>
+    {/if}
   {:else}
     <div class="container">
       <Placeholder

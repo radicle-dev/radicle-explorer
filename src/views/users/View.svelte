@@ -1,5 +1,12 @@
 <script lang="ts">
-  import type { BaseUrl, NodeIdentity, NodeStats } from "@http-client";
+  import type {
+    ActivityItem,
+    BaseUrl,
+    ContributionDay,
+    NodeIdentity,
+    NodeStats,
+    UserRepo,
+  } from "@http-client";
 
   import * as utils from "@app/lib/utils";
 
@@ -13,6 +20,7 @@
   import Popover from "@app/components/Popover.svelte";
   import Separator from "@app/views/repos/Separator.svelte";
   import UserAddress from "@app/views/users/UserAddress.svelte";
+  import UserActivityView from "@app/views/users/UserActivityView.svelte";
   import UserAvatar from "@app/components/UserAvatar.svelte";
   import UserReposView from "./UserReposView.svelte";
 
@@ -22,6 +30,17 @@
   export let nodeId: string;
   export let nodeAvatarUrl: string | undefined;
   export let stats: NodeStats;
+  export let repos: UserRepo[] | undefined;
+  export let activity: ActivityItem[] | undefined;
+  export let calendar: ContributionDay[] | undefined;
+
+  // The feed names repos by RID; the repo list is where their names come from.
+  $: repoNames = Object.fromEntries(
+    (repos ?? []).flatMap(repo => {
+      const project = repo.payloads["xyz.radicle.project"];
+      return project ? [[repo.rid, project.data.name]] : [];
+    }),
+  );
 </script>
 
 <style>
@@ -35,6 +54,11 @@
     flex-direction: column;
   }
 
+  /* The sidebar is a fixed grid track with no overflow of its own, so a row
+     wider than the track spills over the centre column rather than being
+     clipped. The label is the variable-width half of each row — an alias can be
+     any length, while the ids beside it are already truncated to a fixed
+     width — so the label is what gives way. */
   .node-address {
     display: flex;
     align-items: center;
@@ -42,6 +66,16 @@
     margin-top: 0.5rem;
     min-width: 0;
     max-width: 100%;
+    overflow: hidden;
+  }
+
+  .node-address-id {
+    min-width: 0;
+    flex-shrink: 0;
+  }
+
+  .node-alias :global(svg) {
+    flex-shrink: 0;
   }
 
   .node-alias {
@@ -53,6 +87,7 @@
     white-space: nowrap;
     display: flex;
     align-items: center;
+    min-width: 0;
     gap: 0.25rem;
   }
 
@@ -180,30 +215,37 @@
             style:width="100%">
             <div class="node-address">
               <div class="node-alias">
-                <Icon name="key" />{node.alias || "user"}
+                <Icon name="key" />
+                <span class="txt-overflow">{node.alias || "user"}</span>
               </div>
-              <UserAddress {did} />
+              <div class="node-address-id">
+                <UserAddress {did} />
+              </div>
             </div>
           </div>
           <div class="node-address">
             <div class="node-alias">
               <Icon name="key" />SSH Key
             </div>
-            <Id styleWidth="fit-content" id={node.ssh.full}>
-              <div class="txt-overflow">
-                {node.ssh.full.substring(0, 10)}…{node.ssh.full.slice(-10)}
-              </div>
-            </Id>
+            <div class="node-address-id">
+              <Id styleWidth="fit-content" id={node.ssh.full}>
+                <div class="txt-overflow">
+                  {node.ssh.full.substring(0, 10)}…{node.ssh.full.slice(-10)}
+                </div>
+              </Id>
+            </div>
           </div>
           <div class="node-address">
             <div class="node-alias">
               <Icon name="key" />SSH Hash
             </div>
-            <Id styleWidth="fit-content" id={node.ssh.hash}>
-              <div class="txt-overflow">
-                {node.ssh.hash.substring(0, 10)}…{node.ssh.hash.slice(-10)}
-              </div>
-            </Id>
+            <div class="node-address-id">
+              <Id styleWidth="fit-content" id={node.ssh.hash}>
+                <div class="txt-overflow">
+                  {node.ssh.hash.substring(0, 10)}…{node.ssh.hash.slice(-10)}
+                </div>
+              </Id>
+            </div>
           </div>
         </div>
       </div>
@@ -211,6 +253,14 @@
   </div>
 
   <div slot="center">
-    <UserReposView {baseUrl} {stats} user={node} {did} />
+    <UserReposView {baseUrl} {stats} user={node} {did} {repos} />
+    {#if activity && activity.length > 0 && calendar}
+      <UserActivityView
+        {baseUrl}
+        did={utils.formatDid(did)}
+        {activity}
+        {calendar}
+        {repoNames} />
+    {/if}
   </div>
 </Layout>

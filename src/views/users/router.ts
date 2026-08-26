@@ -1,4 +1,11 @@
-import type { BaseUrl, NodeIdentity, NodeStats } from "@http-client";
+import type {
+  ActivityItem,
+  BaseUrl,
+  ContributionDay,
+  NodeIdentity,
+  NodeStats,
+  UserRepo,
+} from "@http-client";
 import type { ErrorRoute, NotFoundRoute } from "@app/lib/router/definitions";
 
 import * as utils from "@app/lib/utils";
@@ -7,6 +14,10 @@ import { ResponseError, ResponseParseError } from "@http-client/lib/fetcher";
 import { handleError } from "@app/views/nodes/error";
 import { nodePath } from "@app/views/nodes/router";
 import { unreachableError } from "@app/views/repos/error";
+
+// A profile's feed is the main thing worth scrolling on the page, so it opens
+// with a deep page rather than a teaser and grows from there.
+export const USER_ACTIVITY_TAKE = 50;
 
 export interface UserRoute {
   resource: "users";
@@ -23,6 +34,12 @@ export interface UserLoadedRoute {
     nodeId: string;
     nodeAvatarUrl: string | undefined;
     stats: NodeStats;
+    // The three below are undefined on a node that predates the endpoints
+    // behind them, in which case the page renders what it did before: the
+    // repos this user delegates, and nothing else.
+    repos: UserRepo[] | undefined;
+    activity: ActivityItem[] | undefined;
+    calendar: ContributionDay[] | undefined;
   };
 }
 
@@ -44,11 +61,39 @@ export async function loadUserRoute({
   }
 
   const api = new HttpdClient(baseUrl);
+  const formattedDid = utils.formatDid(parsedDid);
   try {
     const [stats, node, user] = await Promise.all([
       api.getStats(),
       api.getNode(),
       api.getNodeIdentity(parsedDid.pubkey),
+    ]);
+
+    // Older nodes answer these with a 404. The profile is still worth showing
+    // without them, so a failure here is not a failure of the route.
+    const optional = <T>(what: string, request: Promise<T>) =>
+      request.catch((error: unknown) => {
+        if (import.meta.env.DEV) {
+          console.warn(`could not load ${what} for ${formattedDid}`, error);
+        }
+        return undefined;
+      });
+
+    const [repos, activity, calendar] = await Promise.all([
+      optional(
+        "repositories",
+        api.getUserRepos(formattedDid, { perPage: stats.repos.total }),
+      ),
+      optional(
+        "activity",
+        api.getUserActivity(formattedDid, { limit: USER_ACTIVITY_TAKE }),
+      ),
+      // Every year the calendar can offer, in one request; the node clamps
+      // this to its own maximum span.
+      optional(
+        "contributions",
+        api.getUserContributions(formattedDid, { days: 3650 }),
+      ),
     ]);
 
     return {
@@ -60,6 +105,9 @@ export async function loadUserRoute({
         nodeId: node.id,
         nodeAvatarUrl: node.avatarUrl,
         stats,
+        repos,
+        activity,
+        calendar,
       },
     };
   } catch (error) {

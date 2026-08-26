@@ -179,6 +179,19 @@ export const formatTimestamp = (
   return new Date(timestamp).toUTCString();
 };
 
+export function pluralize(singular: string, count: number): string {
+  if (count === 1) {
+    return singular;
+  }
+  if (/(?:ch|sh|s|x|z)$/i.test(singular)) {
+    return `${singular}es`;
+  }
+  if (/[^aeiou]y$/i.test(singular)) {
+    return `${singular.slice(0, -1)}ies`;
+  }
+  return `${singular}s`;
+}
+
 // Check whether the input is a URL.
 export function isUrl(input: string): boolean {
   return /^https?:\/\//.test(input);

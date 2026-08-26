@@ -106,8 +106,16 @@
 
   .headline-and-badges {
     display: flex;
+    align-items: center;
     gap: 0.5rem;
     margin-bottom: 1rem;
+  }
+
+  /* The row clips its overflow, so the name has to be the part that gives way.
+     Without a floor on its width it keeps its full text and pushes the badges
+     past the right edge, where they are cut off rather than ellipsized. */
+  .headline {
+    min-width: 0;
   }
 
   .badges {
@@ -138,6 +146,7 @@
   .icon {
     width: 1.5rem;
     height: 1.5rem;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -166,7 +175,9 @@
           name={project.data.name}
           styleWidth="1.5rem" />
       </div>
-      <div class="txt-body-l-semibold" use:twemoji>{project.data.name}</div>
+      <div class="headline txt-body-l-semibold txt-overflow" use:twemoji>
+        {project.data.name}
+      </div>
       <div class="badges" style:margin-left="auto">
         {#if isPrivate}
           <div
