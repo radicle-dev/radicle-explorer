@@ -49,7 +49,7 @@ const tagInfoSchema = object({
 
 export type TagInfo = z.infer<typeof tagInfoSchema>;
 
-const repoSchema = object({
+export const repoSchema = object({
   rid: string(),
   payloads: object({
     "xyz.radicle.project": object({

@@ -173,6 +173,44 @@ const nodeStatsSchema = z.object({
   repos: z.object({ total: z.number() }),
 }) satisfies ZodSchema<NodeStats>;
 
+export type UserRepo = z.infer<typeof userRepoSchema>;
+
+const userRepoSchema = repo.repoSchema.extend({
+  isDelegate: z.boolean(),
+  patchesAuthored: z.number(),
+  issuesAuthored: z.number(),
+  lastContribution: z.number().optional(),
+});
+
+export type ActivityKind = z.infer<typeof activityKindSchema>;
+
+const activityKindSchema = z.union([
+  z.literal("patch"),
+  z.literal("revision"),
+  z.literal("issue"),
+]);
+
+export type ActivityItem = z.infer<typeof activityItemSchema>;
+
+const activityItemSchema = z.object({
+  rid: z.string(),
+  kind: activityKindSchema,
+  id: z.string(),
+  revisionId: z.string().optional(),
+  revisionPosition: z.number().optional(),
+  revisionTotal: z.number().optional(),
+  title: z.string(),
+  status: z.string(),
+  timestamp: z.number(),
+});
+
+export type ContributionDay = z.infer<typeof contributionDaySchema>;
+
+const contributionDaySchema = z.object({
+  date: z.string(),
+  count: z.number(),
+});
+
 export class HttpdClient {
   #fetcher: Fetcher;
 
@@ -281,6 +319,66 @@ export class HttpdClient {
         options,
       },
       nodeIdentitySchema,
+    );
+  }
+
+  /**
+   * The repos a user delegates or has contributed to, most recently
+   * contributed to first.
+   */
+  public async getUserRepos(
+    did: string,
+    query?: { page?: number; perPage?: number },
+    options?: RequestOptions,
+  ): Promise<UserRepo[]> {
+    return this.#fetcher.fetchOk(
+      {
+        method: "GET",
+        path: `users/${did}/repos`,
+        query,
+        options,
+      },
+      z.array(userRepoSchema),
+    );
+  }
+
+  /**
+   * The patches, revisions and issues a user opened, across every repo the
+   * node holds, newest first.
+   */
+  public async getUserActivity(
+    did: string,
+    query?: { limit?: number },
+    options?: RequestOptions,
+  ): Promise<ActivityItem[]> {
+    return this.#fetcher.fetchOk(
+      {
+        method: "GET",
+        path: `users/${did}/activity`,
+        query,
+        options,
+      },
+      z.array(activityItemSchema),
+    );
+  }
+
+  /**
+   * A user's daily contribution counts, for the calendar. Days with no
+   * contributions are omitted.
+   */
+  public async getUserContributions(
+    did: string,
+    query?: { days?: number },
+    options?: RequestOptions,
+  ): Promise<ContributionDay[]> {
+    return this.#fetcher.fetchOk(
+      {
+        method: "GET",
+        path: `users/${did}/contributions`,
+        query,
+        options,
+      },
+      z.array(contributionDaySchema),
     );
   }
 
