@@ -38,6 +38,7 @@ export interface PrinciplesRoute {
 export type DocsPage =
   | "glossary"
   | "download"
+  | "guides/canonical-references"
   | "guides/getting-started"
   | "guides/protocol"
   | "guides/seeder"
@@ -46,6 +47,7 @@ export type DocsPage =
 const docsPages: DocsPage[] = [
   "glossary",
   "download",
+  "guides/canonical-references",
   "guides/getting-started",
   "guides/protocol",
   "guides/seeder",

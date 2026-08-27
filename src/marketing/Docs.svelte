@@ -8,6 +8,10 @@
   export let component: ComponentType;
 
   const guideHeroes: Record<string, { src: string; alt: string }> = {
+    "guides/canonical-references": {
+      src: "/marketing/images/learn/canonical-references.png",
+      alt: "Canonical References Guide",
+    },
     "guides/getting-started": {
       src: "/marketing/images/learn/getting-started.jpg",
       alt: "Getting Started",

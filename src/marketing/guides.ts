@@ -46,6 +46,15 @@ export const guides: Guide[] = [
     video: false,
   },
   {
+    title: "Canonical references",
+    description:
+      "Branch and tag protection without a central server: how quorum decides whose branch or tag is authoritative.",
+    href: "/guides/canonical-references",
+    image: "/marketing/images/learn/canonical-references.png",
+    external: false,
+    video: false,
+  },
+  {
     title: "Private collaboration over Radicle Garden",
     description:
       "Collaborate on a private repository from behind NAT firewalls, using Garden as an always-on relay.",

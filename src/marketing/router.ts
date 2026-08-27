@@ -24,6 +24,10 @@ const docsLoaders = new Map<
 >([
   ["glossary", () => import("./docs/glossary.md")],
   ["download", () => import("./docs/download.md")],
+  [
+    "guides/canonical-references",
+    () => import("./docs/guides/canonical-references.md"),
+  ],
   ["guides/getting-started", () => import("./docs/guides/getting-started.md")],
   ["guides/protocol", () => import("./docs/guides/protocol.md")],
   ["guides/seeder", () => import("./docs/guides/seeder.md")],
@@ -33,6 +37,7 @@ const docsLoaders = new Map<
 const docsTitles = new Map<DocsPage, string>([
   ["glossary", "Glossary"],
   ["download", "Download"],
+  ["guides/canonical-references", "Canonical references guide"],
   ["guides/getting-started", "Getting started"],
   ["guides/protocol", "Protocol guide"],
   ["guides/seeder", "Seeder guide"],
