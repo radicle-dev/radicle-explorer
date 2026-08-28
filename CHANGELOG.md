@@ -1,5 +1,11 @@
 # Changelog
 
+# radicle-httpd + radicle-search 0.28.0
+
+- **Releases API**: New `/repos/{rid}/releases` endpoints serve radicle-artifact release COBs, with Releases and Release views in the UI that degrade gracefully on older nodes
+- **`Git-Protocol` header passed through**: Git HTTP routes forward the header to `git-http-backend`, fixing clients that require Git wire protocol version 2
+- Updated `chacha20`, `h2` and `lru` to clear advisories reported by `cargo audit`
+
 ## radicle-httpd + radicle-search 0.27.0
 
 - **Commit-count endpoint**: New `/repos/{rid}/stats/commits/{sha}` counts reachable commits from the commit-graph, avoiding the full history walk of `/stats/tree`
