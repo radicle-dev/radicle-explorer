@@ -463,7 +463,6 @@
             <Button
               variant="background"
               on:click={() => (showRedacted = !showRedacted)}>
-              <Icon name="warning" />
               {showRedacted ? "Hide redacted" : "Show redacted"}
               <span class="counter">{redactedCount}</span>
             </Button>
