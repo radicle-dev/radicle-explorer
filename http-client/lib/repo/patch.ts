@@ -34,6 +34,13 @@ const patchStateSchema = union([
   }),
 ]);
 
+export type MergeTarget = z.infer<typeof mergeTargetSchema>;
+
+const mergeTargetSchema = union([
+  literal("delegates"),
+  object({ branch: string() }),
+]);
+
 export type Merge = z.infer<typeof mergeSchema>;
 
 const mergeSchema = object({
@@ -89,7 +96,7 @@ export const patchSchema = object({
   author: authorSchema,
   title: string(),
   state: patchStateSchema,
-  target: string(),
+  target: mergeTargetSchema,
   labels: array(string()),
   merges: array(mergeSchema),
   assignees: array(authorSchema),

@@ -35,6 +35,7 @@ import type { Issue, IssueState } from "./lib/repo/issue.js";
 import type {
   LifecycleState,
   Merge,
+  MergeTarget,
   Patch,
   PatchState,
   Review,
@@ -88,6 +89,7 @@ export type {
   LifecycleState,
   Location,
   Merge,
+  MergeTarget,
   Patch,
   PatchState,
   PeerRefs,
