@@ -578,8 +578,8 @@ async fn diff_handler(
 ) -> impl IntoResponse {
     let rid = ctx.resolve_repo(&rid)?;
     let response = api::blocking(move || {
-        let (repo, _) = ctx.repo(rid)?;
-        let repo = Repository::open(repo.path())?;
+        let (storage, _) = ctx.repo(rid)?;
+        let repo = Repository::open(storage.path())?;
         let base = repo.commit(base)?;
         let commit = repo.commit(oid)?;
         let diff = repo.diff(base.id, commit.id)?;
@@ -622,17 +622,21 @@ async fn diff_handler(
             }
         });
 
-        let commits = repo
-            .history(commit.id)?
-            .take_while(|c| {
-                if let Ok(c) = c {
-                    c.id != base.id
-                } else {
-                    false
-                }
-            })
-            .map(|r| r.map(|c| api::json::commit::Commit::new(&c).as_json()))
-            .collect::<Result<Vec<_>, _>>()?;
+        // Hide `base` from the walk rather than stopping at the first commit
+        // that equals it. A merge commit reaches `base` through one of its
+        // parents, so truncating there drops every commit the other parent
+        // contributes, and a revision whose head merges the target branch in
+        // looks like a single-commit revision.
+        let raw = radicle::git::raw::Repository::open(storage.path())?;
+        let mut walk = raw.revwalk()?;
+        walk.push(commit.id.into())?;
+        walk.hide(base.id.into())?;
+
+        let commits = walk
+            .filter_map(|oid| oid.ok())
+            .filter_map(|oid| repo.commit(Oid::from(oid)).ok())
+            .map(|c| api::json::commit::Commit::new(&c).as_json())
+            .collect::<Vec<_>>();
 
         Ok::<_, Error>(json!({ "diff": diff, "files": files, "commits": commits }))
     })
@@ -2479,6 +2483,34 @@ mod routes {
                 ],
             })
         );
+    }
+
+    /// The head of the diff is a merge commit whose second parent is the base.
+    /// A commit-date-ordered walk reaches the base first, which used to
+    /// truncate the list to the merge alone.
+    #[tokio::test]
+    async fn test_repos_diff_merge_commit() {
+        let tmp = tempfile::tempdir().unwrap();
+        let MergeFixture {
+            ctx,
+            rid,
+            base,
+            head,
+            feature,
+        } = seed_merge(tmp.path());
+        let app = super::router(ctx);
+
+        let response = get(&app, format!("/repos/{rid}/diff/{base}/{head}")).await;
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let json = response.json().await;
+        let commits = json["commits"].as_array().unwrap();
+        let ids = commits
+            .iter()
+            .map(|c| c["id"].as_str().unwrap().to_string())
+            .collect::<Vec<_>>();
+
+        assert_eq!(ids, vec![head.to_string(), feature.to_string()]);
     }
 
     #[tokio::test]

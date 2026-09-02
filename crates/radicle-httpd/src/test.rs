@@ -471,6 +471,180 @@ pub fn seed_multi_peer(dir: &Path) -> Context {
     ctx
 }
 
+/// A repository whose default branch tip is a merge commit.
+///
+/// Returned by [`seed_merge`].
+pub struct MergeFixture {
+    pub ctx: Context,
+    pub rid: radicle::identity::RepoId,
+    /// Tip of the merge target, used as the `base` of the diff.
+    pub base: radicle::git::Oid,
+    /// The merge commit, used as the `head` of the diff.
+    pub head: radicle::git::Oid,
+    /// The commit contributed by the merged-in side.
+    pub feature: radicle::git::Oid,
+}
+
+/// Seed a repository whose default branch tip is a merge commit.
+///
+/// The topology, with commit dates in parentheses:
+///
+/// ```text
+///     root (t1) ──┬── feature (t2) ──┐
+///                 │                  ├── merge (t4)  <- `head`, tip of `master`
+///                 └── base    (t3) ──┘
+/// ```
+///
+/// `base` is deliberately given a *newer* commit date than `feature`, so that a
+/// commit-date-ordered revwalk from the merge reaches `base` before it reaches
+/// `feature`. That is the case that used to truncate the commit list of
+/// `GET /repos/:rid/diff/:base/:oid` down to just the merge itself.
+pub fn seed_merge(dir: &Path) -> MergeFixture {
+    const DEFAULT_BRANCH: &str = "master";
+
+    fn tree<'a>(
+        repo: &'a radicle::git::raw::Repository,
+        entries: &[(&str, radicle::git::raw::Oid)],
+    ) -> radicle::git::raw::Tree<'a> {
+        let mut builder = repo.treebuilder(None).unwrap();
+        for (name, oid) in entries {
+            builder
+                .insert(name, *oid, i32::from(radicle::git::raw::FileMode::Blob))
+                .unwrap();
+        }
+        repo.find_tree(builder.write().unwrap()).unwrap()
+    }
+
+    crate::logger::init().ok();
+
+    let home = dir.join("radicle");
+    let profile = profile(home.as_path(), [0xfe; 32]);
+    let signer = SigningKey::from_seed(Seed::new([0xfe; 32]));
+
+    env::set_var(env::GIT_COMMITTER_DATE, TIMESTAMP.to_string());
+
+    let workdir = dir.join("hello-merge");
+    fs::create_dir_all(&workdir).unwrap();
+
+    let mut opts = radicle::git::raw::RepositoryInitOptions::new();
+    opts.initial_head(DEFAULT_BRANCH);
+    let repo = radicle::git::raw::Repository::init_opts(&workdir, &opts).unwrap();
+
+    let sig = |secs: i64| {
+        radicle::git::raw::Signature::new(
+            "Alice Liddell",
+            "alice@radicle.xyz",
+            &radicle::git::raw::Time::new(secs, 0),
+        )
+        .unwrap()
+    };
+
+    // The two sides touch different files, so the merge tree is just the union
+    // of both and no merge machinery is needed to build it.
+    let readme = repo.blob("Hello World!\n".as_bytes()).unwrap();
+    let feature_blob = repo.blob("A feature.\n".as_bytes()).unwrap();
+    let base_blob = repo.blob("Moved on.\n".as_bytes()).unwrap();
+
+    let root_tree = tree(&repo, &[("README", readme)]);
+    let root = repo
+        .commit(
+            None,
+            &sig(1673001014),
+            &sig(1673001014),
+            "Initial commit\n",
+            &root_tree,
+            &[],
+        )
+        .unwrap();
+    let root = repo.find_commit(root).unwrap();
+
+    let feature_tree = tree(&repo, &[("README", readme), ("FEATURE", feature_blob)]);
+    let feature = repo
+        .commit(
+            None,
+            &sig(1673002014),
+            &sig(1673002014),
+            "Add a feature\n",
+            &feature_tree,
+            &[&root],
+        )
+        .unwrap();
+
+    let base_tree = tree(&repo, &[("README", readme), ("MASTER", base_blob)]);
+    let base = repo
+        .commit(
+            None,
+            &sig(1673003014),
+            &sig(1673003014),
+            "Advance master\n",
+            &base_tree,
+            &[&root],
+        )
+        .unwrap();
+
+    let merge_tree = tree(
+        &repo,
+        &[
+            ("README", readme),
+            ("FEATURE", feature_blob),
+            ("MASTER", base_blob),
+        ],
+    );
+    let head = repo
+        .commit(
+            None,
+            &sig(1673004014),
+            &sig(1673004014),
+            "Merge branch 'master' into feature\n",
+            &merge_tree,
+            &[
+                &repo.find_commit(feature).unwrap(),
+                &repo.find_commit(base).unwrap(),
+            ],
+        )
+        .unwrap();
+
+    // Point the default branch at the merge so that `rad init` pushes the whole
+    // topology into storage.
+    let branch = format!("refs/heads/{DEFAULT_BRANCH}");
+    repo.reference(&branch, head, true, "test: point master at the merge")
+        .unwrap();
+    repo.set_head(&branch).unwrap();
+
+    let mut checkout = radicle::git::raw::build::CheckoutBuilder::new();
+    repo.checkout_head(Some(checkout.force())).unwrap();
+
+    let repo = radicle::git::raw::Repository::open(&workdir).unwrap();
+    let (rid, _, _) = radicle::rad::init(
+        &repo,
+        project::ProjectName::from_str("hello-merge").unwrap(),
+        "Rad repository whose head is a merge commit",
+        RefString::try_from(DEFAULT_BRANCH).unwrap(),
+        Visibility::default(),
+        &signer,
+        &profile.storage,
+    )
+    .unwrap();
+
+    let options = crate::Options {
+        aliases: std::collections::HashMap::new(),
+        listen: axum_listener::DualAddr::Tcp(std::net::SocketAddr::from(([0, 0, 0, 0], 8080))),
+        cache: Some(crate::DEFAULT_CACHE_SIZE),
+        search: None,
+    };
+    let web_config = crate::api::WebConfig::from_profile(&profile);
+    let ctx = Context::new(Arc::new(profile), web_config, &options)
+        .expect("test context creation failed");
+
+    MergeFixture {
+        ctx,
+        rid,
+        base: base.into(),
+        head: head.into(),
+        feature: feature.into(),
+    }
+}
+
 pub async fn get(app: &Router, path: impl ToString) -> Response {
     Response(
         app.clone()
