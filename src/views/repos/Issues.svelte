@@ -55,9 +55,7 @@
   }
 
   $: showMoreButton =
-    !loading &&
-    !error &&
-    allIssues.length < repo.payloads["xyz.radicle.project"].meta.issues[status];
+    !loading && !error && allIssues.length < (repo.cobs?.issues?.[status] ?? 0);
 </script>
 
 <style>
@@ -128,9 +126,11 @@
         <Icon name="issue" />
         <div class="title-counter">
           Open
-          <span class="counter" class:selected={status === "open"}>
-            {repo.payloads["xyz.radicle.project"].meta.issues.open}
-          </span>
+          {#if repo.cobs?.issues}
+            <span class="counter" class:selected={status === "open"}>
+              {repo.cobs.issues.open}
+            </span>
+          {/if}
         </div>
       </Button>
     </Link>
@@ -145,9 +145,11 @@
         <Icon name="issue-closed" />
         <div class="title-counter">
           Closed
-          <span class="counter" class:selected={status === "closed"}>
-            {repo.payloads["xyz.radicle.project"].meta.issues.closed}
-          </span>
+          {#if repo.cobs?.issues}
+            <span class="counter" class:selected={status === "closed"}>
+              {repo.cobs.issues.closed}
+            </span>
+          {/if}
         </div>
       </Button>
     </Link>
@@ -166,7 +168,7 @@
       {error} />
   {/if}
 
-  {#if repo.payloads["xyz.radicle.project"].meta.issues[status] === 0}
+  {#if repo.cobs?.issues?.[status] === 0}
     <div class="placeholder">
       <Placeholder iconName="no-issues" caption={`No ${status} issues`} />
     </div>

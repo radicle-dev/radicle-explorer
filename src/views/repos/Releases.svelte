@@ -44,7 +44,9 @@
     ? allReleases.filter(r => delegateIds.has(r.creator.id)).length
     : allReleases.length;
 
-  $: releaseCount = repo.payloads["xyz.radicle.project"].meta.releases;
+  // Only the full (all-authors) count is in repo metadata; absent on older
+  // nodes.
+  $: releaseCount = repo.cobs?.releases;
 
   const api = new HttpdClient(baseUrl);
 

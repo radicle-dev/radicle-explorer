@@ -6,6 +6,7 @@
 
   import {
     absoluteTimestamp,
+    defaultBranchTip,
     formatTimestamp,
     formatRepositoryId,
     repoSegment,
@@ -28,6 +29,7 @@
   $: project = repoInfo.repo.payloads["xyz.radicle.project"];
   $: baseUrl = repoInfo.baseUrl;
   $: isPrivate = repo.visibility.type === "private";
+  $: tip = defaultBranchTip(repo);
 </script>
 
 <style>
@@ -207,20 +209,26 @@
         class="stats-row txt-code-regular"
         style:color="var(--color-text-tertiary)">
         <Icon name="seed" />
-        {repoInfo.repo.seeding} ·
-        <Icon name="issue" />
-        {project.meta.issues.open} ·
-        <Icon name="patch" />
-        {project.meta.patches.open}
-        {#await api.repo.getCommitBySha(repo.rid, project.meta.head) then { commit }}
-          <span
-            class="txt-body-m-regular"
-            style:margin-left="auto"
-            style:overflow="hidden"
-            style:text-overflow="ellipsis"
-            title={absoluteTimestamp(commit.committer.time)}>
-            Updated {formatTimestamp(commit.committer.time)}
-          </span>
+        {repo.seeding}
+        {#if repo.cobs?.issues && repo.cobs.patches}
+          ·
+          <Icon name="issue" />
+          {repo.cobs.issues.open} ·
+          <Icon name="patch" />
+          {repo.cobs.patches.open}
+        {/if}
+        {#await tip && api.repo.getCommitBySha(repo.rid, tip) then result}
+          {#if result}
+            {@const commit = result.commit}
+            <span
+              class="txt-body-m-regular"
+              style:margin-left="auto"
+              style:overflow="hidden"
+              style:text-overflow="ellipsis"
+              title={absoluteTimestamp(commit.committer.time)}>
+              Updated {formatTimestamp(commit.committer.time)}
+            </span>
+          {/if}
         {/await}
       </div>
     </div>

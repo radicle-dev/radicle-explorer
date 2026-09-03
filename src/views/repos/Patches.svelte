@@ -58,8 +58,7 @@
   $: showMoreButton =
     !loading &&
     !error &&
-    allPatches.length <
-      repo.payloads["xyz.radicle.project"].meta.patches[status];
+    allPatches.length < (repo.cobs?.patches?.[status] ?? 0);
 </script>
 
 <style>
@@ -133,9 +132,11 @@
         <Icon name="patch" />
         <div class="title-counter" class:active={status === "open"}>
           Open
-          <span class="counter" class:selected={status === "open"}>
-            {repo.payloads["xyz.radicle.project"].meta.patches.open}
-          </span>
+          {#if repo.cobs?.patches}
+            <span class="counter" class:selected={status === "open"}>
+              {repo.cobs.patches.open}
+            </span>
+          {/if}
         </div>
       </Button>
     </Link>
@@ -150,9 +151,11 @@
         <Icon name="patch-draft" />
         <div class="title-counter" class:active={status === "draft"}>
           Draft
-          <span class="counter" class:selected={status === "draft"}>
-            {repo.payloads["xyz.radicle.project"].meta.patches.draft}
-          </span>
+          {#if repo.cobs?.patches}
+            <span class="counter" class:selected={status === "draft"}>
+              {repo.cobs.patches.draft}
+            </span>
+          {/if}
         </div>
       </Button>
     </Link>
@@ -167,9 +170,11 @@
         <Icon name="patch-archived" />
         <div class="title-counter" class:active={status === "archived"}>
           Archived
-          <span class="counter" class:selected={status === "archived"}>
-            {repo.payloads["xyz.radicle.project"].meta.patches.archived}
-          </span>
+          {#if repo.cobs?.patches}
+            <span class="counter" class:selected={status === "archived"}>
+              {repo.cobs.patches.archived}
+            </span>
+          {/if}
         </div>
       </Button>
     </Link>
@@ -184,9 +189,11 @@
         <Icon name="patch-merged" />
         <div class="title-counter" class:active={status === "merged"}>
           Merged
-          <span class="counter" class:selected={status === "merged"}>
-            {repo.payloads["xyz.radicle.project"].meta.patches.merged}
-          </span>
+          {#if repo.cobs?.patches}
+            <span class="counter" class:selected={status === "merged"}>
+              {repo.cobs.patches.merged}
+            </span>
+          {/if}
         </div>
       </Button>
     </Link>
@@ -205,7 +212,7 @@
       {error} />
   {/if}
 
-  {#if repo.payloads["xyz.radicle.project"].meta.patches[status] === 0}
+  {#if repo.cobs?.patches?.[status] === 0}
     <div class="placeholder">
       <Placeholder iconName="no-patches" caption={`No ${status} patches`} />
     </div>
