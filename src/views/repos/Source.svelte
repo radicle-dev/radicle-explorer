@@ -23,6 +23,7 @@
   export let baseUrl: BaseUrl;
   export let blobResult: BlobResult;
   export let commit: string;
+  export let defaultBranch: string;
   export let path: string;
   export let peer: string | undefined;
   export let repo: Repo;
@@ -55,9 +56,7 @@
   // and this refname reaches the user as part of the clone popover's archive
   // command.
   $: currentRefname = formatQualifiedRefname(
-    revision
-      ? safeDecodeURIComponent(revision)
-      : repo.payloads["xyz.radicle.project"].data.defaultBranch,
+    revision ? safeDecodeURIComponent(revision) : defaultBranch,
     peer,
   );
 

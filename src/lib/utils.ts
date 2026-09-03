@@ -6,11 +6,18 @@ import twemojiModule from "twemoji";
 
 export const REFS_HEADS = "refs/heads/";
 
-// Reads the repository's default branch. Heartwood no longer requires the
-// project payload, so this is the single place to change once the API stops
-// carrying the default branch there.
-export function defaultBranch(repo: Repo): string {
-  return repo.payloads["xyz.radicle.project"].data.defaultBranch;
+// The commit the default branch resolves to. Nodes older than 0.26.0 send no
+// canonical refs at all, so fall back to the tip they report inside the project
+// payload; drop that arm with the contract in httpd 0.30.0.
+export function defaultBranchTip(repo: Repo): string | undefined {
+  if (!repo.defaultBranch) {
+    return undefined;
+  }
+
+  return (
+    repo.refs?.refs[repo.defaultBranch] ??
+    repo.payloads["xyz.radicle.project"]?.meta.head
+  );
 }
 
 export function unqualifyBranch(refname: string): string {

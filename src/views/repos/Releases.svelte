@@ -161,12 +161,12 @@
           All
           <!-- Only the full (all-authors) count is in repo metadata; absent on
           older nodes. -->
-          {#if repo.payloads["xyz.radicle.project"].meta.releases !== undefined}
+          {#if repo.cobs?.releases !== undefined}
             <span
               class="counter"
               class:selected={allAuthors}
               class:hover={hover && !allAuthors}>
-              {repo.payloads["xyz.radicle.project"].meta.releases}
+              {repo.cobs?.releases}
             </span>
           {/if}
         </div>
