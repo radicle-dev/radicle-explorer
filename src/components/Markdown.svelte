@@ -207,18 +207,19 @@
       }
     }
 
-    // Replace standard HTML checkboxes with our custom radicle-icon-small element
+    // Replace standard HTML checkboxes with a custom styled box.
     for (const i of container.querySelectorAll('input[type="checkbox"]')) {
       i.parentElement?.classList.add("task-item");
 
-      const checkbox = document.createElement("radicle-icon-small");
-      const checked = i.getAttribute("checked");
-      checkbox.setAttribute(
-        "name",
-        checked === null ? "checkbox-unchecked" : "checkbox-checked",
-      );
-      i.insertAdjacentElement("beforebegin", checkbox);
-      i.remove();
+      const box = document.createElement("span");
+      box.classList.add("task-box");
+      if (i.hasAttribute("checked")) {
+        box.classList.add("checked");
+        const icon = document.createElement("radicle-icon-small");
+        icon.setAttribute("name", "checkmark");
+        box.appendChild(icon);
+      }
+      i.replaceWith(box);
     }
 
     // Iterate over all images, and replace the source with a canonicalized URL
@@ -411,9 +412,20 @@
     list-style-type: none;
     color: var(--color-text-tertiary);
   }
-  .markdown :global(li.task-item radicle-icon-small) {
-    margin-right: 0.2rem;
+  .markdown :global(li.task-item .task-box) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-right: 0.5rem;
     vertical-align: middle;
+    border: 1px solid var(--color-border-mid);
+    border-radius: var(--border-radius-md);
+    background-color: var(--color-surface-base);
+  }
+  .markdown :global(li.task-item .task-box.checked) {
+    color: var(--color-text-brand);
   }
   .markdown :global(li.task-item:not(:last-child)) {
     margin-bottom: 0.25rem;
