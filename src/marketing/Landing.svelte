@@ -68,11 +68,13 @@
       if (token !== loadToken) {
         return;
       }
-      repos = list
-        .filter(r => r.payloads["xyz.radicle.project"])
-        .map(r => {
-          const project = r.payloads["xyz.radicle.project"];
-          return {
+      repos = list.flatMap(r => {
+        const project = r.payloads["xyz.radicle.project"];
+        if (!project) {
+          return [];
+        }
+        return [
+          {
             name: project.data.name,
             description: project.data.description,
             rid: r.rid,
@@ -81,8 +83,9 @@
             patches: project.meta.patches.open,
             route: { resource: "repo.source", repo: r.rid, node: seed },
             avatar: renderRepoAvatar(project.data.name),
-          };
-        });
+          },
+        ];
+      });
     } catch (error) {
       if (token === loadToken && import.meta.env.DEV) {
         console.warn(

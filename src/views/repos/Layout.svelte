@@ -2,6 +2,8 @@
   import type { ActiveTab } from "./Header.svelte";
   import type { BaseUrl, Repo } from "@http-client";
 
+  import { repoName } from "@app/lib/utils";
+
   import Button from "@app/components/Button.svelte";
   import Header from "@app/components/Header.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -118,7 +120,7 @@
                 node: baseUrl,
               }}>
               <div class="breadcrumb">
-                {repo.payloads["xyz.radicle.project"].data.name}
+                {repoName(repo)}
               </div>
             </Link>
           </span>

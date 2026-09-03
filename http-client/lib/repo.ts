@@ -94,6 +94,8 @@ const legacyMetaSchema = object({
 const repoSchema = object({
   rid: string(),
   payloads: object({
+    // Optional: a repo may declare its default branch in `xyz.radicle.crefs`
+    // instead, and carry no project payload at all.
     "xyz.radicle.project": object({
       data: object({
         name: string(),
@@ -102,7 +104,7 @@ const repoSchema = object({
         defaultBranch: string(),
       }),
       meta: legacyMetaSchema,
-    }),
+    }).optional(),
   }),
   // Both absent on nodes older than 0.30.0, which report the counts inside the
   // project payload and the default branch nowhere else.

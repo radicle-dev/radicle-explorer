@@ -36,6 +36,7 @@ import {
   defaultBranchTip,
   getBranchesFromRefs,
   getTagsFromRefs,
+  repoName,
   unqualifyBranch,
   unreachable,
 } from "@app/lib/utils";
@@ -214,6 +215,17 @@ export type RepoLoadedRoute =
         revision: string | undefined;
         tree: Tree;
         commitHeaders: CommitHeader[];
+        nodeId: string;
+        nodeAvatarUrl: string | undefined;
+      };
+    }
+  | {
+      resource: "repo.sourceUnavailable";
+      params: {
+        baseUrl: BaseUrl;
+        seedingPolicy: SeedingPolicy;
+        repo: Repo;
+        repoId: string;
         nodeId: string;
         nodeAvatarUrl: string | undefined;
       };
@@ -493,27 +505,42 @@ async function loadIssuesView(
 
 // Neither the project nor the canonical refs payload names a default branch,
 // so there is no revision to browse.
-function noDefaultBranch(node: BaseUrl): NotFoundRoute {
+// Neither the project nor the canonical refs payload names a branch, so there
+// is no revision to browse. The repo still has COBs, so render its shell rather
+// than a full-page not-found that would take the issue and patch tabs with it.
+function sourceUnavailable(
+  route: { node: BaseUrl; repo: string },
+  repo: Repo,
+  seedingPolicy: SeedingPolicy,
+  node: { id: string; avatarUrl?: string | undefined },
+): RepoLoadedRoute {
   return {
-    resource: "notFound",
+    resource: "repo.sourceUnavailable",
     params: {
-      title: "This repository has no default branch",
-      description:
-        "Its identity document doesn't name a branch to browse.\nSource and history are unavailable until a delegate sets one.",
-      baseUrl: node,
+      baseUrl: route.node,
+      repoId: route.repo,
+      repo,
+      seedingPolicy,
+      nodeId: node.id,
+      nodeAvatarUrl: node.avatarUrl,
     },
   };
 }
 
-// Older nodes don't report a release count and lack the release API. Show a
-// friendly page pointing to another node instead of a raw 404.
-function releasesNotSupported(node: BaseUrl): NotFoundRoute {
+// A missing release count means the node cannot serve releases, for one of two
+// reasons. A node that reports no counts at all predates the release API; one
+// that reports the others was built without release support. Naming the right
+// one keeps us from telling an operator to upgrade a current node.
+function releasesNotSupported(repo: Repo, node: BaseUrl): NotFoundRoute {
+  const outdated = repo.cobs === undefined;
+
   return {
     resource: "notFound",
     params: {
       title: "Releases are not available on this node",
-      description:
-        "This node is running an older version that doesn't support browsing releases yet.\nSelect a different node to continue.",
+      description: outdated
+        ? "This node is running an older version that doesn't support browsing releases yet.\nSelect a different node to continue."
+        : "This node was built without release support.\nSelect a different node to continue.",
       baseUrl: node,
     },
   };
@@ -544,7 +571,7 @@ async function loadReleasesView(
   ]);
 
   if (repo.cobs?.releases === undefined) {
-    return releasesNotSupported(route.node);
+    return releasesNotSupported(repo, route.node);
   }
   if ("error" in releasesResult) {
     throw releasesResult.error;
@@ -580,7 +607,7 @@ async function loadReleaseView(
   ]);
 
   if (repo.cobs?.releases === undefined) {
-    return releasesNotSupported(route.node);
+    return releasesNotSupported(repo, route.node);
   }
   if ("error" in releaseResult) {
     throw releaseResult.error;
@@ -639,14 +666,8 @@ async function loadTreeView(
     nodePromise,
   ]);
 
-  if (!repo["payloads"]["xyz.radicle.project"]) {
-    throw new Error(
-      `Repository ${repo.rid} does not have a xyz.radicle.project payload.`,
-    );
-  }
-
   if (!repo.defaultBranch) {
-    return noDefaultBranch(route.node);
+    return sourceUnavailable(route, repo, seedingPolicy, node);
   }
 
   let branchMap = canonicalBranchMap(repo);
@@ -791,7 +812,7 @@ async function loadHistoryView(
     : canonicalBranchMap(repo);
 
   if (!repo.defaultBranch) {
-    return noDefaultBranch(route.node);
+    return sourceUnavailable(route, repo, seedingPolicy, node);
   }
 
   const commitId =
@@ -1321,35 +1342,31 @@ function patchRouteToPath(route: RepoPatchRoute): string {
 export function repoTitle(loadedRoute: RepoLoadedRoute) {
   const title: string[] = [];
 
-  if (!loadedRoute.params.repo["payloads"]["xyz.radicle.project"]) {
-    throw new Error(
-      `Repository ${loadedRoute.params.repo.rid} does not have a xyz.radicle.project payload.`,
-    );
-  }
-  const project = loadedRoute.params.repo["payloads"]["xyz.radicle.project"];
+  const repo = loadedRoute.params.repo;
+  const project = repo["payloads"]["xyz.radicle.project"];
 
   if (loadedRoute.resource === "repo.source") {
-    title.push(project.data.name);
-    if (project.data.description.length > 0) {
+    title.push(repoName(repo));
+    if (project && project.data.description.length > 0) {
       title.push(project.data.description);
     }
   } else if (loadedRoute.resource === "repo.commit") {
     title.push(loadedRoute.params.commit.commit.summary);
     title.push("commit");
   } else if (loadedRoute.resource === "repo.history") {
-    title.push(project.data.name);
+    title.push(repoName(repo));
     title.push("history");
   } else if (loadedRoute.resource === "repo.issue") {
     title.push(loadedRoute.params.issue.title);
     title.push("issue");
   } else if (loadedRoute.resource === "repo.issues") {
-    title.push(project.data.name);
+    title.push(repoName(repo));
     title.push("issues");
   } else if (loadedRoute.resource === "repo.patch") {
     title.push(loadedRoute.params.patch.title);
     title.push("patch");
   } else if (loadedRoute.resource === "repo.patches") {
-    title.push(project.data.name);
+    title.push(repoName(repo));
     title.push("patches");
   } else if (loadedRoute.resource === "repo.release") {
     title.push(
@@ -1359,8 +1376,10 @@ export function repoTitle(loadedRoute: RepoLoadedRoute) {
     );
     title.push("release");
   } else if (loadedRoute.resource === "repo.releases") {
-    title.push(project.data.name);
+    title.push(repoName(repo));
     title.push("releases");
+  } else if (loadedRoute.resource === "repo.sourceUnavailable") {
+    title.push(repoName(repo));
   } else {
     return unreachable(loadedRoute);
   }
