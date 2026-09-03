@@ -1,8 +1,23 @@
-import type { Author, BaseUrl } from "@http-client";
+import type { Author, BaseUrl, Repo } from "@http-client";
 
 import md5 from "md5";
 import bs58 from "bs58";
 import twemojiModule from "twemoji";
+
+export const REFS_HEADS = "refs/heads/";
+
+// Reads the repository's default branch. Heartwood no longer requires the
+// project payload, so this is the single place to change once the API stops
+// carrying the default branch there.
+export function defaultBranch(repo: Repo): string {
+  return repo.payloads["xyz.radicle.project"].data.defaultBranch;
+}
+
+export function unqualifyBranch(refname: string): string {
+  return refname.startsWith(REFS_HEADS)
+    ? refname.slice(REFS_HEADS.length)
+    : refname;
+}
 
 export async function toClipboard(text: string): Promise<void> {
   await navigator.clipboard.writeText(text);
@@ -328,8 +343,8 @@ export function getBranchesFromRefs(
 ): Record<string, string> {
   const branches: Record<string, string> = {};
   for (const [name, oid] of Object.entries(refs)) {
-    if (name.startsWith("refs/heads/")) {
-      branches[name.slice("refs/heads/".length)] = oid;
+    if (name.startsWith(REFS_HEADS)) {
+      branches[name.slice(REFS_HEADS.length)] = oid;
     }
   }
   return branches;

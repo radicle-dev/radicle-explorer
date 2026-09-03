@@ -32,6 +32,7 @@ import { ResponseError, ResponseParseError } from "@http-client/lib/fetcher";
 import { cached } from "@app/lib/cache";
 import { handleError, unreachableError } from "@app/views/repos/error";
 import {
+  REFS_HEADS,
   getBranchesFromRefs,
   getTagsFromRefs,
   unreachable,
@@ -43,7 +44,7 @@ export const ISSUES_PER_PAGE = 10;
 export const RELEASES_PER_PAGE = 30;
 
 export function peerHasBranches(peer: PeerRefs): boolean {
-  return Object.keys(peer.refs).some(name => name.startsWith("refs/heads/"));
+  return Object.keys(peer.refs).some(name => name.startsWith(REFS_HEADS));
 }
 
 function canonicalOids(
@@ -70,7 +71,7 @@ export function remoteToPeerRefs(remote: Remote): PeerRefs {
   const refs: Record<string, string> = {};
 
   for (const [name, oid] of Object.entries(remote.heads)) {
-    refs[`refs/heads/${name}`] = oid;
+    refs[`${REFS_HEADS}${name}`] = oid;
   }
 
   return {
@@ -979,8 +980,8 @@ function canonicalBranchMap(repo: Repo): Record<string, string> {
   }
 
   for (const [refName, oid] of canonicalOids(repo.refs)) {
-    const shortName = refName.startsWith("refs/heads/")
-      ? refName.slice("refs/heads/".length)
+    const shortName = refName.startsWith(REFS_HEADS)
+      ? refName.slice(REFS_HEADS.length)
       : refName.startsWith("refs/tags/")
         ? refName.slice("refs/tags/".length)
         : refName;

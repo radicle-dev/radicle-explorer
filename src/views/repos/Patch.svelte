@@ -4,10 +4,13 @@
     Comment,
     Review,
     Merge,
+    Patch,
     Repo,
     Revision,
     Diff,
   } from "@http-client";
+
+  import * as utils from "@app/lib/utils";
 
   interface Thread {
     root: Comment;
@@ -41,15 +44,32 @@
     string,
     { latest: boolean; review: Review }
   >;
+
+  // The branch a patch is opened against, unqualified. The `delegates` target
+  // leaves the repository default implied.
+  function resolveTargetBranch(patch: Patch, repo: Repo): string {
+    return patch.target === "delegates"
+      ? utils.defaultBranch(repo)
+      : utils.unqualifyBranch(patch.target.branch);
+  }
+
+  // Nothing validates a patch's target when it is opened, so it can name a
+  // branch that is not a canonical reference. The source view cannot resolve
+  // such a branch, so it is shown without a link rather than one that errors.
+  function isBrowsableBranch(branch: string, repo: Repo): boolean {
+    return (
+      branch === utils.defaultBranch(repo) ||
+      repo.refs?.refs[`${utils.REFS_HEADS}${branch}`] !== undefined
+    );
+  }
 </script>
 
 <script lang="ts">
-  import type { BaseUrl, Patch } from "@http-client";
+  import type { BaseUrl } from "@http-client";
   import type { PatchView } from "./router";
   import type { Route } from "@app/lib/router";
   import type { ComponentProps } from "svelte";
 
-  import * as utils from "@app/lib/utils";
   import capitalize from "lodash/capitalize";
   import uniqBy from "lodash/uniqBy";
 
@@ -232,6 +252,9 @@
         })),
     ].sort((a, b) => a.timestamp - b.timestamp),
   ]);
+  $: targetBranch = resolveTargetBranch(patch, repo);
+  $: targetBranchCaption = `This patch merges into ${targetBranch}`;
+  $: targetBranchBrowsable = isBrowsableBranch(targetBranch, repo);
   $: firstRevision = timelineTuple[0][0];
   $: latestRevision = patch.revisions[patch.revisions.length - 1];
 </script>
@@ -285,6 +308,19 @@
   .author-metadata {
     color: var(--color-text-tertiary);
     font: var(--txt-body-m-regular);
+  }
+  .code-chip {
+    display: inline-flex;
+  }
+  .code-chip > :global(*) {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font: var(--txt-code-regular);
+    color: var(--color-text-tertiary);
+    background-color: var(--color-surface-alpha-subtle);
+    border-radius: var(--border-radius-sm);
+    padding: 0 0.25rem;
   }
   .revision-description {
     display: flex;
@@ -379,7 +415,33 @@
             nodeId={patch.author.id}
             alias={patch.author.alias} />
           opened
-          <Id id={patch.id} />
+          <span class="code-chip">
+            <Id id={patch.id} />
+          </span>
+          <span class="global-flex-item" title={targetBranchCaption}>
+            <Icon name="arrow-right" />
+          </span>
+          <span class="code-chip">
+            {#if targetBranchBrowsable}
+              <Link
+                styleHoverState
+                title={targetBranchCaption}
+                route={{
+                  resource: "repo.source",
+                  repo: repoId,
+                  node: baseUrl,
+                  revision: targetBranch,
+                }}>
+                <Icon name="branch" />
+                <span class="txt-overflow">{targetBranch}</span>
+              </Link>
+            {:else}
+              <span title={targetBranchCaption}>
+                <Icon name="branch" />
+                <span class="txt-overflow">{targetBranch}</span>
+              </span>
+            {/if}
+          </span>
           <span title={utils.absoluteTimestamp(patch.revisions[0].timestamp)}>
             {utils.formatTimestamp(patch.revisions[0].timestamp)}
           </span>
