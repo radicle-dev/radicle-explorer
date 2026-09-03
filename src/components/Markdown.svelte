@@ -414,6 +414,7 @@
   .markdown :global(li.task-item radicle-icon-small) {
     margin-right: 0.2rem;
     vertical-align: middle;
+    display: inline-block;
   }
   .markdown :global(li.task-item:not(:last-child)) {
     margin-bottom: 0.25rem;
