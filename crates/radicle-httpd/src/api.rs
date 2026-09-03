@@ -31,7 +31,10 @@ use crate::Options;
 
 pub const RADICLE_VERSION: &str = env!("RADICLE_VERSION");
 // This version has to be updated on every breaking change to the radicle-httpd API.
-pub const API_VERSION: &str = "6.2.0";
+pub const API_VERSION: &str = "6.3.0";
+
+/// Prefix of a qualified branch reference.
+const REFS_HEADS: &str = "refs/heads/";
 
 /// Thread-safe wrapper around radicle's web configuration.
 ///
@@ -170,32 +173,69 @@ impl Context {
         let db = &self.profile.database()?;
         let seeding = db.count(&rid).unwrap_or_default();
 
+        // Heartwood resolves this from the `xyz.radicle.crefs` symbolic HEAD,
+        // falling back to the project payload, so it works for repos that have
+        // neither a name nor a description. Reported qualified, to match the
+        // crefs payload and the keys of `refs`.
+        //
+        // Only ever a branch: the explorer is branch-shaped throughout, so a
+        // HEAD resolving elsewhere leaves the repo without a default branch
+        // rather than a tag rendered as a branch it is not.
+        let default_branch = doc
+            .default_branch()
+            .ok()
+            .filter(|branch| branch.as_str().starts_with(REFS_HEADS))
+            .map(|branch| branch.to_string());
+
+        // Counts are computed rather than declared, so they can differ between
+        // seeds. A count this node cannot determine is omitted: zero is a claim
+        // we would not be entitled to make.
+        let patches = self
+            .profile
+            .patches(repo)
+            .ok()
+            .and_then(|patches| patches.counts().ok());
+        let issues = self
+            .profile
+            .issues(repo)
+            .ok()
+            .and_then(|issues| issues.counts().ok());
+
+        let mut cobs = json!({});
+        if let Some(issues) = &issues {
+            cobs["issues"] = json!(issues);
+        }
+        if let Some(patches) = &patches {
+            cobs["patches"] = json!(patches);
+        }
+        add_releases_count(&mut cobs, repo);
+
+        // Expand phase: clients older than 0.30.0 read the counts and the head
+        // from inside the project payload. Drop this and the `head` above with
+        // the contract in 0.30.0; see docs/adr/0001.
+        let head = default_branch
+            .as_ref()
+            .and_then(|_| repo.head().ok())
+            .map(|(_, oid)| oid);
+        let mut legacy_meta = cobs.clone();
+        if let Some(head) = head {
+            legacy_meta["head"] = json!(head);
+        }
+
         let payloads: BTreeMap<PayloadId, Value> = doc
             .payload()
             .iter()
-            .filter_map(|(id, payload)| {
+            .map(|(id, payload)| {
                 if id == &PayloadId::project() {
-                    let (_, head) = repo.head().ok()?;
-                    let patches = self.profile.patches(repo).ok()?;
-                    let patches = patches.counts().ok()?;
-                    let issues = self.profile.issues(repo).ok()?;
-                    let issues = issues.counts().ok()?;
-                    let mut meta = json!({
-                        "head": head,
-                        "issues": issues,
-                        "patches": patches
-                    });
-                    add_releases_meta(&mut meta, repo);
-
-                    Some((
+                    (
                         id.clone(),
                         json!({
                             "data": payload,
-                            "meta": meta
+                            "meta": legacy_meta
                         }),
-                    ))
+                    )
                 } else {
-                    Some((id.clone(), json!({ "data": payload })))
+                    (id.clone(), json!({ "data": payload }))
                 }
             })
             .collect();
@@ -206,6 +246,8 @@ impl Context {
 
         Ok(repo::Info {
             payloads,
+            cobs,
+            default_branch,
             delegates,
             threshold: doc.threshold(),
             visibility: doc.visibility().clone(),
@@ -242,20 +284,21 @@ impl Context {
     }
 }
 
-/// Add the release count to a project payload's `meta` object.
+/// Add the release count to a repo's `cobs` object.
 #[cfg(feature = "artifacts")]
-fn add_releases_meta(meta: &mut Value, repo: &Repository) {
+fn add_releases_count(cobs: &mut Value, repo: &Repository) {
     let releases = Releases::open(repo)
         .ok()
         .and_then(|releases| releases.count().ok())
         .unwrap_or_default();
 
-    meta["releases"] = json!(releases);
+    cobs["releases"] = json!(releases);
 }
 
 /// Without artifact support there is no release store, so the key is omitted.
+/// Its absence is how clients learn this node cannot serve releases.
 #[cfg(not(feature = "artifacts"))]
-fn add_releases_meta(_meta: &mut Value, _repo: &Repository) {}
+fn add_releases_count(_cobs: &mut Value, _repo: &Repository) {}
 
 /// Run a blocking closure on the blocking thread pool.
 ///
@@ -543,6 +586,13 @@ mod repo {
     #[serde(rename_all = "camelCase")]
     pub struct Info {
         pub payloads: BTreeMap<PayloadId, Value>,
+        /// Repo-level COB counts. Each is absent when this node cannot
+        /// determine it; the object itself is always present.
+        pub cobs: Value,
+        /// The qualified default branch, resolved from either the canonical
+        /// refs or the project payload. Absent when neither names a branch.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub default_branch: Option<String>,
         pub delegates: Vec<Value>,
         pub threshold: usize,
         pub visibility: Visibility,
