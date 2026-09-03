@@ -98,6 +98,15 @@ export function truncateId(pubkey: string): string {
   return `${pubkey.substring(0, 6)}…${pubkey.slice(-6)}`;
 }
 
+// A repo only has a name if it carries a project payload. Fall back to the RID,
+// which every repo has.
+export function repoName(repo: Repo): string {
+  return (
+    repo.payloads["xyz.radicle.project"]?.data.name ??
+    formatRepositoryId(repo.rid)
+  );
+}
+
 // The URL path segment to use for a repo: its configured alias when the node
 // advertises one, otherwise the canonical RID. Keeps alias-based URLs sticky
 // across in-app navigation, since the backend resolves either form.

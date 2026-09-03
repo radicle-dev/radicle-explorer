@@ -9,6 +9,7 @@
     defaultBranchTip,
     formatTimestamp,
     formatRepositoryId,
+    repoName,
     repoSegment,
     twemoji,
   } from "@app/lib/utils";
@@ -164,11 +165,11 @@
     <div class="headline-and-badges txt-overflow">
       <div class="icon">
         <RepoAvatar
-          rid={repoInfo.repo.rid}
-          name={project.data.name}
+          rid={repo.rid}
+          name={project?.data.name ?? ""}
           styleWidth="1.5rem" />
       </div>
-      <div class="txt-body-l-semibold" use:twemoji>{project.data.name}</div>
+      <div class="txt-body-l-semibold" use:twemoji>{repoName(repo)}</div>
       <div class="badges" style:margin-left="auto">
         {#if isPrivate}
           <div
@@ -184,7 +185,7 @@
     <div class="content-and-activity">
       <div class="content">
         <div class="txt-body-m-regular txt-overflow" use:twemoji>
-          {project.data.description}
+          {project?.data.description ?? ""}
         </div>
         <span style:text-overflow="ellipsis">
           <Id id={repo.rid} title={repo.rid}>
