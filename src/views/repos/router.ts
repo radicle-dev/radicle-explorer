@@ -36,8 +36,10 @@ import { cached } from "@app/lib/cache";
 import { handleError, unreachableError } from "@app/views/repos/error";
 import {
   REFS_HEADS,
+  defaultBranchTip,
   getBranchesFromRefs,
   getTagsFromRefs,
+  unqualifyBranch,
   unreachable,
 } from "@app/lib/utils";
 import { nodePath } from "@app/views/nodes/router";
@@ -191,6 +193,7 @@ export type RepoLoadedRoute =
         commit: string;
         repo: Repo;
         repoId: string;
+        defaultBranch: string;
         peer: string | undefined;
         revision: string | undefined;
         tree: Tree;
@@ -209,6 +212,7 @@ export type RepoLoadedRoute =
         commit: string;
         repo: Repo;
         repoId: string;
+        defaultBranch: string;
         peer: string | undefined;
         revision: string | undefined;
         tree: Tree;
@@ -491,6 +495,20 @@ async function loadIssuesView(
   };
 }
 
+// Neither the project nor the canonical refs payload names a default branch,
+// so there is no revision to browse.
+function noDefaultBranch(node: BaseUrl): NotFoundRoute {
+  return {
+    resource: "notFound",
+    params: {
+      title: "This repository has no default branch",
+      description:
+        "Its identity document doesn't name a branch to browse.\nSource and history are unavailable until a delegate sets one.",
+      baseUrl: node,
+    },
+  };
+}
+
 // Older nodes don't report a release count and lack the release API. Show a
 // friendly page pointing to another node instead of a raw 404.
 function releasesNotSupported(node: BaseUrl): NotFoundRoute {
@@ -538,7 +556,7 @@ async function loadReleasesView(
   let scope = route.scope ?? "trusted";
 
   // Fetch releases alongside the repo so the common path stays parallel; the
-  // repo's `meta.releases` then tells us whether a failure is an unsupported
+  // repo's `cobs.releases` then tells us whether a failure is an unsupported
   // node or a genuine error.
   const [repo, releasesResult, node] = await Promise.all([
     api.repo.getByRid(route.repo),
@@ -551,7 +569,7 @@ async function loadReleasesView(
 
   // Older nodes report a single count here, newer ones the buckets, and
   // either way its absence means no release API.
-  const releasesMeta = repo.payloads["xyz.radicle.project"].meta.releases;
+  const releasesMeta = repo.cobs?.releases;
   if (releasesMeta === undefined) {
     return releasesNotSupported(route.node);
   }
@@ -641,7 +659,7 @@ async function loadReleaseView(
     api.getNode(),
   ]);
 
-  if (repo.payloads["xyz.radicle.project"].meta.releases === undefined) {
+  if (repo.cobs?.releases === undefined) {
     return releasesNotSupported(route.node);
   }
   if ("error" in releaseResult) {
@@ -708,7 +726,10 @@ async function loadTreeView(
     );
   }
 
-  const project = repo["payloads"]["xyz.radicle.project"];
+  if (!repo.defaultBranch) {
+    return noDefaultBranch(route.node);
+  }
+
   let branchMap = canonicalBranchMap(repo);
 
   if (route.peer) {
@@ -733,7 +754,7 @@ async function loadTreeView(
 
   const commit = parseRevisionToOid(
     route.revision,
-    project.data.defaultBranch,
+    unqualifyBranch(repo.defaultBranch),
     branchMap,
   );
   const path = route.path || "/";
@@ -749,6 +770,7 @@ async function loadTreeView(
       seedingPolicy,
       commit,
       repo,
+      defaultBranch: unqualifyBranch(repo.defaultBranch),
       peer: route.peer,
       rawPath,
       revision: route.revision,
@@ -813,7 +835,7 @@ async function loadBlob(
 async function loadHistoryView(
   route: RepoHistoryRoute,
   previousLoaded: LoadedRoute,
-): Promise<RepoLoadedRoute> {
+): Promise<RepoLoadedRoute | NotFoundRoute> {
   const api = new HttpdClient(route.node);
 
   let repoPromise: Promise<Repo>;
@@ -850,17 +872,14 @@ async function loadHistoryView(
     ? await getPeerBranchMap(api, route.repo, route.peer)
     : canonicalBranchMap(repo);
 
-  if (!repo["payloads"]["xyz.radicle.project"]) {
-    throw new Error(
-      `Repository ${repo.rid} does not have a xyz.radicle.project payload.`,
-    );
+  if (!repo.defaultBranch) {
+    return noDefaultBranch(route.node);
   }
 
-  const project = repo["payloads"]["xyz.radicle.project"];
   const commitId =
     route.revision && isOid(route.revision)
       ? route.revision
-      : branchMap[route.revision || project.data.defaultBranch];
+      : branchMap[route.revision || unqualifyBranch(repo.defaultBranch)];
 
   if (!commitId) {
     throw new Error(
@@ -900,6 +919,7 @@ async function loadHistoryView(
       seedingPolicy,
       commit: commitId,
       repo,
+      defaultBranch: unqualifyBranch(repo.defaultBranch),
       peer: route.peer,
       revision: route.revision,
       tree,
@@ -1055,11 +1075,12 @@ async function loadPatchView(
 function canonicalBranchMap(repo: Repo): Record<string, string> {
   const branchMap: Record<string, string> = {};
 
-  const project = repo.payloads["xyz.radicle.project"];
-  if (project) {
-    branchMap[project.data.defaultBranch] = project.meta.head;
-    branchMap[encodeURIComponent(project.data.defaultBranch)] =
-      project.meta.head;
+  // `defaultBranch` is qualified but this map is keyed by short names.
+  const tip = defaultBranchTip(repo);
+  if (repo.defaultBranch && tip) {
+    const name = unqualifyBranch(repo.defaultBranch);
+    branchMap[name] = tip;
+    branchMap[encodeURIComponent(name)] = tip;
   }
 
   for (const [refName, oid] of canonicalOids(repo.refs)) {

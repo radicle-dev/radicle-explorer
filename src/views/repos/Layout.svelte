@@ -151,7 +151,9 @@
 
       <div style:width="100%">
         <Link
-          title={`${repo.payloads["xyz.radicle.project"].meta.issues.open} Issues`}
+          title={repo.cobs?.issues
+            ? `${repo.cobs.issues.open} Issues`
+            : "Issues"}
           route={{
             resource: "repo.issues",
             repo: repoId,
@@ -167,7 +169,9 @@
 
       <div style:width="100%">
         <Link
-          title={`${repo.payloads["xyz.radicle.project"].meta.patches.open} Patches`}
+          title={repo.cobs?.patches
+            ? `${repo.cobs.patches.open} Patches`
+            : "Patches"}
           route={{
             resource: "repo.patches",
             repo: repoId,
@@ -181,7 +185,7 @@
         </Link>
       </div>
 
-      {#if repo.payloads["xyz.radicle.project"].meta.releases !== undefined}
+      {#if repo.cobs?.releases !== undefined}
         <div style:width="100%">
           <Link
             title="Releases"
