@@ -3,9 +3,11 @@
 # its default name. The other files here are uploaded from below.
 #
 # The broker creates exactly one Buildkite pipeline per Radicle repo, so every
-# suite lands in this single build. Keep cache volume names distinct across the
-# uploaded files: volumes are scoped to the pipeline, and a step that commits a
-# volume version discards what a concurrent step wrote to the same volume.
+# suite lands in this single build. Cache volumes are scoped to the pipeline, so
+# the same name in two uploaded files is one volume: node-checks.yml, e2e.yml and
+# visual.yml all attach `deps` on purpose. Share a name only where that is safe,
+# because a step that commits a volume version discards what a concurrent step
+# wrote to the same volume.
 #
 # Upload node-checks.yml before e2e.yml: the e2e step depends on the `check` key
 # defined there, and Buildkite rejects a step whose dependency is not yet part of
