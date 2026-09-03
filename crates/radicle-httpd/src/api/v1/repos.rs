@@ -1408,6 +1408,20 @@ mod routes {
                     }
                   }
                 },
+                "cobs": {
+                  "patches": {
+                    "open": 1,
+                    "draft": 0,
+                    "archived": 0,
+                    "merged": 0,
+                  },
+                  "issues": {
+                    "open": 1,
+                    "closed": 0,
+                  },
+                  "releases": 0,
+                },
+                "defaultBranch": "refs/heads/master",
                 "delegates": [
                   {
                     "id": DID,
@@ -1446,6 +1460,20 @@ mod routes {
                     }
                   }
                 },
+                "cobs": {
+                  "patches": {
+                    "open": 0,
+                    "draft": 0,
+                    "archived": 0,
+                    "merged": 0,
+                  },
+                  "issues": {
+                    "open": 0,
+                    "closed": 0,
+                  },
+                  "releases": 0,
+                },
+                "defaultBranch": "refs/heads/master",
                 "delegates": [
                   {
                     "id": DID,
@@ -1497,6 +1525,20 @@ mod routes {
                     }
                   }
                 },
+                "cobs": {
+                  "patches": {
+                    "open": 1,
+                    "draft": 0,
+                    "archived": 0,
+                    "merged": 0,
+                  },
+                  "issues": {
+                    "open": 1,
+                    "closed": 0,
+                  },
+                  "releases": 0,
+                },
+                "defaultBranch": "refs/heads/master",
                 "delegates": [
                   {
                     "id": DID,
@@ -1535,6 +1577,20 @@ mod routes {
                     }
                   }
                 },
+                "cobs": {
+                  "patches": {
+                    "open": 0,
+                    "draft": 0,
+                    "archived": 0,
+                    "merged": 0,
+                  },
+                  "issues": {
+                    "open": 0,
+                    "closed": 0,
+                  },
+                  "releases": 0,
+                },
+                "defaultBranch": "refs/heads/master",
                 "delegates": [
                   {
                     "id": DID,
@@ -1716,6 +1772,20 @@ mod routes {
                     }
                   }
                 },
+               "cobs": {
+                 "patches": {
+                   "open": 1,
+                   "draft": 0,
+                   "archived": 0,
+                   "merged": 0,
+                 },
+                 "issues": {
+                   "open": 1,
+                   "closed": 0,
+                 },
+                 "releases": 0,
+               },
+               "defaultBranch": "refs/heads/master",
                "delegates": [
                  {
                    "id": DID,
@@ -2304,6 +2374,23 @@ mod routes {
         assert_eq!(refs["tags"]["refs/tags/v1.0"]["commit"], json!(HEAD));
         assert!(refs["refs"]["refs/heads/feature/branch"].is_string());
         assert!(refs["tags"].get("refs/tags/v2.0-rc").is_none());
+    }
+
+    #[tokio::test]
+    async fn test_repos_without_canonical_head() {
+        let tmp = tempfile::tempdir().unwrap();
+        let app = super::router(seed_no_quorum(tmp.path()));
+        let response = get(&app, format!("/repos/{RID}")).await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        // Clients older than 0.30.0 require `meta.head`, so the project payload
+        // is left out rather than sent without it.
+        let body = response.json().await;
+        assert!(body["payloads"].get("xyz.radicle.project").is_none());
+        assert_eq!(body["defaultBranch"], json!("refs/heads/master"));
+        assert_eq!(body["cobs"]["issues"]["open"], json!(1));
+        assert_eq!(body["cobs"]["patches"]["open"], json!(1));
     }
 
     #[tokio::test]
