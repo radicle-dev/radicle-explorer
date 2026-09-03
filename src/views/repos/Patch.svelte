@@ -548,6 +548,7 @@
               {timelines}
               {...revision}
               first={index === 0}
+              {targetBranch}
               patchId={patch.id}
               patchState={patch.state}
               initiallyExpanded={index === patch.revisions.length - 1}

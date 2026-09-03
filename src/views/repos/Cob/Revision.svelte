@@ -48,6 +48,7 @@
   export let revisionReactions: Comment["reactions"];
   export let revisionAuthor: Author;
   export let revisionDescription: string;
+  export let targetBranch: string;
   export let timelines: Timeline[];
   export let previousRevBase: string | undefined = undefined;
   export let previousRevId: string | undefined = undefined;
@@ -209,6 +210,11 @@
     min-height: 1.5rem;
     gap: 0.5rem;
     font: var(--txt-body-m-regular);
+  }
+  .target-branch {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
   }
   .timestamp {
     font: var(--txt-body-m-regular);
@@ -491,6 +497,11 @@
 
               merged revision
               <Id id={element.inner.revision} />
+              into
+              <span class="target-branch">
+                <Icon name="branch" />
+                {targetBranch}
+              </span>
               at commit
               <Id id={element.inner.commit} />
               <span
