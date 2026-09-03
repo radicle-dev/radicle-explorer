@@ -1,30 +1,27 @@
 # Visual snapshot tests.
 #
-# tests/visual/snapshots is gitignored, so the baselines live only in this cache
-# volume. Master updates them with --update-snapshots; every other branch
-# compares against them.
+# tests/visual/snapshots is gitignored, so the baselines are not in the checkout.
+# Master regenerates them with --update-snapshots and uploads them as build
+# artifacts. Every other branch downloads the set from the newest passed master
+# build and compares against it.
 #
-# A step can attach only one volume, so these two steps cannot also read the
-# `deps` volume from node-checks.yml. This volume carries the npm cache and the
-# Radicle binaries as well as the baselines.
+# Artifacts rather than a cache volume, because a volume publishes a new version
+# only when a job exits 0. That made every passing branch job a writer, so the
+# branch step had to fail on purpose to keep its copy out, and it left the volume
+# at its empty first version until a master job went green. Artifacts have
+# neither problem, and they free the one cache volume a step can attach for the
+# shared `deps` volume from node-checks.yml.
 #
-# A job does not read the volume in place: it gets a private copy at start, and
-# that copy becomes the version the next job sees if the job exits 0. So every
-# successful job is a writer, whether or not it changed a file. The two steps
-# below therefore keep exactly one writer:
+# A job knows its own build id and no other, so the branch step asks the REST API
+# for the newest passed master build. No credential a job already holds can do
+# that: the agent access token authenticates the agent API, not the REST API. So
+# the step reads an API token with the read_builds scope from the cluster secret
+# `read_builds_api_token`. A secret key cannot start with `buildkite` or `bk`,
+# which is why the name does not say which API it is for.
 #
-#   - Master updates the snapshots and commits, serialized by `concurrency: 1`
-#     so two master builds cannot overwrite each other.
-#   - Branches compare, and always exit non-zero so their copy is thrown away.
-#     They need this even though they do not update the snapshots: without
-#     --update-snapshots the mode is `missing`, under which Playwright still
-#     writes a baseline that does not exist yet. A branch therefore needs no
-#     concurrency limit, and any number of branch builds can run at once.
-#
-# The cost of that trick is that a branch build never adds to this volume, and
-# so never warms the npm cache it shares with the baselines. A branch that
-# changes package-lock.json therefore downloads the full dependency set on every
-# build until it lands on master.
+# Passed is the right filter for more than freshness: the agent uploads artifacts
+# whether or not the job succeeded, so a run that died halfway leaves a partial
+# set behind, but its build never reaches that state.
 
 env:
   CI: "true"
@@ -34,19 +31,20 @@ steps:
   - label: "📸 visual update snapshots"
     key: visual-update-snapshots
     branches: "master"
+    # The check step in node-checks.yml seeds the shared volume.
+    depends_on: check
     timeout_in_minutes: 30
-    # One writer at a time. Buildkite runs a concurrency group in the order the
-    # jobs were created, so the newest master build commits last.
-    concurrency: 1
-    concurrency_group: "radicle-explorer/visual-snapshots"
-    cache: &visual_cache
-      name: visual-snapshots
+    # Keep these paths the same as the ones in node-checks.yml and e2e.yml.
+    cache: &deps_cache
+      name: deps
       paths:
-        - "tests/visual/snapshots"
         - ".npm-cache"
         - "tests/tmp/bin"
+        - ".lintcache"
     artifact_paths:
-      - "tests/artifacts/**/*.png"
+      # The baseline set that every branch build compares against.
+      - "tests/visual/snapshots/**/*.png"
+      - "tests/artifacts/**/*"
     plugins:
       # The image ships WebKit as well as Chromium, which this suite needs: the
       # visual-mobile project uses the iPhone 13 Mini device descriptor, whose
@@ -57,15 +55,19 @@ steps:
           image: "mcr.microsoft.com/playwright:v1.61.1-noble"
           # Chromium exhausts Docker's default 64MB /dev/shm.
           ipc: host
-          # buildkite-agent annotate runs inside the container.
+          # Puts buildkite-agent in the container, with the job id, the build id
+          # and the access token it needs.
           mount-buildkite-agent: true
-          # Without this the cache volume links point at nothing, which is why
-          # the baselines never persisted before.
+          # Without this the cache volume links point at nothing.
           volumes:
             - "/cache/bkcache:/cache/bkcache"
           environment:
             - CI
             - NPM_CONFIG_CACHE
+            # The two slugs that address this pipeline in the REST API.
+            # mount-buildkite-agent does not pass them.
+            - BUILDKITE_ORGANIZATION_SLUG
+            - BUILDKITE_PIPELINE_SLUG
     commands:
       - npm ci
       # The image ships no decompressors: install-binaries unpacks .tar.xz
@@ -73,47 +75,50 @@ steps:
       - apt-get update -qq && apt-get install -y -qq xz-utils bzip2
       - mkdir -p tests/artifacts
       - ./scripts/install-binaries
-      # No `|| true` here: --update-snapshots reports a re-generated snapshot as
-      # a pass, so a non-zero exit means the run itself broke. Failing is then
-      # what we want, because only a job that exits 0 commits a volume version,
-      # and a run that died halfway would publish a half-written baseline set.
-      # The visual projects set retries: 0, so one flaky test skips the update
-      # until the next push to master.
-      - npm run test:e2e -- --project visual-desktop visual-mobile --update-snapshots
+      # --update-snapshots reports a re-generated snapshot as a pass, so a
+      # non-zero exit means the run itself broke. --retries overrides the
+      # retries: 0 of the visual projects, so that one unstable screenshot
+      # cannot keep the build out of the passed state that publishes the set.
+      - npm run test:e2e -- --project visual-desktop visual-mobile --update-snapshots --retries=2
 
   - label: "📸 visual"
     key: visual
     branches: "!master"
+    depends_on: check
     timeout_in_minutes: 30
-    # No concurrency limit: this job never commits a volume version.
-    #
-    # The job must always exit non-zero to discard its copy of the volume, so
-    # the exit code cannot also report whether the tests passed. Two codes carry
-    # both: 100 means no differences, and soft_fail keeps the build green.
-    # Anything else fails the build — a real difference, but also a broken
-    # npm ci or a crashed browser. 100 is a sentinel that no tool in this step
-    # produces, so only the success path below is soft.
-    soft_fail:
-      - exit_status: 100
-    cache: *visual_cache
+    cache: *deps_cache
     artifact_paths:
-      - "tests/artifacts/**/*.png"
+      - "tests/artifacts/**/*"
     plugins:
       - *playwright_docker
     commands:
+      # jq reads the build id out of the API response.
+      - apt-get update -qq && apt-get install -y -qq xz-utils bzip2 jq
+      - |
+        token=$$(buildkite-agent secret get read_builds_api_token)
+        builds=$$(curl -sfS -H "Authorization: Bearer $$token" \
+          "https://api.buildkite.com/v2/organizations/$$BUILDKITE_ORGANIZATION_SLUG/pipelines/$$BUILDKITE_PIPELINE_SLUG/builds?branch=master&state=passed&per_page=1")
+        baseline=$$(printf '%s' "$$builds" | jq -r '.[0].id // empty')
+        # A master build older than this file uploaded no baselines, so let a
+        # download that finds none pass and judge the result below instead.
+        if [ -n "$$baseline" ]; then
+          buildkite-agent artifact download "tests/visual/snapshots/**/*.png" . --build "$$baseline" || true
+        fi
+        # Comparing with no baselines makes Playwright report all 89 screenshots
+        # as missing, which reads like a total regression. Report the real state
+        # instead, and stop before the expensive part of the step.
+        if ! find tests/visual/snapshots -name '*.png' 2>/dev/null | grep -q .; then
+          buildkite-agent annotate "📸 visual: no baselines yet — a master build must publish them first" \
+            --style warning --context visual
+          exit 0
+        fi
       - npm ci
-      - apt-get update -qq && apt-get install -y -qq xz-utils bzip2
       - mkdir -p tests/artifacts
       - ./scripts/install-binaries
-      # Both paths exit non-zero, so Buildkite discards this job's copy of the
-      # volume. A zero exit would revert an update that master committed while
-      # this job ran, and would also publish any baseline this run wrote itself
-      # for a screenshot that has none yet.
       - |
         if npm run test:e2e -- --project visual-desktop visual-mobile; then
           buildkite-agent annotate "📸 visual: no differences" \
             --style success --context visual
-          exit 100
         else
           buildkite-agent annotate "📸 visual: differences found, see the uploaded images" \
             --style warning --context visual
