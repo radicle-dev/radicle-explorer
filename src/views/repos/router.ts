@@ -25,6 +25,8 @@ import type {
   Tree,
 } from "@http-client";
 
+import isEqual from "lodash/isEqual";
+
 import * as Syntax from "@app/lib/syntax";
 import config from "@app/lib/config";
 import { HttpdClient } from "@http-client";
@@ -637,6 +639,7 @@ async function loadTreeView(
   if (
     (previousLoaded.resource === "repo.source" ||
       previousLoaded.resource === "repo.history") &&
+    isEqual(previousLoaded.params.baseUrl, route.node) &&
     [previousLoaded.params.repo.rid, previousLoaded.params.repo.alias].includes(
       route.repo,
     ) &&
@@ -780,6 +783,7 @@ async function loadHistoryView(
   if (
     (previousLoaded.resource === "repo.source" ||
       previousLoaded.resource === "repo.history") &&
+    isEqual(previousLoaded.params.baseUrl, route.node) &&
     [previousLoaded.params.repo.rid, previousLoaded.params.repo.alias].includes(
       route.repo,
     ) &&
@@ -909,6 +913,7 @@ async function loadPatchView(
 
   if (
     previousLoaded.resource === "repo.patch" &&
+    isEqual(previousLoaded.params.baseUrl, route.node) &&
     [previousLoaded.params.repo.rid, previousLoaded.params.repo.alias].includes(
       route.repo,
     ) &&

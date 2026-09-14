@@ -19,7 +19,7 @@
     clearSeedFailure,
     failedSeeds,
     removeBookmark,
-    selectedSeed,
+    explicitSeed,
   } from "@app/views/nodes/SeedSelector";
   import { closeFocused } from "@app/components/Popover.svelte";
 
@@ -38,8 +38,19 @@
   export let mode: "node" | "search";
   export let ariaLabel = "Seed selector";
   export let title = "Switch seed";
+  // Where the picker sits. A breadcrumb sits on the left of the header, so
+  // its popover is anchored to the toggle's left edge instead of its right.
+  export let variant: "header" | "breadcrumb" | "panel" = "header";
 
   const VALIDATION_TIMEOUT_MS = 10000;
+
+  // The seed currently in use isn't necessarily bookmarked or a default: it
+  // can be reached through a shared link or through failover. List it anyway,
+  // so it is always possible to open its node view from here.
+  $: isListed =
+    $bookmarkedSeeds.some(s => isEqual(s, baseUrl)) ||
+    config.preferredSeeds.some(s => isEqual(s, baseUrl));
+  $: customSeeds = isListed ? $bookmarkedSeeds : [...$bookmarkedSeeds, baseUrl];
 
   let expanded: boolean = false;
   let loading = false;
@@ -147,7 +158,7 @@
     // Either the picker is setting the search seed, or it's in node mode on a
     // route whose URL names no node to switch (explore). Both come down to the
     // same thing: the search seed is the only node such a page reads.
-    selectedSeed.set(seed);
+    explicitSeed.set(seed);
     // Leave the current page where it is; only the explore listing reloads,
     // since it's the one view served by the search seed. Keyed off the
     // unloaded route rather than the loaded one, because a failed listing
@@ -205,6 +216,10 @@
     return failed.some(s => isEqual(s, seed));
   }
 
+  function isBookmarked(seed: BaseUrl, bookmarks: BaseUrl[]) {
+    return bookmarks.some(s => isEqual(s, seed));
+  }
+
   function handleEscape(event: KeyboardEvent) {
     if (expanded && event.key === "Escape") {
       closeFocused();
@@ -219,10 +234,16 @@
     align-items: center;
     gap: 0.375rem;
     max-width: 14rem;
-    padding: 0.375rem 0.5rem;
+    padding: 0.375rem 0;
     border-radius: var(--border-radius-sm);
-    color: var(--color-text-secondary);
     cursor: pointer;
+  }
+  .target.breadcrumb {
+    padding: 0.375rem 0.5rem;
+    color: var(--color-text-primary);
+  }
+  .target.panel {
+    padding: 0.375rem 0.5rem;
   }
   .target:hover {
     background-color: var(--color-surface-mid);
@@ -296,13 +317,14 @@
 <Popover
   bind:expanded
   popoverPositionTop="2.5rem"
-  popoverPositionRight="0"
+  popoverPositionLeft={variant === "breadcrumb" ? "0" : undefined}
+  popoverPositionRight={variant === "breadcrumb" ? undefined : "0"}
   popoverPadding="0.25rem"
   popoverBorderRadius="var(--border-radius-md)">
   <div
     slot="toggle"
     let:toggle
-    class="target"
+    class="target {variant}"
     {title}
     aria-label={ariaLabel}
     on:click={toggle}
@@ -311,16 +333,18 @@
     tabindex="0"
     aria-haspopup="dialog"
     aria-expanded={expanded}>
-    <Icon name="seed" />
+    <slot name="icon"><Icon name="seed" /></slot>
     <div class="hostname txt-overflow">{baseUrl.hostname}</div>
-    <Icon name={expanded ? "chevron-up" : "chevron-down"} />
+    {#if variant !== "breadcrumb"}
+      <Icon name={expanded ? "chevron-up" : "chevron-down"} />
+    {/if}
   </div>
 
   <svelte:fragment slot="popover">
     <div class="popover-content">
       <div class="section-label">Custom seeds</div>
-      {#if $bookmarkedSeeds.length > 0}
-        <DropdownList items={$bookmarkedSeeds} styleDropdownPadding="0">
+      {#if customSeeds.length > 0}
+        <DropdownList items={customSeeds} styleDropdownPadding="0">
           <DropdownListItem
             slot="item"
             let:item
@@ -343,12 +367,22 @@
                   on:click={() => openNodeView(item)}>
                   <Icon name="open-external" />
                 </IconButton>
-                <IconButton
-                  ariaLabel="Remove bookmark"
-                  stopPropagation
-                  on:click={() => removeBookmark(item)}>
-                  <Icon name="close" />
-                </IconButton>
+                {#if isBookmarked(item, $bookmarkedSeeds)}
+                  <IconButton
+                    ariaLabel="Remove bookmark"
+                    stopPropagation
+                    on:click={() => removeBookmark(item)}>
+                    <Icon name="close" />
+                  </IconButton>
+                {:else}
+                  <IconButton
+                    ariaLabel="Bookmark seed"
+                    title="Bookmark seed"
+                    stopPropagation
+                    on:click={() => addBookmark(item)}>
+                    <Icon name="plus" />
+                  </IconButton>
+                {/if}
               </div>
             </div>
           </DropdownListItem>

@@ -9,8 +9,7 @@
     followSystemTheme,
     loadTheme,
   } from "@app/lib/appearance";
-  import { activeUnloadedRouteStore, routeBaseUrl } from "@app/lib/router";
-  import { determineSeed, selectedSeed } from "@app/views/nodes/SeedSelector";
+  import { searchSeed } from "@app/views/nodes/SeedSelector";
 
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -20,25 +19,20 @@
     return `${seed.scheme}://${seed.hostname}:${seed.port}`;
   }
 
-  // The node serving the page on screen. Undefined on routes that name no node
-  // in their URL (explore, landing, docs), where the row is hidden.
-  $: currentNode = routeBaseUrl($activeUnloadedRouteStore);
-  $: searchSeed = $selectedSeed ?? determineSeed();
-
   // Whether the selected seed exposes the search backend (drives the callout).
   let seedSearchAvailable: boolean | undefined = undefined;
-  $: void checkSeedSearch(searchSeed);
+  $: void checkSeedSearch($searchSeed);
 
   async function checkSeedSearch(seed: BaseUrl) {
     const key = seedKey(seed);
     seedSearchAvailable = undefined;
     try {
       const info = await new HttpdClient(seed).getInfo();
-      if (seedKey(searchSeed) === key) {
+      if (seedKey($searchSeed) === key) {
         seedSearchAvailable = info.httpd.searchAvailable;
       }
     } catch {
-      if (seedKey(searchSeed) === key) {
+      if (seedKey($searchSeed) === key) {
         seedSearchAvailable = false;
       }
     }
@@ -103,28 +97,14 @@
 </style>
 
 <div class="settings">
-  {#if currentNode}
-    <div class="seed-setting">
-      <div class="seed-setting-row">
-        <div>Current node</div>
-        <div class="right">
-          <SeedPicker
-            baseUrl={currentNode}
-            mode="node"
-            ariaLabel="Current node selector"
-            title="Switch the node serving this page" />
-        </div>
-      </div>
-      <div class="description">The node serving the page you’re viewing.</div>
-    </div>
-  {/if}
   <div class="seed-setting">
     <div class="seed-setting-row">
       <div>Search seed</div>
       <div class="right">
         <SeedPicker
-          baseUrl={searchSeed}
+          baseUrl={$searchSeed}
           mode="search"
+          variant="panel"
           ariaLabel="Search seed selector"
           title="Switch the seed used for search and explore" />
       </div>

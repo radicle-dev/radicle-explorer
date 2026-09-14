@@ -11,6 +11,8 @@
   import Layout from "@app/components/Layout.svelte";
   import Link from "@app/components/Link.svelte";
   import Popover from "@app/components/Popover.svelte";
+  import NodeAvatar from "@app/components/NodeAvatar.svelte";
+  import SeedPicker from "@app/views/explore/SeedPicker.svelte";
   import Separator from "@app/views/repos/Separator.svelte";
   import UserAddress from "@app/views/users/UserAddress.svelte";
   import UserAvatar from "@app/components/UserAvatar.svelte";
@@ -78,36 +80,22 @@
   .breadcrumb :global(a:hover) {
     color: var(--color-text-brand);
   }
-  .avatar {
-    border-radius: var(--border-radius-md);
-  }
 </style>
 
 <Layout>
   <svelte:fragment slot="breadcrumbs">
     <div class="breadcrumbs">
       <span class="breadcrumb">
-        <Link
-          style="display: flex; align-items: center; gap: 0.5rem;"
-          route={{
-            resource: "nodes",
-            params: {
-              baseUrl,
-              repoPageIndex: 0,
-            },
-          }}>
-          {#if nodeAvatarUrl}
-            <img
-              width="24"
-              height="24"
-              class="avatar"
-              alt="Node avatar"
-              src={nodeAvatarUrl} />
-          {:else}
-            <UserAvatar {nodeId} styleWidth="1.5rem" />
-          {/if}
-          {baseUrl.hostname}
-        </Link>
+        <SeedPicker
+          {baseUrl}
+          mode="node"
+          variant="breadcrumb"
+          ariaLabel="Current node selector"
+          title="Switch the node serving this page">
+          <svelte:fragment slot="icon">
+            <NodeAvatar {nodeId} avatarUrl={nodeAvatarUrl} />
+          </svelte:fragment>
+        </SeedPicker>
       </span>
 
       <Separator />

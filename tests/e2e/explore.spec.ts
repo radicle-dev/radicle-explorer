@@ -64,9 +64,6 @@ test("seed picker lives in the settings dropdown on explore", async ({
   await expect(
     page.getByRole("button", { name: "Search seed selector" }),
   ).toContainText("localhost");
-
-  // Explore names no node in its URL, so there's nothing to switch.
-  await expect(page.getByText("Current node")).toHaveCount(0);
 });
 
 test("explore shows an error when no seed can be reached", async ({ page }) => {

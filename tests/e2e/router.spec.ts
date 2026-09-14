@@ -35,7 +35,12 @@ test("navigation between node and repo pages", async ({ page }) => {
   await expectBackAndForwardNavigationWorks("/nodes/localhost", page);
   await expectUrlPersistsReload(page);
 
-  await page.getByRole("link", { name: "Home" }).click();
+  // The node breadcrumb is a picker now, so the node page is reached through
+  // its "Open node view" action.
+  await page.getByRole("button", { name: "Current node selector" }).click();
+  await page
+    .getByRole("button", { name: "Open node view", exact: true })
+    .click();
   await expect(page).toHaveURL("/nodes/localhost");
 });
 

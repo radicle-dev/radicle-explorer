@@ -16,7 +16,7 @@
   import { activeRouteStore, homeRoute } from "@app/lib/router";
   import config from "@app/lib/config";
   import { isMobile } from "@app/lib/media";
-  import { determineSeed, selectedSeed } from "@app/views/nodes/SeedSelector";
+  import { determineSeed, searchSeed } from "@app/views/nodes/SeedSelector";
 
   import Settings from "@app/App/Settings.svelte";
   import Help from "@app/App/Help.svelte";
@@ -65,21 +65,20 @@
       ? ($activeRouteStore.params.baseUrl ?? determineSeed())
       : undefined;
 
-  // Search always queries the selected explore seed, regardless of which seed
-  // the current page (e.g. a repo view) was served from.
-  $: searchSeed = $selectedSeed ?? determineSeed();
+  // Search always queries the stored search seed, regardless of which seed the
+  // current page (e.g. a repo view) was served from.
 
   // The explore routes already resolved /info during load; reuse it, but only
   // when it describes the same seed we're about to search.
   $: routeSearchAvailable =
     ($activeRouteStore.resource === "explore" ||
       $activeRouteStore.resource === "explore.repos") &&
-    seedKey($activeRouteStore.params.baseUrl) === seedKey(searchSeed)
+    seedKey($activeRouteStore.params.baseUrl) === seedKey($searchSeed)
       ? $activeRouteStore.params.searchAvailable
       : undefined;
 
   let searchAvailable = false;
-  $: void resolveSearchAvailable(searchSeed, routeSearchAvailable);
+  $: void resolveSearchAvailable($searchSeed, routeSearchAvailable);
 
   async function resolveSearchAvailable(
     seed: BaseUrl,
@@ -103,7 +102,7 @@
       // Older nodes without /info (or an unreachable seed) have no search.
       searchAvailableCache[key] = false;
     }
-    if (seedKey(searchSeed) === key) {
+    if (seedKey($searchSeed) === key) {
       searchAvailable = searchAvailableCache[key];
     }
   }
@@ -234,13 +233,13 @@
 
     {#if showSearch && !collapsedSearch}
       <div class="header-search">
-        <RepoSearch baseUrl={searchSeed} />
+        <RepoSearch baseUrl={$searchSeed} />
       </div>
     {/if}
 
     <div class="right-section">
       {#if showSearch && collapsedSearch}
-        <HeaderSearch baseUrl={searchSeed} />
+        <HeaderSearch baseUrl={$searchSeed} />
       {/if}
       {#if seedPickerBaseUrl}
         <SeedPicker baseUrl={seedPickerBaseUrl} mode="node" />

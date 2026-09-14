@@ -10,6 +10,8 @@
   import Layout from "@app/components/Layout.svelte";
   import Popover from "@app/components/Popover.svelte";
   import ReposView from "./ReposView.svelte";
+  import NodeAvatar from "@app/components/NodeAvatar.svelte";
+  import SeedPicker from "@app/views/explore/SeedPicker.svelte";
   import UserAvatar from "@app/components/UserAvatar.svelte";
 
   import PolicyExplainer from "./PolicyExplainer.svelte";
@@ -94,6 +96,19 @@
 </style>
 
 <Layout>
+  <svelte:fragment slot="breadcrumbs">
+    <SeedPicker
+      {baseUrl}
+      mode="node"
+      variant="breadcrumb"
+      ariaLabel="Current node selector"
+      title="Switch the node serving this page">
+      <svelte:fragment slot="icon">
+        <NodeAvatar nodeId={node.id} avatarUrl={node.avatarUrl} />
+      </svelte:fragment>
+    </SeedPicker>
+  </svelte:fragment>
+
   <div slot="sidebar" class="sidebar-wrapper">
     {#if node.bannerUrl}
       <img style:width="100%" alt="Node banner" src={node.bannerUrl} />

@@ -3,7 +3,7 @@ import type { BaseUrl } from "@http-client";
 import isEqual from "lodash/isEqual";
 import storedWritable from "@app/lib/localStore";
 import * as z from "zod";
-import { get, writable } from "svelte/store";
+import { derived, get, writable } from "svelte/store";
 
 import config from "@app/lib/config";
 
@@ -19,8 +19,10 @@ const HARDCODED_FALLBACK: BaseUrl = {
   port: 443,
 };
 
-// Seed that is opened on cold app start on the landing page.
-export const selectedSeed = storedWritable<BaseUrl | undefined>(
+// The seed the user explicitly picked, or `undefined` when they never did.
+// Read `searchSeed` instead of this unless you need to distinguish an explicit
+// pick from a resolved fallback.
+export const explicitSeed = storedWritable<BaseUrl | undefined>(
   "selectedSeed",
   seedSchema,
   undefined,
@@ -63,13 +65,13 @@ export function clearSeedFailure(seed: BaseUrl) {
 
 export function removeBookmark(seed: BaseUrl) {
   bookmarkedSeeds.update(previous => previous.filter(x => !isEqual(x, seed)));
-  if (isEqual(get(selectedSeed), seed)) {
+  if (isEqual(get(explicitSeed), seed)) {
     // Clear the explicit pick so `determineSeed()` falls back through its
     // normal resolution path (bucket-pick a preferred seed, or the hardcoded
     // fallback). Setting it to the first remaining bookmark or preferred seed
     // would orphan the store when neither exists, and would also bypass the
     // bucket-based load balancing.
-    selectedSeed.set(undefined);
+    explicitSeed.set(undefined);
   }
 }
 
@@ -94,7 +96,7 @@ function getOrCreateBucketRandom(): number {
 //      probabilistically rebalances them onto new seeds when the list grows.
 //   3. Fallback to a hardcoded seed if nothing is configured.
 export function determineSeed(): BaseUrl {
-  const explicit = get(selectedSeed);
+  const explicit = get(explicitSeed);
   if (explicit) return explicit;
 
   const pool = config.preferredSeeds;
@@ -105,6 +107,13 @@ export function determineSeed(): BaseUrl {
 
   return HARDCODED_FALLBACK;
 }
+
+// The seed that searches and the explore listing run against. Derived so
+// components react to a new pick, and to the bucket number that `determineSeed`
+// creates on first use.
+export const searchSeed = derived([explicitSeed, seedBucketRandom], () =>
+  determineSeed(),
+);
 
 // Ordered list of seeds to try for failover: the primary first, then the rest
 // of the preferred pool (deduplicated).

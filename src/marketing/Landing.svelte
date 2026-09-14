@@ -4,7 +4,7 @@
 
   import { HttpdClient } from "@http-client";
   import { push, routeToPath, useDefaultNavigation } from "@app/lib/router";
-  import { determineSeed, selectedSeed } from "@app/views/nodes/SeedSelector";
+  import { searchSeed } from "@app/views/nodes/SeedSelector";
 
   import CopyCommand from "@app/marketing/CopyCommand.svelte";
   import Meta from "@app/marketing/Meta.svelte";
@@ -44,18 +44,16 @@
     }
   }
 
-  // Reload whenever the explore seed changes (e.g. picked in Settings) so the
-  // carousel always reflects the currently selected seed, not just the one
-  // resolved on first mount. `determineSeed()` applies the fallback logic; the
-  // `$selectedSeed` reference is what makes this reactive.
+  // Reload whenever the search seed changes (e.g. picked in Settings) so the
+  // carousel always reflects the current seed, not just the one resolved on
+  // first mount.
   let loadToken = 0;
 
   // When the selected seed exposes a search backend the carousel shows the
   // most-seeded repositories; otherwise it falls back to the repos pinned on
   // the seed. Either way, links point at the repo on the current deployment.
-  async function loadCarousel(_selected: BaseUrl | undefined) {
+  async function loadCarousel(seed: BaseUrl) {
     const token = ++loadToken;
-    const seed = determineSeed();
     const api = new HttpdClient(seed);
     loading = true;
     try {
@@ -97,7 +95,7 @@
     }
   }
 
-  $: void loadCarousel($selectedSeed);
+  $: void loadCarousel($searchSeed);
 
   function onRepoClick(event: MouseEvent, route: Route) {
     if (useDefaultNavigation(event)) {

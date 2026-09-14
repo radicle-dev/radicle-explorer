@@ -185,10 +185,53 @@ test("node can be switched from a repo the node doesn't have", async ({
   await expect(
     page.getByRole("button", { name: "Seed selector" }),
   ).toBeVisible();
+});
 
-  await page.getByRole("button", { name: "Settings" }).click();
-  await expect(page.getByText("Current node")).toBeVisible();
+test("repo page shows the node selector in the header", async ({ page }) => {
+  await page.goto(`/nodes/localhost/${sourceBrowsingRid}`, {
+    waitUntil: "networkidle",
+  });
+
   await expect(
     page.getByRole("button", { name: "Current node selector" }),
   ).toContainText("localhost");
+});
+
+test("breadcrumb picker lists a seed that isn't bookmarked", async ({
+  page,
+}) => {
+  // Proxy requests to seed.example.tld to the local test api, so the page can
+  // be served by a seed that is neither bookmarked nor a preferred one.
+  await page.route(
+    url => url.hostname === "seed.example.tld",
+    route =>
+      route.fulfill({
+        status: 301,
+        headers: {
+          Location: route
+            .request()
+            .url()
+            .replace("seed.example.tld", "localhost"),
+        },
+      }),
+  );
+
+  await page.goto(`/nodes/seed.example.tld/${sourceBrowsingRid}`, {
+    waitUntil: "networkidle",
+  });
+
+  const picker = page.getByRole("button", { name: "Current node selector" });
+  await expect(picker).toContainText("seed.example.tld");
+  await picker.click();
+
+  // The seed serving the page is listed under the custom seeds, even though
+  // it was never bookmarked, and its node view is reachable from there.
+  const item = page
+    .locator(".item")
+    .filter({ hasText: "seed.example.tld" })
+    .first();
+  await expect(item).toBeVisible();
+  await item.getByRole("button", { name: "Open node view" }).click();
+
+  await expect(page).toHaveURL("/nodes/seed.example.tld");
 });

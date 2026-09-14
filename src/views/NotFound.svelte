@@ -36,7 +36,7 @@
         <!-- This page is always reached from a URL that names a node, and what
              it offers is "try this page on a different node" — a navigation,
              not a change to the stored search seed. -->
-        <SeedPicker {baseUrl} mode="node" />
+        <SeedPicker {baseUrl} mode="node" variant="panel" />
       {/if}
     </div>
     {#if description}
