@@ -1,6 +1,10 @@
 # Changelog
 
-# radicle-httpd + radicle-search 0.28.0
+## radicle-httpd + radicle-search 0.29.0
+
+- **Complete commit lists for merge-commit diffs**: The diff endpoint no longer stops the walk early when the head merges the target branch in, which reduced such patches to a single commit
+
+## radicle-httpd + radicle-search 0.28.0
 
 - **Releases API**: New `/repos/{rid}/releases` endpoints serve radicle-artifact release COBs, with Releases and Release views in the UI that degrade gracefully on older nodes
 - **`Git-Protocol` header passed through**: Git HTTP routes forward the header to `git-http-backend`, fixing clients that require Git wire protocol version 2
