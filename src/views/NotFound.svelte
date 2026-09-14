@@ -33,7 +33,10 @@
     <div class="title-row txt-heading-m">
       <span>{title}</span>
       {#if baseUrl}
-        <SeedPicker {baseUrl} />
+        <!-- This page is always reached from a URL that names a node, and what
+             it offers is "try this page on a different node" — a navigation,
+             not a change to the stored search seed. -->
+        <SeedPicker {baseUrl} mode="node" />
       {/if}
     </div>
     {#if description}

@@ -63,6 +63,14 @@ export function clearSeedFailure(seed: BaseUrl) {
 
 export function removeBookmark(seed: BaseUrl) {
   bookmarkedSeeds.update(previous => previous.filter(x => !isEqual(x, seed)));
+  if (isEqual(get(selectedSeed), seed)) {
+    // Clear the explicit pick so `determineSeed()` falls back through its
+    // normal resolution path (bucket-pick a preferred seed, or the hardcoded
+    // fallback). Setting it to the first remaining bookmark or preferred seed
+    // would orphan the store when neither exists, and would also bypass the
+    // bucket-based load balancing.
+    selectedSeed.set(undefined);
+  }
 }
 
 export function addBookmark(seed: BaseUrl) {

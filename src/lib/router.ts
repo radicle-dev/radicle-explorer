@@ -340,16 +340,21 @@ export async function replace(newRoute: Route): Promise<void> {
 }
 
 // Return a copy of `route` with any baseUrl-bearing field replaced by
-// `baseUrl`. Used by the SeedPicker so that selecting a different seed
+// `baseUrl`. Used by the SeedPicker so that selecting a different node
 // from e.g. an "unreachable node" error view retries the same logical
-// page (repo, user, node) on the new seed instead of looping on the
+// page (repo, user, node) on the new node instead of looping on the
 // original bad host. A not-found page is tied to a specific node/repo, so
-// it retries the node view on the chosen seed. Error and booting routes
-// carry no logical page to preserve, so they return to the app's home
-// (the marketing landing for `homepage: "landing"`, otherwise the node page),
-// which resolves the just-selected seed via `selectedSeed`. Explore routes have
-// no baseUrl field and resolve the active seed via `selectedSeed`, so they
-// pass through unchanged.
+// it retries the node view on the chosen node. Error and booting routes
+// carry no logical page to preserve, so they return to the app's home.
+//
+// Routes that name no node in their URL — explore and the marketing pages —
+// have nothing to rewrite and pass through unchanged. They are exactly the
+// routes `routeBaseUrl` returns `undefined` for, and callers must not reach
+// here with one: `applySeed` sets the search seed for those instead.
+//
+// The switch is exhaustive on purpose. A `default` arm would silently drop the
+// node picker on any route added later, which is how the release routes came
+// to be missing from it.
 export function withBaseUrl(route: Route, baseUrl: BaseUrl): Route {
   switch (route.resource) {
     case "nodes":
@@ -366,6 +371,8 @@ export function withBaseUrl(route: Route, baseUrl: BaseUrl): Route {
     case "repo.issue":
     case "repo.patches":
     case "repo.patch":
+    case "repo.releases":
+    case "repo.release":
       return { ...route, node: baseUrl };
     case "notFound":
       return {
@@ -375,8 +382,69 @@ export function withBaseUrl(route: Route, baseUrl: BaseUrl): Route {
     case "error":
     case "booting":
       return homeRoute();
-    default:
+    case "explore":
+    case "explore.repos":
+    case "landing":
+    case "learn":
+    case "install":
+    case "guides":
+    case "desktop":
+    case "cli":
+    case "principles":
+    case "docs":
       return route;
+    default:
+      return utils.unreachable(route);
+  }
+}
+
+// The node named by the current URL, or `undefined` on routes that name none
+// (explore, marketing). The getter half of the `withBaseUrl` pair: a route
+// returns a baseUrl here exactly when `withBaseUrl` can point it at another
+// node.
+//
+// This reads the *unloaded* route, because that is what the URL says. When a
+// page fails to load — a repo that the chosen node doesn't have, say — the
+// loaded route becomes a notFound or error that may carry no node at all, yet
+// the URL still names one and the user still needs a way to switch off it.
+//
+// The bare `/nodes` home URL names no node but does display one, so it
+// resolves the same seed `loadNodeRoute` would.
+//
+// Exhaustive for the same reason as `withBaseUrl`; the two must agree.
+export function routeBaseUrl(route: Route): BaseUrl | undefined {
+  switch (route.resource) {
+    case "nodes":
+      return route.params?.baseUrl ?? determineSeed();
+    case "users":
+      return route.baseUrl;
+    case "repo.source":
+    case "repo.history":
+    case "repo.commit":
+    case "repo.issues":
+    case "repo.issue":
+    case "repo.patches":
+    case "repo.patch":
+    case "repo.releases":
+    case "repo.release":
+      return route.node;
+    case "notFound":
+    case "error":
+      return route.params.baseUrl;
+    case "booting":
+    case "explore":
+    case "explore.repos":
+    case "landing":
+    case "learn":
+    case "install":
+    case "guides":
+    case "desktop":
+    case "cli":
+    case "principles":
+    case "docs":
+      return undefined;
+    default:
+      return utils.unreachable(route);
   }
 }
 

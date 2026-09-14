@@ -28,7 +28,7 @@ export function handleError(
 
     return {
       resource: "notFound",
-      params: { title: `${subject} not found` },
+      params: { title: `${subject} not found`, baseUrl: route.node },
     };
   } else if (error instanceof ResponseError) {
     return {
@@ -37,6 +37,7 @@ export function handleError(
         error,
         title: "Could not load this repository",
         description: `Make sure you are able to connect to the seed <a href="${url}">${url}</a>.`,
+        baseUrl: route.node,
       },
     };
   } else if (error instanceof ResponseParseError) {
@@ -46,6 +47,7 @@ export function handleError(
         error,
         title: "Could not parse the request",
         description: error.description,
+        baseUrl: route.node,
       },
     };
   } else if (
@@ -69,6 +71,7 @@ export function handleError(
         title: "Could not load this repository",
         description:
           "You stumbled on an unknown error, we aren’t exactly sure what happened.",
+        baseUrl: route.node,
       },
     };
   }

@@ -134,7 +134,9 @@ test("edit seed bookmarks", async ({ page }) => {
     page.getByRole("button", { name: "Settings" }).click();
   await openSettings();
 
-  const seedSelector = page.getByRole("button", { name: "Seed selector" });
+  const seedSelector = page.getByRole("button", {
+    name: "Search seed selector",
+  });
 
   // Add a custom seed via the seed selector.
   await seedSelector.click();
@@ -166,4 +168,27 @@ test("edit seed bookmarks", async ({ page }) => {
   await expect(
     page.getByRole("button", { name: "Remove bookmark", exact: true }),
   ).not.toBeVisible();
+});
+
+test("node can be switched from a repo the node doesn't have", async ({
+  page,
+}) => {
+  // A syntactically valid RID that localhost doesn't seed, so httpd answers
+  // 404 rather than failing to connect.
+  await page.goto("/nodes/localhost/rad:z4BwwjPCFNVP27FwVbDFgwVwkjciZ", {
+    waitUntil: "networkidle",
+  });
+
+  await expect(page.getByText("Repository not found")).toBeVisible();
+
+  // The URL still names a node, so the page must offer a way off it.
+  await expect(
+    page.getByRole("button", { name: "Seed selector" }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Settings" }).click();
+  await expect(page.getByText("Current node")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Current node selector" }),
+  ).toContainText("localhost");
 });

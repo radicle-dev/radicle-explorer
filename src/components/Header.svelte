@@ -56,9 +56,10 @@
 
   // Seed selection lives in Settings now, so the header no longer shows a
   // general seed picker. It's kept only on error routes as an escape hatch to
-  // a working seed, using the route's seed when known and otherwise falling
-  // back to the currently selected one. (The notFound view renders its own
-  // inline picker, so it's excluded here.)
+  // a working node, using the route's node when known and otherwise falling
+  // back to the currently selected seed, so the picker never disappears and
+  // strand the page. (The notFound view renders its own inline picker, so it's
+  // excluded here.)
   $: seedPickerBaseUrl =
     $activeRouteStore.resource === "error"
       ? ($activeRouteStore.params.baseUrl ?? determineSeed())
@@ -242,7 +243,7 @@
         <HeaderSearch baseUrl={searchSeed} />
       {/if}
       {#if seedPickerBaseUrl}
-        <SeedPicker baseUrl={seedPickerBaseUrl} />
+        <SeedPicker baseUrl={seedPickerBaseUrl} mode="node" />
       {/if}
       {#if isMarketingRoute}
         <span class="get-started">

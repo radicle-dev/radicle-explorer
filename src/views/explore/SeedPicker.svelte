@@ -7,9 +7,9 @@
   import config from "@app/lib/config";
   import { HttpdClient, ResponseError } from "@http-client";
   import {
-    activeRouteStore,
     activeUnloadedRouteStore,
     push,
+    routeBaseUrl,
     withBaseUrl,
   } from "@app/lib/router";
   import { isLocal, isOnion } from "@app/lib/utils";
@@ -31,10 +31,13 @@
   import TextInput from "@app/components/TextInput.svelte";
 
   export let baseUrl: BaseUrl;
-  // When false (e.g. used in global settings), picking a seed updates the
-  // explore/search seed without navigating the current page onto it — only
-  // the explore listing reloads. The default navigates like a seed switch.
-  export let navigateOnApply = true;
+  // What picking a seed applies to:
+  //   "node"   — move the current page onto the seed, changing the URL.
+  //   "search" — set the stored search seed, leaving the page where it is.
+  // Required, so every call site has to say which of the two it means.
+  export let mode: "node" | "search";
+  export let ariaLabel = "Seed selector";
+  export let title = "Switch seed";
 
   const VALIDATION_TIMEOUT_MS = 10000;
 
@@ -123,30 +126,34 @@
   }
 
   async function applySeed(seed: BaseUrl) {
-    selectedSeed.set(seed);
     const isDefault = config.preferredSeeds.some(s => isEqual(s, seed));
     const isBookmarked = get(bookmarkedSeeds).some(s => isEqual(s, seed));
     if (!isDefault && !isBookmarked) {
       addBookmark(seed);
     }
     closeFocused();
-    if (navigateOnApply) {
+
+    const route = get(activeUnloadedRouteStore);
+
+    if (mode === "node" && routeBaseUrl(route) !== undefined) {
       // Rewrite the route's baseUrl-bearing field so we retry the same
-      // logical page (repo, user, node) on the new seed — important for
-      // pages opened via a hardcoded seed URL such as the "node
-      // unreachable" error view. Routes without a baseUrl field
-      // (explore) pass through unchanged and rely on the updated
-      // `selectedSeed` store; transient routes (notFound, error,
-      // booting) fall back to the new seed's node view.
-      const route = withBaseUrl(get(activeUnloadedRouteStore), seed);
+      // logical page (repo, user, node) on the new node — important for
+      // pages opened via a hardcoded node URL such as the "node
+      // unreachable" error view.
+      await push(withBaseUrl(route, seed));
+      return;
+    }
+
+    // Either the picker is setting the search seed, or it's in node mode on a
+    // route whose URL names no node to switch (explore). Both come down to the
+    // same thing: the search seed is the only node such a page reads.
+    selectedSeed.set(seed);
+    // Leave the current page where it is; only the explore listing reloads,
+    // since it's the one view served by the search seed. Keyed off the
+    // unloaded route rather than the loaded one, because a failed listing
+    // loads as an `error` — exactly when the user is switching seeds.
+    if (route.resource === "explore" || route.resource === "explore.repos") {
       await push(route);
-    } else {
-      // Settings context: don't move the current page onto the new seed;
-      // just reload the explore listing when that's what's on screen.
-      const resource = get(activeRouteStore).resource;
-      if (resource === "explore" || resource === "explore.repos") {
-        await push(get(activeUnloadedRouteStore));
-      }
     }
   }
 
@@ -201,19 +208,6 @@
   function handleEscape(event: KeyboardEvent) {
     if (expanded && event.key === "Escape") {
       closeFocused();
-    }
-  }
-
-  function handleRemoveBookmark(item: BaseUrl) {
-    const wasActive = isEqual(baseUrl, item);
-    removeBookmark(item);
-    if (wasActive) {
-      // Clear the explicit pick so `determineSeed()` falls back through
-      // its normal resolution path (bucket-pick a preferred seed, or the
-      // hardcoded fallback). Setting it to the first remaining bookmark
-      // or preferred seed would orphan the store when neither exists, and
-      // would also bypass the bucket-based load balancing.
-      selectedSeed.set(undefined);
     }
   }
 </script>
@@ -309,8 +303,8 @@
     slot="toggle"
     let:toggle
     class="target"
-    title="Switch seed used for explore"
-    aria-label="Seed selector"
+    {title}
+    aria-label={ariaLabel}
     on:click={toggle}
     on:keydown={e => e.key === "Enter" && toggle()}
     role="button"
@@ -352,7 +346,7 @@
                 <IconButton
                   ariaLabel="Remove bookmark"
                   stopPropagation
-                  on:click={() => handleRemoveBookmark(item)}>
+                  on:click={() => removeBookmark(item)}>
                   <Icon name="close" />
                 </IconButton>
               </div>
