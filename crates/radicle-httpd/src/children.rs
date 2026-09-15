@@ -1,6 +1,13 @@
+use std::io;
+use std::process::ExitStatus;
 use std::time::Duration;
 
+use axum::body::Body;
+use futures_util::stream::{self, StreamExt};
+use tokio::io::AsyncRead;
 use tokio::process::{Child, Command};
+use tokio::sync::oneshot;
+use tokio_util::io::ReaderStream;
 use tokio_util::sync::CancellationToken;
 use tokio_util::task::TaskTracker;
 
@@ -27,19 +34,29 @@ pub struct Children {
 }
 
 impl Children {
-    /// Reap `child` in the background once it exits.
-    pub fn supervise(&self, mut child: Child) {
+    /// Stream `stdout` as a response body while reaping `child` in the
+    /// background. The body ends in an error rather than a clean end-of-file
+    /// unless the process exits successfully, so a killed or failed git
+    /// process cannot pass a truncated response off as complete.
+    pub fn stream(&self, mut child: Child, stdout: impl AsyncRead + Send + 'static) -> Body {
+        let (exited_tx, exited) = oneshot::channel();
         let cancel = self.cancel.clone();
         self.tracker.spawn(async move {
-            tokio::select! {
-                _ = child.wait() => {}
+            let status = tokio::select! {
+                status = child.wait() => status,
                 _ = cancel.cancelled() => {
-                    if let Err(e) = child.kill().await {
+                    if let Err(e) = child.start_kill() {
                         tracing::warn!("Unable to kill git process: {e}");
                     }
+                    child.wait().await
                 }
-            }
+            };
+            let _ = exited_tx.send(status);
         });
+
+        let outcome =
+            stream::once(exited).filter_map(|exit| async move { exit_error(exit).map(Err) });
+        Body::from_stream(ReaderStream::new(stdout).chain(outcome))
     }
 
     /// Kill every process still streaming, returning once each one has been
@@ -61,5 +78,18 @@ impl Children {
                 self.tracker.len()
             );
         }
+    }
+}
+
+/// The error a response body ends with when its process did not exit
+/// successfully, or was never reaped.
+fn exit_error(
+    exit: Result<io::Result<ExitStatus>, oneshot::error::RecvError>,
+) -> Option<io::Error> {
+    match exit {
+        Ok(Ok(status)) if status.success() => None,
+        Ok(Ok(status)) => Some(io::Error::other(format!("git exited with {status}"))),
+        Ok(Err(e)) => Some(e),
+        Err(_) => Some(io::Error::other("git process was dropped before it exited")),
     }
 }
