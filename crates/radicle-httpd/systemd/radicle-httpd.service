@@ -15,7 +15,7 @@ User=seed
 Group=seed
 ExecStart=/usr/local/bin/radicle-httpd --listen 127.0.0.1:8080
 Environment=RAD_HOME=/home/seed/.radicle RUST_BACKTRACE=1 RUST_LOG=info
-KillMode=process
+KillMode=mixed
 Restart=always
 RestartSec=1
 

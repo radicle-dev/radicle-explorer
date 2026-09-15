@@ -18,7 +18,6 @@ use radicle::profile::Profile;
 use radicle::storage::{ReadRepository, ReadStorage};
 use radicle_surf::Repository;
 use tokio::io::BufReader;
-use tokio::process::Command;
 use tokio_util::io::ReaderStream;
 
 use crate::api::query::RawQuery;
@@ -282,7 +281,7 @@ async fn archive_by_committish(
         return Ok(response);
     }
 
-    let mut command = Command::new("git");
+    let mut command = crate::children::git();
 
     command
         .arg("archive")

@@ -1,11 +1,21 @@
 use std::time::Duration;
 
-use tokio::process::Child;
+use tokio::process::{Child, Command};
 use tokio_util::sync::CancellationToken;
 use tokio_util::task::TaskTracker;
 
 /// How long killed processes get to be reaped before the daemon stops waiting.
 const REAP_TIMEOUT: Duration = Duration::from_secs(2);
+
+/// A `git` command in its own process group, out of reach of the terminal and
+/// service-manager signals that stop the daemon, so that a shutdown cuts a
+/// streaming response short only once the drain says so.
+pub fn git() -> Command {
+    let mut command = Command::new("git");
+    #[cfg(unix)]
+    command.process_group(0);
+    command
+}
 
 /// The git processes still streaming into response bodies. Each is owned by a
 /// task that waits for it, so a response keeps streaming after its handler has
