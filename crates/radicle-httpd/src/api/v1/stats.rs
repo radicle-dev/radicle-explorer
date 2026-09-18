@@ -1,13 +1,14 @@
 use axum::extract::State;
 use axum::response::IntoResponse;
 use axum::routing::get;
-use axum::{Json, Router};
+use axum::Router;
 use serde_json::json;
 
 use radicle::node::routing::Store;
 
 use crate::api::error::Error;
 use crate::api::Context;
+use crate::axum_extra::stale_response;
 
 pub fn router(ctx: Context) -> Router {
     Router::new()
@@ -26,7 +27,9 @@ async fn stats_handler(State(ctx): State<Context>) -> impl IntoResponse {
     })
     .await?;
 
-    Ok::<_, Error>(Json(json!({ "repos": { "total": total_seeded } })))
+    Ok::<_, Error>(stale_response(
+        json!({ "repos": { "total": total_seeded } }),
+    ))
 }
 
 #[cfg(test)]
@@ -44,5 +47,26 @@ mod routes {
 
         assert_eq!(response.status(), StatusCode::OK);
         assert_eq!(response.json().await, json!({ "repos": { "total": 2 } }));
+    }
+
+    #[tokio::test]
+    async fn test_stats_sets_stale_cache_control() {
+        // A slightly old repository count is acceptable, so a shared cache
+        // may serve the previous answer while it refreshes.
+        let tmp = tempfile::tempdir().unwrap();
+        let app = super::router(test::seed(tmp.path()));
+        let response = get(&app, "/stats").await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let cache_control = response
+            .headers()
+            .get("cache-control")
+            .expect("cache-control header should be present")
+            .to_str()
+            .unwrap();
+        assert!(
+            cache_control.contains("stale-while-revalidate=120"),
+            "unexpected cache-control: {cache_control}"
+        );
     }
 }
