@@ -32,12 +32,13 @@ use radicle::identity::RepoId;
 use radicle::Profile;
 
 use crate::api::RADICLE_VERSION;
-use crate::tracing_extra::{tracing_middleware, ColoredStatus, Paint, RequestId, TracingInfo};
+use crate::tracing_extra::{log_response, tracing_middleware, RequestId, TracingInfo};
 
 mod api;
 mod axum_extra;
 mod cache;
 mod git;
+pub mod logger;
 mod raw;
 #[cfg(test)]
 mod test;
@@ -142,27 +143,12 @@ pub async fn run(options: Options) -> anyhow::Result<()> {
                 .on_response(
                     |response: &hyper::Response<Body>, latency: Duration, _span: &Span| {
                         if let Some(info) = response.extensions().get::<TracingInfo>() {
-                            tracing::info!(
-                                "{} \"{} {} {:?}\" {} {:?} {}",
-                                match info.connect_info.0 {
-                                    DualAddr::Tcp(c) => c.to_string(),
-                                    #[cfg(unix)]
-                                    DualAddr::Uds(_) => "unix-socket".into()
-                                },
-                                info.method,
-                                info.uri,
-                                info.version,
-                                ColoredStatus(response.status()),
+                            log_response(
+                                logger::format(),
+                                info,
+                                response.status(),
                                 latency,
-                                Paint::dim(
-                                    response
-                                        .body()
-                                        .size_hint()
-                                        .exact()
-                                        .map(|n| n.to_string())
-                                        .unwrap_or("0".to_string())
-                                        .into()
-                                ),
+                                response.body().size_hint().exact(),
                             );
                         } else {
                             tracing::info!("Processed");
@@ -234,36 +220,6 @@ async fn root_index_handler() -> impl IntoResponse {
     });
 
     Json(response)
-}
-
-pub mod logger {
-    use tracing::dispatcher::Dispatch;
-
-    pub fn init() -> Result<(), tracing::subscriber::SetGlobalDefaultError> {
-        tracing::dispatcher::set_global_default(Dispatch::new(subscriber()))
-    }
-
-    #[cfg(feature = "logfmt")]
-    pub fn subscriber() -> impl tracing::Subscriber {
-        use tracing_subscriber::layer::SubscriberExt as _;
-        use tracing_subscriber::EnvFilter;
-
-        tracing_subscriber::Registry::default()
-            .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")))
-            .with(tracing_logfmt::layer())
-    }
-
-    #[cfg(not(feature = "logfmt"))]
-    pub fn subscriber() -> impl tracing::Subscriber {
-        use tracing_subscriber::EnvFilter;
-
-        tracing_subscriber::FmtSubscriber::builder()
-            .with_target(false)
-            .with_env_filter(
-                EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
-            )
-            .finish()
-    }
 }
 
 #[cfg(test)]

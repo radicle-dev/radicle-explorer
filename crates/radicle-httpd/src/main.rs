@@ -35,6 +35,8 @@ Environment
 
     RUST_LOG                         Set the log level (e.g. RUST_LOG=warn, or
                                      RUST_LOG=radicle_httpd=debug). Defaults to "info".
+    RADICLE_HTTPD_LOG_FORMAT         Log rendering: text (default) or json.
+                                     Unrecognised values fall back to "text".
 "#;
 
 #[tokio::main]
