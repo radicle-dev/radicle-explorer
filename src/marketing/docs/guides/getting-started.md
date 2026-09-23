@@ -78,7 +78,7 @@ $ brew install radicle
 
 ### Arch Linux (pacman)
 
-Install [`radicle-bin`](https://aur.archlinux.org/packages?O=0&K=radicle) from the AUR.
+Install [`radicle`](https://archlinux.org/packages/extra/x86_64/radicle/) via pacman.
 
 ### Nix
 

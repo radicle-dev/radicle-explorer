@@ -39,7 +39,7 @@ sudo apt install radicle
 
 ### Pacman (Arch Linux)
 
-Install [`radicle-bin`](https://aur.archlinux.org/packages/radicle-bin) from the AUR.
+Install [`radicle`](https://archlinux.org/packages/extra/x86_64/radicle/) via pacman.
 
 ### Nix
 

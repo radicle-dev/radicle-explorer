@@ -38,8 +38,8 @@
     {
       name: "Arch Linux",
       os: "linux",
-      description: "Available from the Arch User Repository.",
-      command: "yay -S radicle-desktop",
+      description: "Available in the official extra repository.",
+      command: "pacman -Syu radicle-desktop",
     },
     {
       name: "NixOS",
