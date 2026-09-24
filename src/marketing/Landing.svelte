@@ -18,8 +18,8 @@
     description: string;
     rid: string;
     seeding: number;
-    issues: number;
-    patches: number;
+    issues: number | undefined;
+    patches: number | undefined;
     route: Route;
     avatar: string;
   }
@@ -79,8 +79,8 @@
             description: project.data.description,
             rid: r.rid,
             seeding: r.seeding,
-            issues: project.meta.issues.open,
-            patches: project.meta.patches.open,
+            issues: r.cobs?.issues?.open,
+            patches: r.cobs?.patches?.open,
             route: { resource: "repo.source", repo: r.rid, node: seed },
             avatar: renderRepoAvatar(project.data.name),
           },
@@ -628,8 +628,12 @@
 
               <div class="meta-row">
                 <div class="stats txt-code-regular">
-                  <span class="stat">{repo.issues} issues</span>
-                  <span class="stat">{repo.patches} patches</span>
+                  {#if repo.issues !== undefined}
+                    <span class="stat">{repo.issues} issues</span>
+                  {/if}
+                  {#if repo.patches !== undefined}
+                    <span class="stat">{repo.patches} patches</span>
+                  {/if}
                 </div>
                 <span class="time txt-medium-14">{repo.seeding} seeds</span>
               </div>
