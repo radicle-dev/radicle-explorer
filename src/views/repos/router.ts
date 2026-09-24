@@ -504,8 +504,6 @@ async function loadIssuesView(
   };
 }
 
-// Neither the project nor the canonical refs payload names a default branch,
-// so there is no revision to browse.
 // Neither the project nor the canonical refs payload names a branch, so there
 // is no revision to browse. The repo still has COBs, so render its shell rather
 // than a full-page not-found that would take the issue and patch tabs with it.
