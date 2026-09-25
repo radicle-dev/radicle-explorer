@@ -89,6 +89,25 @@ Notes:
   build directory live in container-private volumes, leaving your host copies
   untouched.
 
+**Testing with meilisearch:**
+
+If you're developing radicle-search and want to test the meilisearch-backed
+search path instead of the default sqlite one:
+
+    npm run test:e2e:meili
+
+This will:
+1. Install the meilisearch binary alongside the usual heartwood/httpd ones
+2. Compile radicle-httpd and radicle-search from source
+3. Run the full test suite with a private meilisearch instance per test peer
+
+**Note:** The e2e suite requires a POSIX-coherent filesystem — shared/network
+mounts (VirtualBox vboxsf, NFS) break the peers' git fetch finalization; run
+from a native-disk checkout or worktree (e.g. under `/tmp` or `$HOME`).
+
+Sqlite-mode commands (`test:e2e`, `test:e2e:local`) are unchanged. The Docker
+equivalent is `scripts/test-e2e-docker --meili`.
+
 Proposing changes
 -----------------
 When proposing changes via a patch:

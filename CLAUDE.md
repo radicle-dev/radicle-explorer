@@ -46,6 +46,9 @@ or test fixtures requires a full run.
 SKIP_SETUP=true npm run test:e2e -- --project chromium
 ```
 
+To test against meilisearch instead of the default sqlite search backend,
+use `npm run test:e2e:meili -- --project chromium`.
+
 ### Rust backend (radicle-httpd)
 
 ```sh
@@ -82,7 +85,8 @@ and fall back when they're absent.
 3. `npm run test:http-client:unit`
 4. `npm run test:e2e -- --project chromium`
 5. If Rust code changed: clippy, fmt, cargo test (see above),
-   plus `:local` variants of e2e and http-client tests
+   plus `:local` variants of e2e and http-client tests, plus
+   `npm run test:e2e:meili -- --project chromium`
 
 ## Radicle ecosystem (sibling repos)
 
