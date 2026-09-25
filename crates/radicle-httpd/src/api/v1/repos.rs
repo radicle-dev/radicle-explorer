@@ -24,8 +24,7 @@ use radicle_search::query::{CobFilter, CobKind};
 use crate::api;
 use crate::api::error::Error;
 use crate::api::query::{
-    search_query, CobsQuery, CobsSearchQuery, PaginationQuery, RepoQuery, MAX_PER_PAGE,
-    MAX_QUERY_LEN,
+    CobsQuery, CobsSearchQuery, PaginationQuery, RepoQuery, MAX_PER_PAGE, MAX_QUERY_LEN,
 };
 use crate::api::search::SearchQueryString;
 use crate::api::Context;
@@ -1583,6 +1582,14 @@ async fn patches_from_docs(
         )
     })
     .await
+}
+
+fn search_query(q: Option<String>) -> String {
+    q.unwrap_or_default()
+        .trim()
+        .chars()
+        .take(MAX_QUERY_LEN)
+        .collect()
 }
 
 /// Get repo issues list.

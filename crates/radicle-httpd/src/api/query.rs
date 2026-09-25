@@ -12,14 +12,6 @@ pub const MAX_PER_PAGE: usize = 100;
 /// backend.
 pub const MAX_QUERY_LEN: usize = 256;
 
-pub fn search_query(q: Option<String>) -> String {
-    q.unwrap_or_default()
-        .trim()
-        .chars()
-        .take(MAX_QUERY_LEN)
-        .collect()
-}
-
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct PaginationQuery {
@@ -169,13 +161,5 @@ mod tests {
         assert_eq!(PatchStatus::All.as_state_filter(), None);
         assert_eq!(PatchStatus::Draft.as_state_filter(), Some("draft"));
         assert_eq!(PatchStatus::Merged.as_state_filter(), Some("merged"));
-    }
-
-    #[test]
-    fn search_query_trims_and_truncates() {
-        assert_eq!(search_query(None), "");
-        assert_eq!(search_query(Some("  hello  ".to_string())), "hello");
-        let long = "x".repeat(MAX_QUERY_LEN + 10);
-        assert_eq!(search_query(Some(long)).chars().count(), MAX_QUERY_LEN);
     }
 }
