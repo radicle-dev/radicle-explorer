@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- **Meilisearch source mode**: `RADICLE_HTTPD_SOURCE=meilisearch` serves all derived data (listings, search, issues, patches, aliases, policies, inventory, stats) from the six Meilisearch indexes radicle-search publishes; SQLite is never opened. Default remains `sqlite` (unchanged behavior). `/info` reports the active source (`httpd.source`); API version 6.2.0
+- **Breaking (config)**: `RADICLE_SEARCH_INDEX_NAME` is replaced by `RADICLE_SEARCH_INDEX_PREFIX` in both radicle-search and radicle-httpd
+- **radicle-search**: publishes six indexes (repos, issues, patches, nodes, policies, inventory) with issue/patch full-text fields and participant DIDs
+
 ## radicle-httpd + radicle-search 0.29.0
 
 - **Complete commit lists for merge-commit diffs**: The diff endpoint no longer stops the walk early when the head merges the target branch in, which reduced such patches to a single commit
