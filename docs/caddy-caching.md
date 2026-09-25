@@ -22,6 +22,9 @@ Header: `public, max-age=604800, immutable, stale-while-revalidate=86400, stale-
 - `/api/v1/repos/{rid}/stats/commits/{sha}`
 - `/api/v1/repos/{rid}/blob/{sha}/{path}`
 - `/api/v1/repos/{rid}/readme/{sha}`
+- `/raw/{rid}/{sha}.tar.gz`, also `.tar` and `.zip`
+- `/raw/{rid}/{sha}/{path}`
+- `/raw/{rid}/blobs/{oid}`
 
 ### Revalidated routes
 
@@ -55,7 +58,8 @@ Header: `public, max-age=120, stale-while-revalidate=120, stale-if-error=3600`
 - `/api/v1/node/policies/repos/{name}`
 - `/api/v1/nodes/{nid}`
 - `/api/v1/nodes/{nid}/inventory`
-- every route under `/raw/`
+- `/raw/{rid}/head/{path}`
+- `/raw/{rid}/archive/{refname}`
 
 `radicle-httpd` sets no `ETag` and no `Last-Modified` header. It does not answer conditional requests. Every revalidation is a full refetch.
 
@@ -78,17 +82,11 @@ Let `radicle-httpd` supply the TTL (time to live, how long the cache keeps a res
 
 example.com {
   # radicle-httpd supplies the TTL and the stale window for each route.
-  @cached path_regexp ^/api/v1/(info|node|stats|repos/search)$|^/api/v1/repos/[^/]+/(commits|diff|tree|blob|readme|stats|activity)
+  @cached path_regexp ^/api/v1/(info|node|stats|repos/search)$|^/api/v1/repos/[^/]+/(commits|diff|tree|blob|readme|stats|activity)|^/raw/[^/]+/(blobs/|[0-9a-f]{40})
   cache @cached
 
-  # Everything else, the COB routes included, stays uncached.
+  # Everything else, the COB routes and /raw/ head and archive included,
+  # stays uncached.
   reverse_proxy radicle-httpd:8080
 }
 ```
-
-## Backend changes required
-
-These changes need work in `radicle-httpd`. They are listed here so that operators know what the cache cannot solve:
-
-- No `ETag` and no `If-None-Match` handling. The object ID is the natural `ETag` value. Conditional requests make revalidation and stale-while-revalidate cheap.
-- Routes under `/raw/` send no `Cache-Control`, although archive and blob responses are content-addressed.

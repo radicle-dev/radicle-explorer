@@ -90,7 +90,7 @@ pub struct Error {
 /// Cache-Control for content-addressed responses: fresh for 7 days, then
 /// servable stale for a further day while a cache refreshes it or while the
 /// node is failing. The content cannot change, so a stale copy is correct.
-const IMMUTABLE_CACHE_CONTROL: &str =
+pub const IMMUTABLE_CACHE_CONTROL: &str =
     "public, max-age=604800, immutable, stale-while-revalidate=86400, stale-if-error=86400";
 
 /// Cache-Control for responses where a slightly old answer is acceptable:

@@ -22,7 +22,7 @@ use tokio::process::Command;
 use tokio_util::io::ReaderStream;
 
 use crate::api::query::RawQuery;
-use crate::axum_extra::Path;
+use crate::axum_extra::{Path, IMMUTABLE_CACHE_CONTROL};
 use crate::error::RawError as Error;
 
 const MAX_BLOB_SIZE: usize = 10_485_760;
@@ -166,7 +166,7 @@ async fn file_by_commit_handler(
         &path,
     )?;
 
-    blob_response(blob, &path)
+    blob_response(blob, &path, true)
 }
 
 async fn archive_by_refname_handler(
@@ -256,6 +256,13 @@ async fn archive_by_committish(
             format.extension()
         ))?,
     );
+    // Only an archive of a commit ID is fixed. A ref can move.
+    if matches!(committish, Committish::Oid(_)) {
+        response_headers.insert(
+            header::CACHE_CONTROL,
+            HeaderValue::from_static(IMMUTABLE_CACHE_CONTROL),
+        );
+    }
 
     let response = response_headers.into_response();
 
@@ -308,12 +315,13 @@ async fn file_by_canonical_head_handler(
         &path,
     )?;
 
-    blob_response(blob, &path)
+    blob_response(blob, &path, false)
 }
 
 fn blob_response(
     blob: Blob<BlobRef>,
     path: &str,
+    immutable: bool,
 ) -> Result<(StatusCode, HeaderMap, Vec<u8>), Error> {
     let mut response_headers = HeaderMap::new();
     if blob.size() > MAX_BLOB_SIZE {
@@ -326,6 +334,12 @@ fn blob_response(
         .unwrap_or("application/octet-stream");
 
     response_headers.insert(header::CONTENT_TYPE, HeaderValue::from_str(mime)?);
+    if immutable {
+        response_headers.insert(
+            header::CACHE_CONTROL,
+            HeaderValue::from_static(IMMUTABLE_CACHE_CONTROL),
+        );
+    }
 
     Ok::<_, Error>((StatusCode::OK, response_headers, blob.content().to_owned()))
 }
@@ -356,6 +370,10 @@ async fn file_by_oid_handler(
     response_headers.insert(
         header::CONTENT_TYPE,
         HeaderValue::from_str(&mime.unwrap_or("application/octet-stream".to_string()))?,
+    );
+    response_headers.insert(
+        header::CACHE_CONTROL,
+        HeaderValue::from_static(IMMUTABLE_CACHE_CONTROL),
     );
 
     Ok::<_, Error>((StatusCode::OK, response_headers, content.to_vec()))
