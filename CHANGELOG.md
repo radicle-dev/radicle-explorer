@@ -7,6 +7,7 @@
 - **radicle-search**: publishes six indexes (repos, issues, patches, nodes, policies, inventory) with issue/patch full-text fields and participant DIDs
 - **Releases in Meilisearch mode**: radicle-search publishes a seventh index, `releases` (release COBs with tag/commit text, artifact names and URLs, participant DIDs, and delegate/redaction view flags); the release count, `/repos/{rid}/releases` and `/repos/{rid}/releases/{id}` are served from it in Meilisearch mode, and a new `GET /repos/{rid}/releases/search?q=` searches one repo's releases (Meilisearch mode only; a sqlite-mode node answers 501)
 - **Issue and patch search**: new `GET /repos/{rid}/issues/search?q=` and `GET /repos/{rid}/patches/search?q=` search one repo's issues or patches by title, description, comments and participant DIDs, with the same `status`/`page`/`perPage` parameters as the list routes. Meilisearch mode only — a sqlite-mode node answers `501 Not Implemented`; API version 6.4.0
+- **Issue and patch filters**: `GET /repos/{rid}/issues/search` and `/patches/search` accept `author`, `assignee` (`did:key:…` or a bare node id) and `label`; radicle-search indexes `authorDid`, `assigneeDids` and `labels` on issue and patch documents (the shared document schema moves to v2, so **all seven** indexes are rebuilt by radicle-search's bootstrap rescan; a Meilisearch-mode httpd answers 503 with `Retry-After` on every derived route until that rescan completes — deploy radicle-search first). API version 6.5.0
 
 ## radicle-httpd + radicle-search 0.29.0
 

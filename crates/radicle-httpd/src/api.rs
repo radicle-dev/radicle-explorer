@@ -35,7 +35,7 @@ use crate::{Options, Source};
 
 pub const RADICLE_VERSION: &str = env!("RADICLE_VERSION");
 // This version has to be updated on every breaking change to the radicle-httpd API.
-pub const API_VERSION: &str = "6.4.0";
+pub const API_VERSION: &str = "6.5.0";
 
 /// Thread-safe wrapper around radicle's web configuration.
 ///
