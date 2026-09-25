@@ -16,7 +16,7 @@ use radicle::Node;
 
 use crate::api::error::Error;
 use crate::api::Context;
-use crate::axum_extra::{cached_response, Path};
+use crate::axum_extra::{cached_response, Path, LISTING_TTL_IN_SECONDS};
 
 const SOCKET_QUERY_TIMEOUT_MS: Duration = Duration::from_millis(500);
 
@@ -129,7 +129,7 @@ pub(crate) async fn build_response(ctx: &Context) -> Result<Response, Error> {
 /// `GET /node`
 async fn node_handler(State(ctx): State<Context>) -> impl IntoResponse {
     let response = build_response(&ctx).await?;
-    Ok::<_, Error>(cached_response(response, 600))
+    Ok::<_, Error>(cached_response(response, LISTING_TTL_IN_SECONDS))
 }
 
 /// Return stored information about other nodes.

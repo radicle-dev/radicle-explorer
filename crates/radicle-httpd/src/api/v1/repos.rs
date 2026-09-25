@@ -26,7 +26,9 @@ use crate::api::query::{CobsQuery, PaginationQuery, RepoQuery, MAX_PER_PAGE, MAX
 use crate::api::search::SearchQueryString;
 use crate::api::Context;
 use crate::api::PeelToCommit;
-use crate::axum_extra::{cached_response, immutable_response, Path, Query};
+use crate::axum_extra::{
+    cached_response, immutable_response, Path, Query, ACTIVITY_TTL_IN_SECONDS,
+};
 
 const MAX_BODY_LIMIT: usize = 4_194_304;
 
@@ -86,7 +88,7 @@ mod storage {
     use crate::api::query::{RepoQuery, RepoSort};
     use crate::api::search::SearchResult;
     use crate::api::Context;
-    use crate::axum_extra::cached_response;
+    use crate::axum_extra::{cached_response, LISTING_TTL_IN_SECONDS};
 
     /// Repo listing via storage walk. Activity/seeding sorts are collapsed
     /// to rid sort — walking storage for every repo per request is too
@@ -235,7 +237,7 @@ mod storage {
         })
         .await?;
 
-        Ok(cached_response(found_repos, 600).into_response())
+        Ok(cached_response(found_repos, LISTING_TTL_IN_SECONDS).into_response())
     }
 }
 
@@ -769,7 +771,10 @@ async fn activity_handler(
     })
     .await?;
 
-    Ok::<_, Error>(cached_response(json!({ "activity": timestamps }), 3600))
+    Ok::<_, Error>(cached_response(
+        json!({ "activity": timestamps }),
+        ACTIVITY_TTL_IN_SECONDS,
+    ))
 }
 
 /// Get repo source tree for '/' path.

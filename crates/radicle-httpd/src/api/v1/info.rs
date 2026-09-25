@@ -7,7 +7,7 @@ use serde::Serialize;
 use crate::api::error::Error;
 use crate::api::v1::node;
 use crate::api::Context;
-use crate::axum_extra::cached_response;
+use crate::axum_extra::{cached_response, LISTING_TTL_IN_SECONDS};
 
 pub fn router(ctx: Context) -> Router {
     Router::new()
@@ -40,7 +40,10 @@ async fn info_handler(State(ctx): State<Context>) -> impl IntoResponse {
     let httpd = HttpdInfo {
         search_available: ctx.search().is_some(),
     };
-    Ok::<_, Error>(cached_response(Info { node, httpd }, 600))
+    Ok::<_, Error>(cached_response(
+        Info { node, httpd },
+        LISTING_TTL_IN_SECONDS,
+    ))
 }
 
 #[cfg(test)]

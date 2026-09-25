@@ -87,11 +87,22 @@ pub struct Error {
     error: String,
 }
 
+/// Cache-Control for content-addressed responses: fresh for 7 days.
+const IMMUTABLE_CACHE_CONTROL: &str = "public, max-age=604800, immutable";
+
+/// How long a listing that changes as the node syncs stays fresh: node and
+/// peer info, and repository search results.
+pub const LISTING_TTL_IN_SECONDS: u64 = 600;
+
+/// How long a repository's commit activity stays fresh. It is a histogram of
+/// the whole history, so a new commit barely moves it.
+pub const ACTIVITY_TTL_IN_SECONDS: u64 = 3600;
+
 /// Add a Cache-Control header that marks the response as immutable and
 /// instructs clients to cache the response for 7 days.
 pub fn immutable_response(data: impl serde::Serialize) -> impl IntoResponse {
     (
-        [(header::CACHE_CONTROL, "public, max-age=604800, immutable")],
+        [(header::CACHE_CONTROL, IMMUTABLE_CACHE_CONTROL)],
         Json(data),
     )
 }
