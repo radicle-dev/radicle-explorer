@@ -4,7 +4,7 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use radicle::Profile;
 use radicle_search::config::Config;
-use radicle_search::index::repo;
+use radicle_search::index::Indexes;
 use radicle_search::indexer::Indexer;
 
 const HELP_MSG: &str = r#"
@@ -19,8 +19,9 @@ Options
 Environment
 
     RADICLE_SEARCH_MEILI_URL           Meilisearch base URL (default: http://localhost:7700)
-    RADICLE_SEARCH_MEILI_KEY           Meilisearch API key (optional)
-    RADICLE_SEARCH_INDEX_NAME          Meilisearch index name (default: repos)
+    RADICLE_SEARCH_MEILI_KEY           Meilisearch API key (optional; must allow writes)
+    RADICLE_SEARCH_INDEX_PREFIX        Prefix for the index names repos, issues, patches,
+                                       nodes, policies, inventory (default: empty)
     RADICLE_SEARCH_RESCAN_SECS         Periodic full rescan interval in seconds (default: 3600)
     RADICLE_SEARCH_RECONNECT_BACKOFF_SECS  Reconnect delay after a dropped event stream (default: 5)
     RAD_HOME, RAD_SOCKET               Standard Radicle paths
@@ -67,7 +68,11 @@ fn parse_args() -> Result<()> {
 
 async fn run() -> Result<()> {
     let config = Config::from_env()?;
-    tracing::info!("meili={}, index={}", config.meili_url, config.index_name);
+    tracing::info!(
+        "meili={}, prefix={:?}",
+        config.meili_url,
+        config.index_prefix
+    );
 
     let (shutdown_tx, mut shutdown_rx) = tokio::sync::watch::channel(false);
     tokio::spawn(async move {
@@ -92,17 +97,17 @@ async fn run() -> Result<()> {
     let profile = Arc::new(Profile::load().context("failed to load Radicle profile")?);
     tracing::info!("loaded profile at {}", profile.home().path().display());
 
-    let index = Arc::new(repo::Index::connect(
+    let indexes = Arc::new(Indexes::connect(
         &config.meili_url,
         config.meili_key.as_deref(),
-        &config.index_name,
+        &config,
     )?);
     tokio::select! {
         _ = shutdown_rx.changed() => return Ok(()),
-        res = index.configure_with_retry() => res?,
+        res = indexes.configure_all_with_retry() => res?,
     }
 
-    let indexer = Indexer::new(profile, index, config);
+    let indexer = Indexer::new(profile, indexes, config);
     indexer.run(shutdown_rx).await?;
     Ok(())
 }
