@@ -179,7 +179,9 @@ fn router(options: Options, profile: Arc<Profile>, ctx: api::Context) -> anyhow:
                 .max_age(Duration::from_secs(86400))
                 .allow_origin(cors::Any)
                 .allow_methods([Method::GET])
-                .allow_headers([CONTENT_TYPE]),
+                .allow_headers([CONTENT_TYPE])
+                // The CORS headers are the same for every origin, so no `Vary` header is needed.
+                .vary(cors::Vary::list([])),
         );
 
     Ok(app)
