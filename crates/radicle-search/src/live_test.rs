@@ -547,6 +547,329 @@ async fn live_unseed_purges() {
 
 #[tokio::test]
 #[ignore]
+async fn live_node_announced_keeps_follow_alias_and_skips_non_seeds() {
+    use radicle::crypto::{Seed, Signer, SigningKey};
+    use radicle::node::{Alias, Event, Features, Timestamp, UserAgent};
+
+    let meili = LiveMeili::spawn();
+    let (_tmp, profile, _rid) = crate::test::fixture();
+    let config = config_with(&meili.url);
+    let indexes = Arc::new(Indexes::connect(&config).expect("connect"));
+    indexes
+        .configure_all_with_retry()
+        .await
+        .expect("configure indexes");
+
+    let followed = *SigningKey::from_seed(Seed::new([0x11; 32])).public_key();
+    let laptop = *SigningKey::from_seed(Seed::new([0x22; 32])).public_key();
+    profile
+        .policies_mut()
+        .expect("open policy store")
+        .follow(&followed, Some(&Alias::new("local-name")))
+        .expect("follow");
+    profile
+        .database_mut()
+        .expect("open node db")
+        .init(
+            &followed,
+            Features::SEED,
+            &Alias::new("announced"),
+            &UserAgent::default(),
+            Timestamp::try_from(crate::test::TIMESTAMP + 1).unwrap(),
+            [],
+        )
+        .expect("init address book");
+
+    let db = profile.database().expect("open node db");
+    let primed = build::node_documents(&profile, &db, std::iter::empty()).expect("node docs");
+    indexes
+        .nodes
+        .upsert(&primed, crate::index::node::Document::PRIMARY_KEY)
+        .await
+        .expect("prime nodes index");
+
+    let profile = Arc::new(profile);
+    let indexer = Indexer::new(profile.clone(), indexes.clone(), config);
+    let client = SearchClient::new(&meili.url, None, "", Duration::from_secs(5))
+        .expect("construct search client");
+    let ready = poll_until(Duration::from_secs(10), || {
+        let client = client.clone();
+        async move { matches!(client.get_node(&followed).await, Ok(Some(_))) }
+    })
+    .await;
+    assert!(ready, "primed node doc did not appear within 10s");
+
+    let ts = Timestamp::try_from(crate::test::TIMESTAMP + 2).unwrap();
+    indexer
+        .handle_event(&Event::NodeAnnounced {
+            nid: followed,
+            alias: Alias::new("announced"),
+            timestamp: ts,
+            features: Features::SEED,
+            addresses: vec![],
+        })
+        .await
+        .expect("handle followed announcement");
+    indexer
+        .handle_event(&Event::NodeAnnounced {
+            nid: laptop,
+            alias: Alias::new("laptop"),
+            timestamp: ts,
+            features: Features::NONE,
+            addresses: vec![],
+        })
+        .await
+        .expect("handle laptop announcement");
+
+    tokio::time::sleep(Duration::from_secs(2)).await;
+    let doc = client
+        .get_node(&followed)
+        .await
+        .expect("get followed node")
+        .expect("followed node document present");
+    assert_eq!(doc.alias.as_deref(), Some("local-name"));
+    assert!(matches!(client.get_node(&laptop).await, Ok(None)));
+
+    indexer
+        .handle_event(&Event::NodeAnnounced {
+            nid: laptop,
+            alias: Alias::new("laptop"),
+            timestamp: ts,
+            features: Features::SEED,
+            addresses: vec![],
+        })
+        .await
+        .expect("handle laptop seed announcement");
+    let appeared = poll_until(Duration::from_secs(10), || {
+        let client = client.clone();
+        async move {
+            matches!(client.get_node(&laptop).await, Ok(Some(d)) if d.alias.as_deref() == Some("laptop"))
+        }
+    })
+    .await;
+    assert!(
+        appeared,
+        "seed announcement did not create the node document within 10s"
+    );
+}
+
+async fn task_count(meili_url: &str, index_uid: &str) -> u64 {
+    let client = meilisearch_sdk::client::Client::new(meili_url, None::<String>).expect("client");
+    let mut query = meilisearch_sdk::tasks::TasksSearchQuery::new(&client);
+    query.with_index_uids([index_uid]).with_limit(1);
+    client
+        .get_tasks_with(&query)
+        .await
+        .expect("list tasks")
+        .total
+}
+
+#[tokio::test]
+#[ignore]
+async fn live_seed_discovered_updates_only_seeding_count() {
+    use radicle::crypto::{Seed, Signer, SigningKey};
+    use radicle::node::routing::Store as _;
+    use radicle::node::{Alias, Event, Features, Timestamp, UserAgent};
+
+    let meili = LiveMeili::spawn();
+    let (_tmp, profile, rid) = crate::test::fixture();
+    let config = config_with(&meili.url);
+    let indexes = Arc::new(Indexes::connect(&config).expect("connect"));
+    indexes
+        .configure_all_with_retry()
+        .await
+        .expect("configure indexes");
+    let profile = Arc::new(profile);
+    let indexer = Indexer::new(profile.clone(), indexes.clone(), config);
+    indexer.mark_seeded(rid).await;
+    indexer.reindex(rid).await.expect("initial reindex");
+
+    let client = SearchClient::new(&meili.url, None, "", Duration::from_secs(5))
+        .expect("construct search client");
+    let seeded = poll_until(Duration::from_secs(10), || {
+        let client = client.clone();
+        async move {
+            matches!(client.get_repo_doc(rid).await, Ok(Some(_)))
+                && matches!(
+                    client.list_cobs(CobKind::Issues, rid, None, 0, 10).await,
+                    Ok(docs) if docs.len() == 1
+                )
+        }
+    })
+    .await;
+    assert!(
+        seeded,
+        "initial reindex did not populate the index within 10s"
+    );
+
+    let before = client
+        .get_repo_doc(rid)
+        .await
+        .expect("get repo doc")
+        .expect("repo doc present");
+    let issues_before = task_count(&meili.url, "issues").await;
+    let patches_before = task_count(&meili.url, "patches").await;
+    let releases_before = task_count(&meili.url, "releases").await;
+
+    let other = *SigningKey::from_seed(Seed::new([0x33; 32])).public_key();
+    profile
+        .database_mut()
+        .expect("open node db")
+        .init(
+            &other,
+            Features::NONE,
+            &Alias::new("other"),
+            &UserAgent::default(),
+            Timestamp::try_from(crate::test::TIMESTAMP + 1).unwrap(),
+            [],
+        )
+        .expect("register routing peer");
+    profile
+        .database_mut()
+        .expect("open node db")
+        .add_inventory(
+            [&rid],
+            other,
+            Timestamp::try_from(crate::test::TIMESTAMP + 1).unwrap(),
+        )
+        .expect("add routing row");
+    let expected = profile
+        .database()
+        .expect("open node db")
+        .count(&rid)
+        .expect("count") as u64;
+    assert_eq!(expected, before.seeding_count + 1);
+
+    indexer
+        .handle_event(&Event::SeedDiscovered { rid, nid: other })
+        .await
+        .expect("handle SeedDiscovered");
+
+    let updated = poll_until(Duration::from_secs(10), || {
+        let client = client.clone();
+        async move {
+            matches!(client.get_repo_doc(rid).await, Ok(Some(d)) if d.seeding_count == expected)
+        }
+    })
+    .await;
+    assert!(updated, "seedingCount was not updated within 10s");
+
+    let after = client
+        .get_repo_doc(rid)
+        .await
+        .expect("get repo doc")
+        .expect("repo doc present after update");
+    assert_eq!(after.name, before.name);
+    assert_eq!(after.issue_counts.open, before.issue_counts.open);
+    assert_eq!(after.patch_counts.open, before.patch_counts.open);
+    assert_eq!(after.activity.head, before.activity.head);
+    assert_eq!(task_count(&meili.url, "issues").await, issues_before);
+    assert_eq!(task_count(&meili.url, "patches").await, patches_before);
+    assert_eq!(task_count(&meili.url, "releases").await, releases_before);
+
+    indexes
+        .repos
+        .delete(&repo::DocumentKey::new(rid).to_string())
+        .await
+        .expect("delete repo doc");
+    let gone = poll_until(Duration::from_secs(10), || {
+        let client = client.clone();
+        async move { matches!(client.get_repo_doc(rid).await, Ok(None)) }
+    })
+    .await;
+    assert!(gone, "repo doc was not deleted within 10s");
+
+    indexer
+        .handle_event(&Event::SeedDiscovered { rid, nid: other })
+        .await
+        .expect("handle SeedDiscovered without a repo doc");
+    let rebuilt = poll_until(Duration::from_secs(10), || {
+        let client = client.clone();
+        async move {
+            matches!(client.get_repo_doc(rid).await, Ok(Some(d)) if d.name == "hello-world" && d.seeding_count == expected)
+        }
+    })
+    .await;
+    assert!(
+        rebuilt,
+        "missing repo doc did not fall back to a full reindex within 10s"
+    );
+}
+
+#[tokio::test]
+#[ignore]
+async fn live_seed_discovered_purges_after_unseed() {
+    use radicle::crypto::{Seed, Signer, SigningKey};
+    use radicle::node::Event;
+
+    let meili = LiveMeili::spawn();
+    let (_tmp, profile, rid) = crate::test::fixture();
+    let config = config_with(&meili.url);
+    let indexes = Arc::new(Indexes::connect(&config).expect("connect"));
+    indexes
+        .configure_all_with_retry()
+        .await
+        .expect("configure indexes");
+    let profile = Arc::new(profile);
+    let indexer = Indexer::new(profile.clone(), indexes.clone(), config);
+    indexer.mark_seeded(rid).await;
+    indexer.reindex(rid).await.expect("initial reindex");
+
+    let client = SearchClient::new(&meili.url, None, "", Duration::from_secs(5))
+        .expect("construct search client");
+    let seeded = poll_until(Duration::from_secs(10), || {
+        let client = client.clone();
+        async move {
+            matches!(client.get_repo_doc(rid).await, Ok(Some(_)))
+                && matches!(
+                    client.list_cobs(CobKind::Issues, rid, None, 0, 10).await,
+                    Ok(docs) if docs.len() == 1
+                )
+        }
+    })
+    .await;
+    assert!(
+        seeded,
+        "initial reindex did not populate the index within 10s"
+    );
+
+    let other = *SigningKey::from_seed(Seed::new([0x44; 32])).public_key();
+    indexer
+        .handle_event(&Event::SeedDiscovered { rid, nid: other })
+        .await
+        .expect("handle SeedDiscovered while still seeded");
+
+    profile
+        .policies_mut()
+        .expect("open policy store")
+        .unseed(&rid)
+        .expect("unseed fixture repo");
+
+    indexer
+        .handle_event(&Event::SeedDiscovered { rid, nid: other })
+        .await
+        .expect("handle SeedDiscovered after unseed");
+
+    let purged = poll_until(Duration::from_secs(10), || {
+        let client = client.clone();
+        async move {
+            let repo_gone = matches!(client.get_repo_doc(rid).await, Ok(None));
+            let issues_gone = matches!(
+                client.list_cobs(CobKind::Issues, rid, None, 0, 10).await,
+                Ok(docs) if docs.is_empty()
+            );
+            repo_gone && issues_gone
+        }
+    })
+    .await;
+    assert!(
+        purged,
+        "SeedDiscovered after unseed did not purge repo/issue docs within 10s"
+    );
+}
+
+#[tokio::test]
+#[ignore]
 async fn live_error_mapping() {
     let meili = LiveMeili::spawn();
 

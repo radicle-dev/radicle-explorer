@@ -71,10 +71,11 @@ been announced.
 2. **Real time.** Subscribes to the node's control socket (same stream as
    `rad node events`) and reacts to:
    - `RefsFetched`, `LocalRefsAnnounced`, `CanonicalRefUpdated`, `RefsSynced`
-     → re-index the affected repo, its issues, and its patches.
-   - `SeedDiscovered`, `SeedDropped`, `RefsAnnounced` → re-index only if
-     the rid is one we locally seed (filtered against an in-memory cache,
-     so gossip about repos we don't host is dropped at near-zero cost).
+     → re-index the affected repo, its issues, patches and releases.
+   - `SeedDiscovered`, `SeedDropped` → refresh the repo's `seedingCount`,
+     only if the rid is one we locally seed (filtered against an in-memory
+     cache, so gossip about repos we don't host is dropped at near-zero cost).
+     `RefsAnnounced` gossip is ignored.
    - `NodeAnnounced` → upsert the node document.
    - `InventoryAnnounced` → replace the inventory document for that node.
 3. **Periodic rescan.** Every `RADICLE_SEARCH_RESCAN_SECS` (default 1h)

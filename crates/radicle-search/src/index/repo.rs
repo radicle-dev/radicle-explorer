@@ -1,5 +1,5 @@
 pub mod data;
-pub use data::{Activity, Document, DocumentKey, IssueCounts, PatchCounts};
+pub use data::{Activity, Document, DocumentKey, IssueCounts, PatchCounts, SeedingCountUpdate};
 
 use meilisearch_sdk::settings::{PaginationSetting, Settings};
 

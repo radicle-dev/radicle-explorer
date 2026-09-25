@@ -9,7 +9,7 @@ use std::time::Duration;
 use anyhow::{Context, Result};
 use radicle::Profile;
 use radicle::identity::RepoId;
-use radicle::node::{Event, Handle as _, NodeId};
+use radicle::node::{Alias, Event, Features, Handle as _, NodeId};
 use radicle::storage::{ReadRepository, ReadStorage};
 use tokio::sync::{RwLock, mpsc, watch};
 
@@ -401,6 +401,143 @@ impl Indexer {
         Ok(())
     }
 
+    pub(crate) async fn update_seeding_count(&self, rid: RepoId) -> Result<()> {
+        let key = repo::DocumentKey::new(rid);
+        if !self.indexes.repos.exists(&key.to_string()).await? {
+            tracing::info!("repo doc for {rid} is missing; reindexing instead");
+            return self.reindex(rid).await;
+        }
+        let profile = self.profile.clone();
+        let (is_seeded, count) = tokio::task::spawn_blocking(move || -> Result<(bool, u64)> {
+            let is_seeded = profile.policies()?.is_seeding(&rid)?;
+            let db = profile.database()?;
+            Ok((is_seeded, build::seeding_count(&db, rid)?))
+        })
+        .await
+        .context("seeding count task panicked")??;
+        if !is_seeded {
+            return self.reindex(rid).await;
+        }
+        let update = repo::SeedingCountUpdate::new(key, count);
+        self.indexes
+            .repos
+            .update(std::slice::from_ref(&update), repo::Document::PRIMARY_KEY)
+            .await
+    }
+
+    #[cfg(test)]
+    pub(crate) async fn mark_seeded(&self, rid: RepoId) {
+        self.seeded.insert(repo::DocumentKey::new(rid)).await;
+    }
+
+    pub(crate) async fn handle_event(&self, event: &Event) -> Result<()> {
+        let Some(class) = event::classify_event(event) else {
+            tracing::debug!("ignored event: {}", event::event_kind(event));
+            return Ok(());
+        };
+        match class {
+            event::EventClass::Repo(rid, category) => {
+                self.handle_repo_event(rid, category, event).await
+            }
+            event::EventClass::Node {
+                nid,
+                alias,
+                features,
+            } => self.handle_node_event(nid, alias, features).await,
+            event::EventClass::Inventory { nid, inventory } => {
+                self.handle_inventory_event(nid, inventory).await
+            }
+        }
+    }
+
+    async fn handle_repo_event(
+        &self,
+        rid: RepoId,
+        category: event::EventCategory,
+        event: &Event,
+    ) -> Result<()> {
+        let key = repo::DocumentKey::new(rid);
+        let is_seeded = self.seeded.contains(&key).await;
+        match event::event_action(category, is_seeded) {
+            event::EventAction::Skip => {
+                tracing::debug!(
+                    "skipping {rid} ({}): not locally seeded",
+                    event::event_kind(event)
+                );
+                return Ok(());
+            }
+            event::EventAction::UpdateSeedingCount => {
+                tracing::info!(
+                    "update seeding count of {rid} (event: {})",
+                    event::event_kind(event)
+                );
+                if let Err(e) = self.update_seeding_count(rid).await {
+                    tracing::warn!("seeding count update for {rid} failed: {e:#}");
+                }
+                return Ok(());
+            }
+            event::EventAction::Reindex => {}
+            event::EventAction::DiscoverAndReindex => {
+                self.seeded.insert(key).await;
+                tracing::info!("discovered new local seed: {rid}");
+            }
+        }
+        tracing::info!("reindex {rid} (event: {})", event::event_kind(event));
+        if let Err(e) = self.reindex(rid).await {
+            tracing::warn!("reindex {} failed: {e:#}", rid);
+        }
+        Ok(())
+    }
+
+    async fn handle_node_event(&self, nid: NodeId, alias: Alias, features: Features) -> Result<()> {
+        let profile = self.profile.clone();
+        let doc = tokio::task::spawn_blocking(move || {
+            let db = profile.database()?;
+            build::node_document_from_announcement(&profile, &db, nid, alias, features)
+        })
+        .await
+        .context("node doc task panicked")?;
+        let doc = match doc {
+            Ok(Some(doc)) => doc,
+            Ok(None) => {
+                tracing::debug!("ignoring announcement from non-seed node {nid}");
+                return Ok(());
+            }
+            Err(e) => {
+                tracing::warn!("node doc for {nid} failed: {e:#}");
+                return Ok(());
+            }
+        };
+        if let Err(e) = self
+            .indexes
+            .nodes
+            .upsert(
+                std::slice::from_ref(&doc),
+                crate::index::node::Document::PRIMARY_KEY,
+            )
+            .await
+        {
+            tracing::warn!("node doc upsert for {nid} failed: {e:#}");
+        }
+        Ok(())
+    }
+
+    async fn handle_inventory_event(&self, nid: NodeId, inventory: Vec<RepoId>) -> Result<()> {
+        let doc = crate::index::inventory::Document::new(nid, inventory);
+        if let Err(e) = self
+            .indexes
+            .inventory
+            .upsert(
+                std::slice::from_ref(&doc),
+                crate::index::inventory::Document::PRIMARY_KEY,
+            )
+            .await
+        {
+            tracing::warn!("inventory doc upsert for {nid} failed: {e:#}");
+        }
+        Ok(())
+    }
+
     pub async fn run(&self, mut shutdown: watch::Receiver<bool>) -> Result<()> {
         tokio::select! {
             _ = shutdown.changed() => return Ok(()),
@@ -468,82 +605,7 @@ impl Indexer {
                 _ = shutdown.changed() => break,
                 event = rx.recv() => {
                     let Some(event) = event else { break; };
-                    let Some(class) = event::classify_event(&event) else {
-                        tracing::debug!("ignored event: {}", event::event_kind(&event));
-                        continue;
-                    };
-                    match class {
-                        event::EventClass::Repo(rid, category) => {
-                            let key = repo::DocumentKey::new(rid);
-                            let is_seeded = self.seeded.contains(&key).await;
-                            match event::event_action(category, is_seeded) {
-                                event::EventAction::Skip => {
-                                    tracing::debug!(
-                                        "skipping {rid} ({}): not locally seeded",
-                                        event::event_kind(&event)
-                                    );
-                                    continue;
-                                }
-                                event::EventAction::Reindex => {}
-                                event::EventAction::DiscoverAndReindex => {
-                                    self.seeded.insert(key).await;
-                                    tracing::info!("discovered new local seed: {rid}");
-                                }
-                            }
-                            tracing::info!("reindex {rid} (event: {})", event::event_kind(&event));
-                            if let Err(e) = self.reindex(rid).await {
-                                tracing::warn!("reindex {} failed: {e:#}", rid);
-                            }
-                        }
-                        event::EventClass::Node { nid, alias } => {
-                            let profile = self.profile.clone();
-                            let doc = tokio::task::spawn_blocking(move || {
-                                let db = profile.database()?;
-                                let agent = radicle::node::address::Store::get(&db, &nid)?
-                                    .map(|n| n.agent.to_string());
-                                Ok::<_, anyhow::Error>(crate::index::node::Document::new(
-                                    nid,
-                                    Some(alias.to_string()),
-                                    agent,
-                                ))
-                            })
-                            .await
-                            .context("node doc task panicked")?;
-                            let doc = match doc {
-                                Ok(doc) => doc,
-                                Err(e) => {
-                                    tracing::warn!("node doc for {nid} failed: {e:#}");
-                                    continue;
-                                }
-                            };
-                            if let Err(e) = self
-                                .indexes
-                                .nodes
-                                .upsert(
-                                    std::slice::from_ref(&doc),
-                                    crate::index::node::Document::PRIMARY_KEY,
-                                )
-                                .await
-                            {
-                                tracing::warn!("node doc upsert for {nid} failed: {e:#}");
-                            }
-                        }
-                        event::EventClass::Inventory { nid, inventory } => {
-                            let doc =
-                                crate::index::inventory::Document::new(nid, inventory);
-                            if let Err(e) = self
-                                .indexes
-                                .inventory
-                                .upsert(
-                                    std::slice::from_ref(&doc),
-                                    crate::index::inventory::Document::PRIMARY_KEY,
-                                )
-                                .await
-                            {
-                                tracing::warn!("inventory doc upsert for {nid} failed: {e:#}");
-                            }
-                        }
-                    }
+                    self.handle_event(&event).await?;
                 }
                 _ = rescan_timer.tick() => {
                     if let Err(e) = self.bootstrap().await {

@@ -90,11 +90,35 @@ impl Document {
     pub const PRIMARY_KEY: &str = "id";
 }
 
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SeedingCountUpdate {
+    pub id: DocumentKey,
+    pub seeding_count: u64,
+}
+
+impl SeedingCountUpdate {
+    pub fn new(id: DocumentKey, seeding_count: u64) -> Self {
+        Self { id, seeding_count }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
     fn repo_document_carries_schema_version() {
         assert_eq!(crate::index::SCHEMA_VERSION, 1);
+    }
+
+    #[test]
+    fn seeding_count_update_serializes_id_and_count_only() {
+        use std::str::FromStr;
+        let rid = radicle::identity::RepoId::from_str("rad:z4FucBZHZMCsxTyQE1dfE2YR59Qbp").unwrap();
+        let update = super::SeedingCountUpdate::new(super::DocumentKey::new(rid), 7);
+        assert_eq!(
+            serde_json::to_value(&update).unwrap(),
+            serde_json::json!({ "id": "z4FucBZHZMCsxTyQE1dfE2YR59Qbp", "seedingCount": 7 })
+        );
     }
 }
 
