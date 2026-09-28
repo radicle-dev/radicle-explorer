@@ -541,8 +541,10 @@ async function loadReleasesView(
     api.getNode(),
   ]);
 
-  const releaseCount = repo.payloads["xyz.radicle.project"].meta.releases;
-  if (releaseCount === undefined) {
+  // Only tested for presence: older nodes report a single count here, newer
+  // ones the buckets, and either way its absence means no release API.
+  const releasesMeta = repo.payloads["xyz.radicle.project"].meta.releases;
+  if (releasesMeta === undefined) {
     return releasesNotSupported(route.node);
   }
   if ("error" in releasesResult) {
@@ -554,12 +556,12 @@ async function loadReleasesView(
   // Offer the author filter only where the two scopes hold different releases,
   // so a repo whose releases are all by delegates carries no filter with an
   // identical list behind it, and one with none of its own still leaves a way
-  // through to the others. Both sizes come from a list the endpoint returned:
-  // `meta.releases` counts every release COB, including ones the endpoint
-  // hides such as fully redacted releases, so it would overcount either scope.
-  // A full page means the list may go on, so keep the filter rather than have
-  // it appear or vanish as the user pages, and keep it too if the other scope
-  // failed to load. Decided here so it stays fixed for the life of the route.
+  // through to the others. Both sizes come from a list the endpoint returned,
+  // not from `meta.releases`, so the filter never disagrees with the list the
+  // user is looking at. A full page means the list may go on, so keep the
+  // filter rather than have it appear or vanish as the user pages, and keep it
+  // too if the other scope failed to load. Decided here so it stays fixed for
+  // the life of the route.
   const delegateIds = new Set(repo.delegates.map(d => d.id));
   const delegateReleaseCount = allAuthors
     ? releases.filter(r => delegateIds.has(r.creator.id)).length
