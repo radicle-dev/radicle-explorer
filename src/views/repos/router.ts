@@ -541,10 +541,11 @@ async function loadReleasesView(
   const releases = releasesResult.releases;
 
   // Offer the author filter only where visible releases by non-delegates
-  // exist, since otherwise both scopes show the same list. Older nodes report
-  // a single count without the buckets, so keep the filter there.
+  // exist, since otherwise both scopes show the same list.
   const showFilters =
-    typeof releasesMeta === "number" || releasesMeta.other > 0;
+    typeof releasesMeta === "number"
+      ? await legacyShowFilters(api, route.repo, repo, releases, allAuthors)
+      : releasesMeta.other > 0;
 
   return {
     resource: "repo.releases",
@@ -559,6 +560,45 @@ async function loadReleasesView(
       nodeAvatarUrl: node.avatarUrl,
     },
   };
+}
+
+// Older nodes report a single release count without the delegate and
+// non-delegate buckets, so the filter is decided by comparing the first page of
+// each scope. The delegate scope is a subset of every author, so the
+// all-authors view sizes both scopes from its own page, while the delegate view
+// has to fetch the other scope. A full page means the list may go on, so keep
+// the filter rather than have it appear or vanish as the user pages. Remove
+// this once nodes without the buckets are no longer supported.
+async function legacyShowFilters(
+  api: HttpdClient,
+  repoId: string,
+  repo: Repo,
+  releases: Release[],
+  allAuthors: boolean,
+): Promise<boolean> {
+  const delegateIds = new Set(repo.delegates.map(d => d.id));
+  const delegateCount = allAuthors
+    ? releases.filter(r => delegateIds.has(r.creator.id)).length
+    : releases.length;
+  const everyAuthorCount = allAuthors
+    ? releases.length
+    : await api.repo
+        .getAllReleases(repoId, {
+          allAuthors: true,
+          page: 0,
+          perPage: RELEASES_PER_PAGE,
+        })
+        .then(
+          page => page.length,
+          // Only the filter depends on this, so a failure must not take the
+          // page down with it.
+          () => undefined,
+        );
+  return (
+    everyAuthorCount === undefined ||
+    everyAuthorCount === RELEASES_PER_PAGE ||
+    delegateCount !== everyAuthorCount
+  );
 }
 
 async function loadReleaseView(
