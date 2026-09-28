@@ -131,7 +131,12 @@ mod routes {
                         "open": 1,
                         "closed": 0,
                       },
-                      "releases": 0,
+                      "releases": {
+                        "delegate": 0,
+                        "delegateHidden": 0,
+                        "other": 0,
+                        "otherHidden": 0,
+                      },
                     }
                   }
                 },
@@ -169,7 +174,12 @@ mod routes {
                         "open": 0,
                         "closed": 0,
                       },
-                      "releases": 0,
+                      "releases": {
+                        "delegate": 0,
+                        "delegateHidden": 0,
+                        "other": 0,
+                        "otherHidden": 0,
+                      },
                     }
                   }
                 },
@@ -229,7 +239,12 @@ mod routes {
                         "open": 1,
                         "closed": 0,
                       },
-                      "releases": 0,
+                      "releases": {
+                        "delegate": 0,
+                        "delegateHidden": 0,
+                        "other": 0,
+                        "otherHidden": 0,
+                      },
                     }
                   }
                 },
@@ -267,7 +282,12 @@ mod routes {
                         "open": 0,
                         "closed": 0,
                       },
-                      "releases": 0,
+                      "releases": {
+                        "delegate": 0,
+                        "delegateHidden": 0,
+                        "other": 0,
+                        "otherHidden": 0,
+                      },
                     }
                   }
                 },

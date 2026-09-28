@@ -3,7 +3,7 @@
 
   import { HttpdClient } from "@http-client";
   import { RELEASES_PER_PAGE } from "./router";
-  import { baseUrlToString } from "@app/lib/utils";
+  import { baseUrlToString, visibleReleaseCount } from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
   import ErrorMessage from "@app/components/ErrorMessage.svelte";
@@ -44,7 +44,7 @@
     ? allReleases.filter(r => delegateIds.has(r.creator.id)).length
     : allReleases.length;
 
-  $: releaseCount = repo.payloads["xyz.radicle.project"].meta.releases;
+  $: releaseCount = visibleReleaseCount(repo);
 
   const api = new HttpdClient(baseUrl);
 

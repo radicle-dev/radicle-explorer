@@ -512,10 +512,8 @@ async function loadReleasesView(
 
   // Fetch releases alongside the repo so the common path stays parallel; the
   // repo's `meta.releases` then tells us whether a failure is an unsupported
-  // node or a genuine error. The delegate scope is a subset of every author,
-  // so the all-authors view sizes both scopes from its own page, while the
-  // delegate view has to ask for the other scope to size it.
-  const [repo, releasesResult, everyAuthorPage, node] = await Promise.all([
+  // node or a genuine error.
+  const [repo, releasesResult, node] = await Promise.all([
     api.repo.getByRid(route.repo),
     api.repo
       .getAllReleases(route.repo, {
@@ -527,22 +525,13 @@ async function loadReleasesView(
         releases => ({ releases }),
         (error: unknown) => ({ error }),
       ),
-    allAuthors
-      ? undefined
-      : api.repo
-          .getAllReleases(route.repo, {
-            allAuthors: true,
-            page: 0,
-            perPage: RELEASES_PER_PAGE,
-          })
-          // Only the filter rides on this, so a failure here shouldn't take
-          // the page down with it.
-          .catch(() => undefined),
     api.getNode(),
   ]);
 
-  const releaseCount = repo.payloads["xyz.radicle.project"].meta.releases;
-  if (releaseCount === undefined) {
+  // Older nodes report a single count here, newer ones the buckets, and
+  // either way its absence means no release API.
+  const releasesMeta = repo.payloads["xyz.radicle.project"].meta.releases;
+  if (releasesMeta === undefined) {
     return releasesNotSupported(route.node);
   }
   if ("error" in releasesResult) {
@@ -551,26 +540,12 @@ async function loadReleasesView(
 
   const releases = releasesResult.releases;
 
-  // Offer the author filter only where the two scopes hold different releases,
-  // so a repo whose releases are all by delegates carries no filter with an
-  // identical list behind it, and one with none of its own still leaves a way
-  // through to the others. Both sizes come from a list the endpoint returned:
-  // `meta.releases` counts every release COB, including ones the endpoint
-  // hides such as fully redacted releases, so it would overcount either scope.
-  // A full page means the list may go on, so keep the filter rather than have
-  // it appear or vanish as the user pages, and keep it too if the other scope
-  // failed to load. Decided here so it stays fixed for the life of the route.
-  const delegateIds = new Set(repo.delegates.map(d => d.id));
-  const delegateReleaseCount = allAuthors
-    ? releases.filter(r => delegateIds.has(r.creator.id)).length
-    : releases.length;
-  const everyAuthorCount = allAuthors
-    ? releases.length
-    : everyAuthorPage?.length;
+  // Offer the author filter only where visible releases by non-delegates
+  // exist, since otherwise both scopes show the same list.
   const showFilters =
-    everyAuthorCount === undefined ||
-    everyAuthorCount === RELEASES_PER_PAGE ||
-    delegateReleaseCount !== everyAuthorCount;
+    typeof releasesMeta === "number"
+      ? await legacyShowFilters(api, route.repo, repo, releases, allAuthors)
+      : releasesMeta.other > 0;
 
   return {
     resource: "repo.releases",
@@ -585,6 +560,45 @@ async function loadReleasesView(
       nodeAvatarUrl: node.avatarUrl,
     },
   };
+}
+
+// Older nodes report a single release count without the delegate and
+// non-delegate buckets, so the filter is decided by comparing the first page of
+// each scope. The delegate scope is a subset of every author, so the
+// all-authors view sizes both scopes from its own page, while the delegate view
+// has to fetch the other scope. A full page means the list may go on, so keep
+// the filter rather than have it appear or vanish as the user pages. Remove
+// this once nodes without the buckets are no longer supported.
+async function legacyShowFilters(
+  api: HttpdClient,
+  repoId: string,
+  repo: Repo,
+  releases: Release[],
+  allAuthors: boolean,
+): Promise<boolean> {
+  const delegateIds = new Set(repo.delegates.map(d => d.id));
+  const delegateCount = allAuthors
+    ? releases.filter(r => delegateIds.has(r.creator.id)).length
+    : releases.length;
+  const everyAuthorCount = allAuthors
+    ? releases.length
+    : await api.repo
+        .getAllReleases(repoId, {
+          allAuthors: true,
+          page: 0,
+          perPage: RELEASES_PER_PAGE,
+        })
+        .then(
+          page => page.length,
+          // Only the filter depends on this, so a failure must not take the
+          // page down with it.
+          () => undefined,
+        );
+  return (
+    everyAuthorCount === undefined ||
+    everyAuthorCount === RELEASES_PER_PAGE ||
+    delegateCount !== everyAuthorCount
+  );
 }
 
 async function loadReleaseView(

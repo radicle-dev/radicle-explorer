@@ -99,9 +99,10 @@ test.describe(() => {
     await page.goto(`${peer.uiUrl()}/${rid}/releases`);
     await expect(page.getByText("No releases", { exact: true })).toBeVisible();
 
-    // The tab counter comes from the repo metadata, which counts every release
-    // COB, redacted or not.
-    await expect(page.getByRole("link", { name: "Releases 1" })).toBeVisible();
+    // The tab counter comes from the repo metadata, which counts only the
+    // releases left with an unredacted artifact, so it agrees with the empty
+    // listing. The tab itself stays, since the node does serve releases.
+    await expect(page.getByRole("link", { name: "Releases 0" })).toBeVisible();
   });
 });
 

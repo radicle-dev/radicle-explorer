@@ -1175,7 +1175,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -1816,9 +1816,9 @@ checksum = "d98f6fed1fde3f8c21bc40a1abb88dd75e67924f9cffc3ef95607bad8017f8e2"
 
 [[package]]
 name = "iroh-base"
-version = "1.0.3"
+version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6be73e16ee21c923aca9b3121aaa0db936f7c7ecc156ff47b8dac944c68d59a8"
+checksum = "ffd1efd1aaecd68d4d1b0727a30c5811f43fb822843e48f65f6e5db3b7256cc9"
 dependencies = [
  "curve25519-dalek 5.0.0",
  "data-encoding",
@@ -2547,7 +2547,7 @@ dependencies = [
  "once_cell",
  "socket2",
  "tracing",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -2610,9 +2610,9 @@ dependencies = [
 
 [[package]]
 name = "radicle-artifact"
-version = "0.18.0"
+version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8166746c3d6bf1618d97aebb48d8b3239c31527fc96fc235309f7c47543ba23"
+checksum = "669a25006bd54b060237bc8d93ab2eef04db1add527b5031dc19af6dcdabe614"
 dependencies = [
  "blake3",
  "cid",
@@ -2633,9 +2633,9 @@ dependencies = [
 
 [[package]]
 name = "radicle-artifact-client"
-version = "0.18.0"
+version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "59abfdeba1a2476c45264014ccc0e9d86cee55eb327e755506e5bc8c0d2b0153"
+checksum = "337b4c2291e45b5c3c6d9cad6deb2587b3c3aebcfc102dc3aaf1e39d3deae267"
 dependencies = [
  "cid",
  "radicle",
@@ -2647,9 +2647,9 @@ dependencies = [
 
 [[package]]
 name = "radicle-artifact-core"
-version = "0.18.0"
+version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba6ef833ec05bb0731b61854c8f39467896d593845c69c0f9437e6f6f2d7bf36"
+checksum = "17410a528d0ed12a9f139bd84d9e976365455109aed044e3f35b6cc21210be10"
 dependencies = [
  "blake3",
  "cid",
@@ -3081,7 +3081,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -3682,7 +3682,7 @@ dependencies = [
  "getrandom 0.4.3",
  "once_cell",
  "rustix",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -4267,7 +4267,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
