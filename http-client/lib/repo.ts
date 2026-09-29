@@ -52,13 +52,13 @@ const tagInfoSchema = object({
 export type TagInfo = z.infer<typeof tagInfoSchema>;
 
 // Releases bucketed by whether a delegate created them and whether a trusted
-// party redacted every artifact they carry. "Hidden" also covers a release
-// with no artifacts at all.
+// party redacted every artifact they carry. A release with no artifacts is not
+// redacted.
 const releaseCountsSchema = object({
   delegate: number(),
-  delegateHidden: number(),
+  delegateRedacted: number(),
   other: number(),
-  otherHidden: number(),
+  otherRedacted: number(),
 });
 
 export type ReleaseCounts = z.infer<typeof releaseCountsSchema>;

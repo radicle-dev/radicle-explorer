@@ -252,9 +252,9 @@ fn add_releases_meta(meta: &mut Value, repo: &Repository, profile: &Profile) {
 
     meta["releases"] = json!({
         "delegate": counts.delegate,
-        "delegateHidden": counts.delegate_hidden,
+        "delegateRedacted": counts.delegate_redacted,
         "other": counts.other,
-        "otherHidden": counts.other_hidden,
+        "otherRedacted": counts.other_redacted,
     });
 }
 

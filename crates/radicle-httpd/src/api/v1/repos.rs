@@ -1406,9 +1406,9 @@ mod routes {
                       },
                       "releases": {
                         "delegate": 0,
-                        "delegateHidden": 0,
+                        "delegateRedacted": 0,
                         "other": 0,
-                        "otherHidden": 0,
+                        "otherRedacted": 0,
                       },
                     }
                   }
@@ -1449,9 +1449,9 @@ mod routes {
                       },
                       "releases": {
                         "delegate": 0,
-                        "delegateHidden": 0,
+                        "delegateRedacted": 0,
                         "other": 0,
-                        "otherHidden": 0,
+                        "otherRedacted": 0,
                       },
                     }
                   }
@@ -1505,9 +1505,9 @@ mod routes {
                       },
                       "releases": {
                         "delegate": 0,
-                        "delegateHidden": 0,
+                        "delegateRedacted": 0,
                         "other": 0,
-                        "otherHidden": 0,
+                        "otherRedacted": 0,
                       },
                     }
                   }
@@ -1548,9 +1548,9 @@ mod routes {
                       },
                       "releases": {
                         "delegate": 0,
-                        "delegateHidden": 0,
+                        "delegateRedacted": 0,
                         "other": 0,
-                        "otherHidden": 0,
+                        "otherRedacted": 0,
                       },
                     }
                   }
@@ -1734,9 +1734,9 @@ mod routes {
                       },
                       "releases": {
                         "delegate": 0,
-                        "delegateHidden": 0,
+                        "delegateRedacted": 0,
                         "other": 0,
-                        "otherHidden": 0,
+                        "otherRedacted": 0,
                       },
                     }
                   }
