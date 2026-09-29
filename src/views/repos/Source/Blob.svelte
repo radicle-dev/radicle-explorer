@@ -153,7 +153,13 @@
 </style>
 
 <File sticky={false} containerBackground="var(--color-surface-canvas)">
-  <FilePath slot="left-header" filenameWithPath={blob.path} />
+  <svelte:fragment slot="left-header">
+    {#if $$slots.path}
+      <slot name="path" />
+    {:else}
+      <FilePath filenameWithPath={blob.path} />
+    {/if}
+  </svelte:fragment>
   <svelte:fragment slot="right-header">
     <CommitButton {repoId} {baseUrl} commit={lastCommit} />
     <div class="global-hide-on-mobile-down teaser-buttons">

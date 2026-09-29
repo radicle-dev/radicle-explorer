@@ -15,6 +15,7 @@
   export let repoId: string;
   export let revision: string | undefined;
   export let tree: Tree;
+  export let limit: number | undefined = undefined;
 
   const dispatch = createEventDispatcher<{ select: string }>();
   const onSelect = ({ detail: path }: { detail: string }): void => {
@@ -22,7 +23,7 @@
   };
 </script>
 
-{#each tree.entries as entry (entry.path)}
+{#each limit !== undefined ? tree.entries.slice(0, limit) : tree.entries as entry (entry.path)}
   {#if entry.kind === "tree"}
     <Folder
       currentPath={path}

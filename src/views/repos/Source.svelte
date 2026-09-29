@@ -3,6 +3,7 @@
   import type { BlobResult, RepoRoute } from "./router";
 
   import { HttpdClient } from "@http-client";
+  import { tick } from "svelte";
 
   import {
     formatQualifiedRefname,
@@ -15,6 +16,7 @@
   import FilePath from "@app/components/FilePath.svelte";
   import Header from "./Source/Header.svelte";
   import Layout from "./Layout.svelte";
+  import PathBreadcrumb from "./Source/PathBreadcrumb.svelte";
   import Placeholder from "@app/components/Placeholder.svelte";
   import RepoNameHeader from "./Source/RepoNameHeader.svelte";
   import Separator from "./Separator.svelte";
@@ -34,7 +36,47 @@
   export let nodeId: string;
   export let nodeAvatarUrl: string | undefined;
 
-  let mobileFileTree = false;
+  const mobileTreeLimit = 6;
+
+  let showAllEntries = false;
+  let animatingTree = false;
+  let mobileTreeElement: HTMLElement | undefined = undefined;
+  let folderTree: Tree | undefined = undefined;
+
+  async function loadFolderTree(folderPath: string, blobLoaded: boolean) {
+    folderTree = undefined;
+    if (folderPath === "/" || blobLoaded) {
+      return;
+    }
+    const result = await api.repo
+      .getTree(repo.rid, tree.lastCommit.id, `${folderPath}/`)
+      .catch(() => undefined);
+    if (folderPath === path) {
+      folderTree = result;
+    }
+  }
+
+  async function toggleShowAll() {
+    if (
+      typeof document.startViewTransition !== "function" ||
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+    ) {
+      showAllEntries = !showAllEntries;
+      return;
+    }
+    animatingTree = true;
+    await tick();
+    const transition = document.startViewTransition(async () => {
+      showAllEntries = !showAllEntries;
+      await tick();
+      if (!showAllEntries) {
+        mobileTreeElement?.scrollIntoView({ block: "nearest" });
+      }
+    });
+    await transition.finished.finally(() => {
+      animatingTree = false;
+    });
+  }
 
   const api = new HttpdClient(baseUrl);
 
@@ -60,6 +102,13 @@
       : repo.payloads["xyz.radicle.project"].data.defaultBranch,
     peer,
   );
+
+  $: isFolder = folderTree !== undefined;
+  $: void loadFolderTree(path, blobResult.ok);
+  $: mobileTree = path === "/" ? tree : folderTree;
+  $: if (path) {
+    showAllEntries = false;
+  }
 
   $: baseRoute = {
     resource: "repo.source",
@@ -100,6 +149,62 @@
     padding: 4rem 0;
     border: 1px solid var(--color-border-subtle);
     border-radius: var(--border-radius-sm);
+  }
+
+  .subheader {
+    padding: 1rem;
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+  @media (max-width: 1010.98px) {
+    .subheader.tree-below {
+      border-bottom: 0;
+    }
+  }
+  .mobile-tree {
+    margin: 0 1rem 1rem;
+    padding: 0.25rem;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
+  }
+  .mobile-tree.animating {
+    view-transition-name: mobile-file-tree;
+  }
+  .container.animating {
+    view-transition-name: source-content;
+  }
+  .animating .show-all {
+    view-transition-name: mobile-file-tree-toggle;
+  }
+  :global(:has(.mobile-tree.animating)) {
+    overflow-anchor: none;
+  }
+  :global(::view-transition-group(mobile-file-tree)),
+  :global(::view-transition-group(mobile-file-tree-toggle)),
+  :global(::view-transition-group(source-content)) {
+    animation-duration: 0.25s;
+    animation-timing-function: ease-out;
+  }
+  :global(::view-transition-group(mobile-file-tree)) {
+    overflow: clip;
+  }
+  :global(::view-transition-old(mobile-file-tree)),
+  :global(::view-transition-new(mobile-file-tree)) {
+    height: auto;
+    inset-block-start: 0;
+  }
+  .show-all {
+    padding: 0.25rem;
+  }
+  .mobile-blob-path {
+    flex: 1;
+    min-width: 0;
+  }
+  :global(.left:has(> .mobile-blob-path)) {
+    flex: 1;
+    min-width: 0;
+  }
+  .mobile-path {
+    padding: 0 1rem 1rem;
   }
 
   .source-tree {
@@ -151,8 +256,8 @@
   <RepoNameHeader {repo} {repoId} {baseUrl} {seedingPolicy} slot="header" />
 
   <div
-    style:padding="1rem"
-    style:border-bottom="1px solid var(--color-border-subtle)"
+    class="subheader"
+    class:tree-below={tree.entries.length > 0}
     slot="subheader">
     <Header
       filesLinkActive={true}
@@ -167,38 +272,45 @@
       {tree} />
   </div>
   <div class="global-hide-on-medium-desktop-up">
-    {#if tree.entries.length > 0}
-      <div style:margin="1rem">
-        <Button
-          styleWidth="100%"
-          size="large"
-          variant="outline"
-          on:click={() => {
-            mobileFileTree = !mobileFileTree;
-          }}>
-          Browse
-        </Button>
+    {#if isFolder}
+      <div class="mobile-path">
+        <PathBreadcrumb
+          {baseUrl}
+          {path}
+          {peer}
+          {repoId}
+          repoName={repo.payloads["xyz.radicle.project"].data.name}
+          {revision} />
       </div>
-
-      {#if mobileFileTree}
-        <div class="layout-mobile" style:margin="1rem">
-          <TreeComponent
-            {repoId}
-            {revision}
-            {baseUrl}
-            {fetchTree}
-            {path}
-            {peer}
-            {tree}
-            on:select={() => {
-              mobileFileTree = false;
-            }} />
-        </div>
-      {/if}
+    {/if}
+    {#if mobileTree && mobileTree.entries.length > 0}
+      <div
+        class="mobile-tree"
+        class:animating={animatingTree}
+        bind:this={mobileTreeElement}>
+        <TreeComponent
+          {repoId}
+          {revision}
+          {baseUrl}
+          {fetchTree}
+          {path}
+          {peer}
+          tree={mobileTree}
+          limit={showAllEntries ? undefined : mobileTreeLimit} />
+        {#if mobileTree.entries.length > mobileTreeLimit}
+          <div class="show-all">
+            <Button styleWidth="100%" variant="gray" on:click={toggleShowAll}>
+              {showAllEntries
+                ? "Show less"
+                : `Show all ${mobileTree.entries.length}`}
+            </Button>
+          </div>
+        {/if}
+      </div>
     {/if}
   </div>
 
-  <div class="container center-content">
+  <div class="container center-content" class:animating={animatingTree}>
     {#if tree.entries.length > 0}
       <div class="column-left global-hide-on-small-desktop-down">
         <div class="source-tree sticky">
@@ -220,7 +332,26 @@
             {repoId}
             blob={blobResult.blob}
             highlighted={blobResult.highlighted}
-            rawPath={rawPath(tree.lastCommit.id)} />
+            rawPath={rawPath(tree.lastCommit.id)}>
+            <svelte:fragment slot="path">
+              {#if path === "/"}
+                <FilePath filenameWithPath={blobResult.blob.path} />
+              {:else}
+                <span class="global-hide-on-small-desktop-down">
+                  <FilePath filenameWithPath={blobResult.blob.path} />
+                </span>
+                <div class="mobile-blob-path global-hide-on-medium-desktop-up">
+                  <PathBreadcrumb
+                    {baseUrl}
+                    {path}
+                    {peer}
+                    {repoId}
+                    repoName={repo.payloads["xyz.radicle.project"].data.name}
+                    {revision} />
+                </div>
+              {/if}
+            </svelte:fragment>
+          </BlobComponent>
         {:else if blobResult.error.status === 413}
           <div class="placeholder">
             <Placeholder
@@ -231,6 +362,12 @@
         {:else if path === "/"}
           <div class="placeholder">
             <Placeholder iconName="no-file" caption="No README found." />
+          </div>
+        {:else if isFolder}
+          <div class="placeholder global-hide-on-small-desktop-down">
+            <Placeholder
+              iconName="no-file"
+              caption="Select a file to view it." />
           </div>
         {:else}
           <div class="placeholder">

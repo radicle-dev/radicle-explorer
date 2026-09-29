@@ -2,6 +2,8 @@
   import type { BaseUrl, Tree } from "@http-client";
 
   import { createEventDispatcher } from "svelte";
+  import { cubicOut } from "svelte/easing";
+  import { slide } from "svelte/transition";
 
   import Loading from "@app/components/Loading.svelte";
   import Link from "@app/components/Link.svelte";
@@ -19,12 +21,19 @@
   export let repoId: string;
   export let revision: string | undefined;
 
-  $: expanded = currentPath.indexOf(prefix) === 0;
+  $: expanded = `${currentPath}/`.indexOf(prefix) === 0;
   $: tree = expanded
     ? fetchTree(prefix).then(tree => {
         return tree;
       })
     : Promise.resolve(undefined);
+
+  const slideOptions = {
+    duration: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+      ? 0
+      : 250,
+    easing: cubicOut,
+  };
 
   const dispatch = createEventDispatcher<{ select: string }>();
   const onSelectFile = ({ detail: path }: { detail: string }) =>
@@ -51,13 +60,20 @@
   }
 
   .container {
+    display: flow-root;
     padding-left: 1rem;
     margin-left: 0.5rem;
+  }
+  .entries {
+    display: flow-root;
   }
 
   .loading {
     display: inline-block;
     padding: 0.5rem 0;
+  }
+  .loading:empty {
+    display: none;
   }
   .icon-container {
     display: flex;
@@ -92,43 +108,45 @@
 </div>
 
 {#if expanded}
-  <div class="container">
+  <div class="container" out:slide={slideOptions}>
     {#await tree}
-      <span class="loading"><Loading grayscale noDelay small margins /></span>
+      <span class="loading"><Loading grayscale small margins /></span>
     {:then tree}
-      {#if tree}
-        {#each tree.entries as entry (entry.path)}
-          {#if entry.kind === "tree"}
-            <!-- svelte:self doesn't check types, make sure to pass in all
+      <div class="entries" in:slide={slideOptions}>
+        {#if tree}
+          {#each tree.entries as entry (entry.path)}
+            {#if entry.kind === "tree"}
+              <!-- svelte:self doesn't check types, make sure to pass in all
             required props! -->
-            <svelte:self
-              name={entry.name}
-              on:select={onSelectFile}
-              prefix={`${entry.path}/`}
-              {baseUrl}
-              {currentPath}
-              {fetchTree}
-              {peer}
-              {repoId}
-              {revision} />
-          {:else if entry.kind === "submodule"}
-            <Submodule name={entry.name} oid={entry.oid} />
-          {:else}
-            <Link
-              route={{
-                resource: "repo.source",
-                repo: repoId,
-                node: baseUrl,
-                path: entry.path,
-                peer,
-                revision,
-              }}
-              on:afterNavigate={() => onSelectFile({ detail: entry.path })}>
-              <File active={entry.path === currentPath} name={entry.name} />
-            </Link>
-          {/if}
-        {/each}
-      {/if}
+              <svelte:self
+                name={entry.name}
+                on:select={onSelectFile}
+                prefix={`${entry.path}/`}
+                {baseUrl}
+                {currentPath}
+                {fetchTree}
+                {peer}
+                {repoId}
+                {revision} />
+            {:else if entry.kind === "submodule"}
+              <Submodule name={entry.name} oid={entry.oid} />
+            {:else}
+              <Link
+                route={{
+                  resource: "repo.source",
+                  repo: repoId,
+                  node: baseUrl,
+                  path: entry.path,
+                  peer,
+                  revision,
+                }}
+                on:afterNavigate={() => onSelectFile({ detail: entry.path })}>
+                <File active={entry.path === currentPath} name={entry.name} />
+              </Link>
+            {/if}
+          {/each}
+        {/if}
+      </div>
     {/await}
   </div>
 {/if}
