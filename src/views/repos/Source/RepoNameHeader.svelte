@@ -148,7 +148,7 @@
     use:twemoji>
     {@html render(project.data.description)}
   </div>
-  <div class="info">
+  <div class="info global-hide-on-mobile-down">
     <ContextRepo
       {baseUrl}
       repoThreshold={repo.threshold}

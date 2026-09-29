@@ -12,6 +12,7 @@
   import BlobComponent from "./Source/Blob.svelte";
   import Button from "@app/components/Button.svelte";
   import CloneButton from "@app/views/repos/Header/CloneButton.svelte";
+  import ContextRepo from "./Sidebar/ContextRepo.svelte";
   import FilePath from "@app/components/FilePath.svelte";
   import Header from "./Source/Header.svelte";
   import Layout from "./Layout.svelte";
@@ -100,6 +101,11 @@
     padding: 4rem 0;
     border: 1px solid var(--color-border-subtle);
     border-radius: var(--border-radius-sm);
+  }
+
+  .mobile-repo-context {
+    padding: 1rem;
+    border-top: 1px solid var(--color-border-subtle);
   }
 
   .source-tree {
@@ -244,4 +250,14 @@
       </div>
     {/if}
   </div>
+
+  {#if path === "/"}
+    <div class="mobile-repo-context global-hide-on-small-desktop-up">
+      <ContextRepo
+        {baseUrl}
+        repoThreshold={repo.threshold}
+        repoDelegates={repo.delegates}
+        {seedingPolicy} />
+    </div>
+  {/if}
 </Layout>
