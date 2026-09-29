@@ -31,6 +31,7 @@
   import Icon from "@app/components/Icon.svelte";
   import JobCob from "@app/components/JobCob.svelte";
   import Link from "@app/components/Link.svelte";
+  import MobileRepoNav from "../MobileRepoNav.svelte";
 
   import PeerBranchSelector from "./PeerBranchSelector.svelte";
 
@@ -194,7 +195,18 @@
   </div>
 </div>
 
-<div class="header">
+<div class="global-hide-on-small-desktop-up">
+  <MobileRepoNav
+    active={historyLinkActive ? "commits" : "files"}
+    baseUrl={node}
+    {commitCount}
+    {peer}
+    {repo}
+    {repoId}
+    {revision} />
+</div>
+
+<div class="header global-hide-on-mobile-down">
   <div style="display: flex; gap: 0.375rem;">
     <Link
       route={{

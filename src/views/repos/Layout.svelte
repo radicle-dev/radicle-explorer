@@ -2,11 +2,9 @@
   import type { ActiveTab } from "./Header.svelte";
   import type { BaseUrl, Repo } from "@http-client";
 
-  import Button from "@app/components/Button.svelte";
   import Header from "@app/components/Header.svelte";
-  import Icon from "@app/components/Icon.svelte";
   import Link from "@app/components/Link.svelte";
-  import MobileFooter from "@app/App/MobileFooter.svelte";
+  import MobileRepoNav from "./MobileRepoNav.svelte";
   import RepoHeader from "./Header.svelte";
   import SeedPicker from "@app/views/explore/SeedPicker.svelte";
   import Separator from "./Separator.svelte";
@@ -37,7 +35,7 @@
     display: block;
   }
 
-  .mobile-footer {
+  .mobile-nav {
     display: none;
   }
 
@@ -68,9 +66,10 @@
       overflow-y: scroll;
       overflow-x: hidden;
     }
-    .mobile-footer {
-      margin-top: auto;
-      display: grid;
+    .mobile-nav {
+      display: block;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--color-border-subtle);
     }
   }
 </style>
@@ -125,81 +124,13 @@
   </div>
 
   <div class="content" style:padding-bottom={stylePaddingBottom}>
+    {#if activeTab !== "source"}
+      <div class="mobile-nav">
+        <MobileRepoNav active={activeTab} {baseUrl} {repo} {repoId} />
+      </div>
+    {/if}
     <slot name="header" />
     <slot name="subheader" />
     <slot />
-  </div>
-
-  <div class="mobile-footer">
-    <MobileFooter>
-      <div style:width="100%">
-        <Link
-          title="Home"
-          route={{
-            resource: "repo.source",
-            repo: repoId,
-            node: baseUrl,
-            path: "/",
-          }}>
-          <Button
-            variant={activeTab === "source" ? "secondary" : "secondary-mobile"}
-            styleWidth="100%">
-            <Icon name="chevron-left-right" />
-          </Button>
-        </Link>
-      </div>
-
-      <div style:width="100%">
-        <Link
-          title={`${repo.payloads["xyz.radicle.project"].meta.issues.open} Issues`}
-          route={{
-            resource: "repo.issues",
-            repo: repoId,
-            node: baseUrl,
-          }}>
-          <Button
-            variant={activeTab === "issues" ? "secondary" : "secondary-mobile"}
-            styleWidth="100%">
-            <Icon name="issue" />
-          </Button>
-        </Link>
-      </div>
-
-      <div style:width="100%">
-        <Link
-          title={`${repo.payloads["xyz.radicle.project"].meta.patches.open} Patches`}
-          route={{
-            resource: "repo.patches",
-            repo: repoId,
-            node: baseUrl,
-          }}>
-          <Button
-            variant={activeTab === "patches" ? "secondary" : "secondary-mobile"}
-            styleWidth="100%">
-            <Icon name="patch" />
-          </Button>
-        </Link>
-      </div>
-
-      {#if repo.payloads["xyz.radicle.project"].meta.releases !== undefined}
-        <div style:width="100%">
-          <Link
-            title="Releases"
-            route={{
-              resource: "repo.releases",
-              repo: repoId,
-              node: baseUrl,
-            }}>
-            <Button
-              variant={activeTab === "releases"
-                ? "secondary"
-                : "secondary-mobile"}
-              styleWidth="100%">
-              <Icon name="parcel" />
-            </Button>
-          </Link>
-        </div>
-      {/if}
-    </MobileFooter>
   </div>
 </div>
