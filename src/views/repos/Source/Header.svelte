@@ -133,11 +133,33 @@
     align-items: center;
     flex-wrap: wrap;
   }
+  @media (min-width: 1011px) {
+    .header,
+    .branch-commit {
+      flex-wrap: nowrap;
+    }
+    .header > *,
+    .branch-commit > :global(*) {
+      flex-shrink: 0;
+    }
+    .header > .branch-commit,
+    .branch-commit > .commit-button {
+      flex-shrink: 1;
+      min-width: 0;
+    }
+    .commit-button :global(a) {
+      display: flex;
+      min-width: 0;
+    }
+    .commit-button :global(button) {
+      max-width: 100%;
+    }
+  }
   .mobile-branch {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    margin-bottom: 0.5rem;
+    margin-top: 0.5rem;
   }
 
   .counter {
@@ -160,39 +182,6 @@
     color: var(--color-text-primary);
   }
 </style>
-
-<div class="mobile-branch global-hide-on-small-desktop-up" style:gap="1px">
-  {#if selectedBranch}
-    <PeerBranchSelector
-      {peers}
-      {peer}
-      {baseRoute}
-      {onCanonical}
-      {repo}
-      {selectedBranch} />
-  {/if}
-  <div class="global-flex-item" style:gap="1px">
-    <CommitButton
-      variant={commitButtonVariant}
-      styleMinWidth="0"
-      hideSummaryOnMobile
-      {repoId}
-      commit={lastCommit}
-      baseUrl={node} />
-    {#if !onCanonical}
-      <Link route={baseRoute}>
-        <Button
-          variant="not-selected"
-          styleBorderRadius="0 var(--border-radius-sm) var(--border-radius-sm) 0">
-          <Icon name="close" />
-        </Button>
-      </Link>
-    {/if}
-    <div style:margin-left="0.5rem">
-      <JobCob baseUrl={node} rid={repo.rid} commit={lastCommit.id} />
-    </div>
-  </div>
-</div>
 
 <div class="header">
   <div style="display: flex; gap: 0.375rem;">
@@ -241,6 +230,41 @@
         {repo}
         {selectedBranch} />
     {/if}
+    <div class="commit-button">
+      <CommitButton
+        variant={commitButtonVariant}
+        styleMinWidth="0"
+        hideSummaryOnMobile
+        {repoId}
+        commit={lastCommit}
+        baseUrl={node} />
+    </div>
+    {#if !onCanonical}
+      <Link route={baseRoute}>
+        <Button
+          variant="not-selected"
+          styleBorderRadius="0 var(--border-radius-sm) var(--border-radius-sm) 0">
+          <Icon name="close" />
+        </Button>
+      </Link>
+    {/if}
+    <div style:margin-left="0.5rem">
+      <JobCob baseUrl={node} rid={repo.rid} commit={lastCommit.id} />
+    </div>
+  </div>
+</div>
+
+<div class="mobile-branch global-hide-on-small-desktop-up" style:gap="1px">
+  {#if selectedBranch}
+    <PeerBranchSelector
+      {peers}
+      {peer}
+      {baseRoute}
+      {onCanonical}
+      {repo}
+      {selectedBranch} />
+  {/if}
+  <div class="global-flex-item" style:gap="1px">
     <CommitButton
       variant={commitButtonVariant}
       styleMinWidth="0"
