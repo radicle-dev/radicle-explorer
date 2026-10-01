@@ -3,7 +3,7 @@
     Artifact,
     BaseUrl,
     Release,
-    ReleaseAuthors,
+    ReleaseScope,
     Repo,
   } from "@http-client";
 
@@ -26,7 +26,7 @@
   export let release: Release;
   export let repo: Repo;
   export let repoId: string;
-  export let authors: ReleaseAuthors | undefined = undefined;
+  export let scope: ReleaseScope | undefined = undefined;
   export let nodeId: string;
   export let nodeAvatarUrl: string | undefined;
 
@@ -72,15 +72,15 @@
     a => !delegateIds.has(a.author.id),
   );
   // Show the scope asked for, delegates by default, unless it is empty.
-  $: wanted = authors ?? "delegates";
-  $: scope =
-    (wanted === "delegates" ? delegateArtifacts : otherArtifacts).length > 0
+  $: wanted = scope ?? "trusted";
+  $: activeScope =
+    (wanted === "trusted" ? delegateArtifacts : otherArtifacts).length > 0
       ? wanted
-      : wanted === "delegates"
-        ? "others"
-        : "delegates";
+      : wanted === "trusted"
+        ? "untrusted"
+        : "trusted";
   $: authorArtifacts =
-    scope === "delegates" ? delegateArtifacts : otherArtifacts;
+    activeScope === "trusted" ? delegateArtifacts : otherArtifacts;
 
   $: shownArtifacts = visible(authorArtifacts, showRedacted, delegateIds);
   // The redacted count is the hidden set within the current author scope.
@@ -395,7 +395,7 @@
         resource: "repo.releases",
         repo: repoId,
         node: baseUrl,
-        authors,
+        scope,
       }}>
       Releases
     </Link>
@@ -462,14 +462,14 @@
                   }}>
                   <Button
                     let:hover
-                    variant={scope === "delegates" ? "gray" : "background"}>
+                    variant={activeScope === "trusted" ? "gray" : "background"}>
                     <Icon name="badge" />
                     <div class="title-counter">
                       Delegates
                       <span
                         class="counter"
-                        class:selected={scope === "delegates"}
-                        class:hover={hover && scope !== "delegates"}>
+                        class:selected={activeScope === "trusted"}
+                        class:hover={hover && activeScope !== "trusted"}>
                         {delegateCount}
                       </span>
                     </div>
@@ -481,18 +481,21 @@
                     repo: repoId,
                     node: baseUrl,
                     release: release.id,
-                    authors: "others",
+                    scope: "untrusted",
                   }}>
                   <Button
                     let:hover
-                    variant={scope === "others" ? "gray" : "background"}>
+                    title="Non-delegates"
+                    variant={activeScope === "untrusted"
+                      ? "gray"
+                      : "background"}>
                     <Icon name="avatar-incognito" />
                     <div class="title-counter">
                       Others
                       <span
                         class="counter"
-                        class:selected={scope === "others"}
-                        class:hover={hover && scope !== "others"}>
+                        class:selected={activeScope === "untrusted"}
+                        class:hover={hover && activeScope !== "untrusted"}>
                         {otherCount}
                       </span>
                     </div>

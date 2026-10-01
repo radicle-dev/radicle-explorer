@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { BaseUrl, Release, ReleaseAuthors, Repo } from "@http-client";
+  import type { BaseUrl, Release, ReleaseScope, Repo } from "@http-client";
 
   import { HttpdClient } from "@http-client";
   import { RELEASES_PER_PAGE, releasesQuery, scopeReleases } from "./router";
@@ -20,7 +20,7 @@
   export let releases: Release[];
   export let repo: Repo;
   export let repoId: string;
-  export let authors: ReleaseAuthors;
+  export let scope: ReleaseScope;
   export let showFilters: boolean;
   export let nodeId: string;
   export let nodeAvatarUrl: string | undefined;
@@ -52,9 +52,9 @@
     try {
       const response = await api.repo.getAllReleases(
         repo.rid,
-        releasesQuery(authors, next),
+        releasesQuery(scope, next),
       );
-      allReleases = [...allReleases, ...scopeReleases(response, repo, authors)];
+      allReleases = [...allReleases, ...scopeReleases(response, repo, scope)];
       page = next;
     } catch (e) {
       error = e;
@@ -138,15 +138,15 @@
           route={{ resource: "repo.releases", repo: repoId, node: baseUrl }}>
           <Button
             let:hover
-            variant={authors === "delegates" ? "gray" : "background"}>
+            variant={scope === "trusted" ? "gray" : "background"}>
             <Icon name="badge" />
             <div class="title-counter">
               Delegates
               {#if counts}
                 <span
                   class="counter"
-                  class:selected={authors === "delegates"}
-                  class:hover={hover && authors !== "delegates"}>
+                  class:selected={scope === "trusted"}
+                  class:hover={hover && scope !== "trusted"}>
                   {counts.delegate}
                 </span>
               {/if}
@@ -158,19 +158,20 @@
             resource: "repo.releases",
             repo: repoId,
             node: baseUrl,
-            authors: "others",
+            scope: "untrusted",
           }}>
           <Button
             let:hover
-            variant={authors === "others" ? "gray" : "background"}>
+            title="Non-delegates"
+            variant={scope === "untrusted" ? "gray" : "background"}>
             <Icon name="avatar-incognito" />
             <div class="title-counter">
               Others
               {#if counts}
                 <span
                   class="counter"
-                  class:selected={authors === "others"}
-                  class:hover={hover && authors !== "others"}>
+                  class:selected={scope === "untrusted"}
+                  class:hover={hover && scope !== "untrusted"}>
                   {counts.other}
                 </span>
               {/if}
@@ -187,7 +188,7 @@
       let:item
       {baseUrl}
       {repoId}
-      {authors}
+      {scope}
       {delegateIds}
       release={item} />
   </List>
@@ -207,7 +208,7 @@
         iconName="desert"
         caption={!showFilters
           ? "No releases"
-          : authors === "delegates"
+          : scope === "trusted"
             ? "No releases by delegates"
             : "No releases by others"} />
     </div>

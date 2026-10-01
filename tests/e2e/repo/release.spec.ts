@@ -187,7 +187,7 @@ test.describe(() => {
     // The scopes don't overlap: others shows only Eve's artifact.
     await page.getByRole("link", { name: "Others 1" }).click();
     await expect(page).toHaveURL(
-      `${peer.uiUrl()}/${rid}/releases/${releaseId}?authors=others`,
+      `${peer.uiUrl()}/${rid}/releases/${releaseId}?scope=untrusted`,
     );
     await expect(page.getByText("eve-artifact")).toBeVisible();
     await expect(page.getByText("delegate-artifact")).toBeHidden();

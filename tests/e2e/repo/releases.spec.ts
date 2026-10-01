@@ -63,7 +63,7 @@ test.describe(() => {
     // The scopes don't overlap: others shows only Eve's release.
     await page.getByRole("link", { name: "Others 1" }).click();
     await expect(page).toHaveURL(
-      `${peer.uiUrl()}/${rid}/releases?authors=others`,
+      `${peer.uiUrl()}/${rid}/releases?scope=untrusted`,
     );
     await expect(page.locator(".release-teaser")).toHaveCount(1);
     await expect(page.getByText("eve commit")).toBeVisible();

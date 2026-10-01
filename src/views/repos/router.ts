@@ -18,7 +18,7 @@ import type {
   PatchState,
   PeerRefs,
   Release,
-  ReleaseAuthors,
+  ReleaseScope,
   Remote,
   Repo,
   Revision,
@@ -112,7 +112,7 @@ interface RepoReleasesRoute {
   resource: "repo.releases";
   node: BaseUrl;
   repo: string;
-  authors?: ReleaseAuthors;
+  scope?: ReleaseScope;
 }
 
 interface RepoReleaseRoute {
@@ -120,7 +120,7 @@ interface RepoReleaseRoute {
   node: BaseUrl;
   repo: string;
   release: string;
-  authors?: ReleaseAuthors;
+  scope?: ReleaseScope;
 }
 
 interface RepoIssueRoute {
@@ -285,7 +285,7 @@ export type RepoLoadedRoute =
         repo: Repo;
         repoId: string;
         releases: Release[];
-        authors: ReleaseAuthors;
+        scope: ReleaseScope;
         showFilters: boolean;
         nodeId: string;
         nodeAvatarUrl: string | undefined;
@@ -298,7 +298,7 @@ export type RepoLoadedRoute =
         repo: Repo;
         repoId: string;
         release: Release;
-        authors?: ReleaseAuthors;
+        scope?: ReleaseScope;
         nodeId: string;
         nodeAvatarUrl: string | undefined;
       };
@@ -506,25 +506,25 @@ function releasesNotSupported(node: BaseUrl): NotFoundRoute {
 }
 
 // The query for a page of releases in one author scope. Older nodes ignore
-// `authors`, so ask them for every author too when the scope is the others'.
-export function releasesQuery(authors: ReleaseAuthors, page: number) {
+// `scope`, so ask them for every author too when the scope is untrusted.
+export function releasesQuery(scope: ReleaseScope, page: number) {
   return {
-    authors,
-    allAuthors: authors === "others" ? true : undefined,
+    scope,
+    allAuthors: scope === "untrusted" ? true : undefined,
     page,
     perPage: RELEASES_PER_PAGE,
   };
 }
 
 // Keep only the releases in the author scope. A newer node has done this
-// already; an older one answers the others' scope with every author. Its pages
+// already; an older one answers the untrusted scope with every author. Its pages
 // then come back short, so "More" can stop early there.
 export function scopeReleases(
   releases: Release[],
   repo: Repo,
-  authors: ReleaseAuthors,
+  scope: ReleaseScope,
 ): Release[] {
-  if (authors === "delegates") {
+  if (scope === "trusted") {
     return releases;
   }
   const delegateIds = new Set(repo.delegates.map(d => d.id));
@@ -535,14 +535,14 @@ async function loadReleasesView(
   route: RepoReleasesRoute,
 ): Promise<RepoLoadedRoute | NotFoundRoute> {
   const api = new HttpdClient(route.node);
-  let authors = route.authors ?? "delegates";
+  let scope = route.scope ?? "trusted";
 
   // Fetch releases alongside the repo so the common path stays parallel; the
   // repo's `meta.releases` then tells us whether a failure is an unsupported
   // node or a genuine error.
   const [repo, releasesResult, node] = await Promise.all([
     api.repo.getByRid(route.repo),
-    api.repo.getAllReleases(route.repo, releasesQuery(authors, 0)).then(
+    api.repo.getAllReleases(route.repo, releasesQuery(scope, 0)).then(
       releases => ({ releases }),
       (error: unknown) => ({ error }),
     ),
@@ -559,21 +559,21 @@ async function loadReleasesView(
     throw releasesResult.error;
   }
 
-  let releases = scopeReleases(releasesResult.releases, repo, authors);
+  let releases = scopeReleases(releasesResult.releases, repo, scope);
 
   // With no scope asked for and no delegate releases, open on the others'
   // rather than on an empty list.
   if (
-    route.authors === undefined &&
+    route.scope === undefined &&
     typeof releasesMeta !== "number" &&
     releasesMeta.delegate === 0 &&
     releasesMeta.other > 0
   ) {
-    authors = "others";
+    scope = "untrusted";
     releases = scopeReleases(
-      await api.repo.getAllReleases(route.repo, releasesQuery(authors, 0)),
+      await api.repo.getAllReleases(route.repo, releasesQuery(scope, 0)),
       repo,
-      authors,
+      scope,
     );
   }
 
@@ -589,7 +589,7 @@ async function loadReleasesView(
       baseUrl: route.node,
       repoId: route.repo,
       releases,
-      authors,
+      scope,
       showFilters,
       repo,
       nodeId: node.id,
@@ -655,7 +655,7 @@ async function loadReleaseView(
       repoId: route.repo,
       repo,
       release: releaseResult.release,
-      authors: route.authors,
+      scope: route.scope,
       nodeId: node.id,
       nodeAvatarUrl: node.avatarUrl,
     },
@@ -1192,10 +1192,10 @@ export function resolveRepoRoute(
     return resolvePatchesRoute(node, repo, segments, urlSearch);
   } else if (content === "releases") {
     const release = segments.shift();
-    const authors =
-      new URLSearchParams(sanitizeQueryString(urlSearch)).get("authors") ===
-      "others"
-        ? "others"
+    const scope =
+      new URLSearchParams(sanitizeQueryString(urlSearch)).get("scope") ===
+      "untrusted"
+        ? "untrusted"
         : undefined;
     if (release) {
       return {
@@ -1203,14 +1203,14 @@ export function resolveRepoRoute(
         node,
         repo,
         release,
-        authors,
+        scope,
       };
     } else {
       return {
         resource: "repo.releases",
         node,
         repo,
-        authors,
+        scope,
       };
     }
   } else {
@@ -1336,14 +1336,14 @@ export function repoRouteToPath(route: RepoRoute): string {
     return patchRouteToPath(route);
   } else if (route.resource === "repo.releases") {
     let url = [...pathSegments, "releases"].join("/");
-    if (route.authors === "others") {
-      url += "?authors=others";
+    if (route.scope === "untrusted") {
+      url += "?scope=untrusted";
     }
     return url;
   } else if (route.resource === "repo.release") {
     let url = [...pathSegments, "releases", route.release].join("/");
-    if (route.authors === "others") {
-      url += "?authors=others";
+    if (route.scope === "untrusted") {
+      url += "?scope=untrusted";
     }
     return url;
   } else {
