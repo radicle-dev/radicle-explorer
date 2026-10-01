@@ -104,9 +104,10 @@
     justify-content: center;
   }
   .group-header {
-    margin: 1rem 0 0.5rem 1rem;
-    font: var(--txt-body-m-regular);
-    color: var(--color-text-tertiary);
+    padding: 1.25rem 1.25rem 0;
+    background-color: var(--color-surface-canvas);
+    font: var(--txt-body-s-semibold);
+    color: var(--color-text-primary);
   }
 </style>
 

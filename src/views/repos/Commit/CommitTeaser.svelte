@@ -110,7 +110,7 @@
         <pre>{@html renderCommitDescription(commit.description)}</pre>
       </div>
     {/if}
-    <CommitAuthorship header={commit}>
+    <CommitAuthorship header={commit} timeOnly>
       <Id id={commit.id} />
     </CommitAuthorship>
   </div>
