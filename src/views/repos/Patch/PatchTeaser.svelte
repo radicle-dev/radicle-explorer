@@ -28,6 +28,7 @@
 
 <style>
   .patch-teaser {
+    position: relative;
     display: flex;
     padding: 1.25rem;
     background-color: var(--color-surface-canvas);
@@ -88,6 +89,20 @@
     gap: 0.5rem;
     min-height: 1.5rem;
   }
+  .patch-teaser :global(a),
+  .patch-teaser :global(button),
+  .patch-teaser :global([role="button"]) {
+    position: relative;
+    z-index: 1;
+  }
+  .title-link :global(a) {
+    position: static;
+  }
+  .title-link :global(a)::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+  }
 </style>
 
 <div role="button" tabindex="0" class="patch-teaser">
@@ -108,16 +123,17 @@
   </div>
   <div class="content">
     <div class="summary">
-      <Link
-        styleHoverState
-        route={{
-          resource: "repo.patch",
-          repo: repoId,
-          node: baseUrl,
-          patch: patch.id,
-        }}>
-        <InlineTitle fontSize="body-m-regular" content={patch.title} />
-      </Link>
+      <span class="title-link">
+        <Link
+          route={{
+            resource: "repo.patch",
+            repo: repoId,
+            node: baseUrl,
+            patch: patch.id,
+          }}>
+          <InlineTitle fontSize="body-m-regular" content={patch.title} />
+        </Link>
+      </span>
       {#if patch.labels.length > 0}
         <span
           class="global-hide-on-small-desktop-down"

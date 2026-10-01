@@ -25,6 +25,7 @@
 
 <style>
   .issue-teaser {
+    position: relative;
     display: flex;
     padding: 1.25rem;
     background-color: var(--color-surface-canvas);
@@ -73,6 +74,20 @@
     background: var(--color-surface-merged);
     border-radius: var(--border-radius-xs);
   }
+  .issue-teaser :global(a),
+  .issue-teaser :global(button),
+  .issue-teaser :global([role="button"]) {
+    position: relative;
+    z-index: 1;
+  }
+  .title-link :global(a) {
+    position: static;
+  }
+  .title-link :global(a)::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+  }
 </style>
 
 <div role="button" tabindex="0" class="issue-teaser">
@@ -84,9 +99,8 @@
   </div>
   <div class="content">
     <div class="summary">
-      <span class="issue-title">
+      <span class="issue-title title-link">
         <Link
-          styleHoverState
           route={{
             resource: "repo.issue",
             repo: repoId,

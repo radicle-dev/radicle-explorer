@@ -21,6 +21,7 @@
 
 <style>
   .teaser {
+    position: relative;
     display: flex;
     padding: 1.25rem;
     background-color: var(--color-surface-canvas);
@@ -51,20 +52,6 @@
   .summary {
     font: var(--txt-body-m-regular);
   }
-  .summary::after {
-    content: "";
-    position: absolute;
-    top: -10px;
-    right: 0px;
-    bottom: -10px;
-    left: -10px;
-  }
-  .summary:hover {
-    text-decoration: underline;
-    text-decoration-thickness: 1px;
-    text-underline-offset: 2px;
-    cursor: pointer;
-  }
   .commit-message {
     margin: 0.5rem 0;
     font: var(--txt-body-m-regular);
@@ -73,19 +60,33 @@
     white-space: pre-wrap;
     word-wrap: break-word;
   }
+  .teaser :global(a),
+  .teaser :global(button),
+  .teaser :global([role="button"]) {
+    position: relative;
+    z-index: 1;
+  }
+  .title-link :global(a) {
+    position: static;
+  }
+  .title-link :global(a)::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+  }
 </style>
 
 <div class="teaser">
   <div class="left">
     <div class="message">
-      <Link
-        route={{
-          resource: "repo.commit",
-          repo: repoId,
-          node: baseUrl,
-          commit: commit.id,
-        }}>
-        <div style="position: relative;">
+      <span class="title-link">
+        <Link
+          route={{
+            resource: "repo.commit",
+            repo: repoId,
+            node: baseUrl,
+            commit: commit.id,
+          }}>
           <div class="summary" use:twemoji>
             {#if !commit.summary}
               <span style:color="var(--color-text-tertiary)">
@@ -95,8 +96,8 @@
               <InlineTitle fontSize="body-m-regular" content={commit.summary} />
             {/if}
           </div>
-        </div>
-      </Link>
+        </Link>
+      </span>
       {#if commit.description}
         <ExpandButton
           variant="inline"
