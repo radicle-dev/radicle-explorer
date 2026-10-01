@@ -60,11 +60,12 @@ test.describe(() => {
     await expect(page.locator(".release-teaser")).toHaveCount(1);
     await expect(page.getByText("eve commit")).toBeHidden();
 
-    await page.getByRole("link", { name: "All 2" }).click();
+    // The scopes don't overlap: others shows only Eve's release.
+    await page.getByRole("link", { name: "Others 1" }).click();
     await expect(page).toHaveURL(
-      `${peer.uiUrl()}/${rid}/releases?allAuthors=true`,
+      `${peer.uiUrl()}/${rid}/releases?authors=others`,
     );
-    await expect(page.locator(".release-teaser")).toHaveCount(2);
+    await expect(page.locator(".release-teaser")).toHaveCount(1);
     await expect(page.getByText("eve commit")).toBeVisible();
 
     await page.getByRole("link", { name: "Delegates 1" }).click();

@@ -18,6 +18,7 @@ import type {
   PatchState,
   PeerRefs,
   Release,
+  ReleaseAuthors,
   Remote,
   Repo,
   Revision,
@@ -111,7 +112,7 @@ interface RepoReleasesRoute {
   resource: "repo.releases";
   node: BaseUrl;
   repo: string;
-  allAuthors?: boolean;
+  authors?: ReleaseAuthors;
 }
 
 interface RepoReleaseRoute {
@@ -119,7 +120,7 @@ interface RepoReleaseRoute {
   node: BaseUrl;
   repo: string;
   release: string;
-  allAuthors?: boolean;
+  authors?: ReleaseAuthors;
 }
 
 interface RepoIssueRoute {
@@ -284,7 +285,7 @@ export type RepoLoadedRoute =
         repo: Repo;
         repoId: string;
         releases: Release[];
-        allAuthors: boolean;
+        authors: ReleaseAuthors;
         showFilters: boolean;
         nodeId: string;
         nodeAvatarUrl: string | undefined;
@@ -297,7 +298,7 @@ export type RepoLoadedRoute =
         repo: Repo;
         repoId: string;
         release: Release;
-        allAuthors: boolean;
+        authors?: ReleaseAuthors;
         nodeId: string;
         nodeAvatarUrl: string | undefined;
       };
@@ -504,27 +505,47 @@ function releasesNotSupported(node: BaseUrl): NotFoundRoute {
   };
 }
 
+// The query for a page of releases in one author scope. Older nodes ignore
+// `authors`, so ask them for every author too when the scope is the others'.
+export function releasesQuery(authors: ReleaseAuthors, page: number) {
+  return {
+    authors,
+    allAuthors: authors === "others" ? true : undefined,
+    page,
+    perPage: RELEASES_PER_PAGE,
+  };
+}
+
+// Keep only the releases in the author scope. A newer node has done this
+// already; an older one answers the others' scope with every author. Its pages
+// then come back short, so "More" can stop early there.
+export function scopeReleases(
+  releases: Release[],
+  repo: Repo,
+  authors: ReleaseAuthors,
+): Release[] {
+  if (authors === "delegates") {
+    return releases;
+  }
+  const delegateIds = new Set(repo.delegates.map(d => d.id));
+  return releases.filter(r => !delegateIds.has(r.creator.id));
+}
+
 async function loadReleasesView(
   route: RepoReleasesRoute,
 ): Promise<RepoLoadedRoute | NotFoundRoute> {
   const api = new HttpdClient(route.node);
-  const allAuthors = route.allAuthors || false;
+  let authors = route.authors ?? "delegates";
 
   // Fetch releases alongside the repo so the common path stays parallel; the
   // repo's `meta.releases` then tells us whether a failure is an unsupported
   // node or a genuine error.
   const [repo, releasesResult, node] = await Promise.all([
     api.repo.getByRid(route.repo),
-    api.repo
-      .getAllReleases(route.repo, {
-        allAuthors,
-        page: 0,
-        perPage: RELEASES_PER_PAGE,
-      })
-      .then(
-        releases => ({ releases }),
-        (error: unknown) => ({ error }),
-      ),
+    api.repo.getAllReleases(route.repo, releasesQuery(authors, 0)).then(
+      releases => ({ releases }),
+      (error: unknown) => ({ error }),
+    ),
     api.getNode(),
   ]);
 
@@ -538,14 +559,29 @@ async function loadReleasesView(
     throw releasesResult.error;
   }
 
-  const releases = releasesResult.releases;
+  let releases = scopeReleases(releasesResult.releases, repo, authors);
 
-  // Offer the author filter only where visible releases by non-delegates
-  // exist, since otherwise both scopes show the same list.
+  // With no scope asked for and no delegate releases, open on the others'
+  // rather than on an empty list.
+  if (
+    route.authors === undefined &&
+    typeof releasesMeta !== "number" &&
+    releasesMeta.delegate === 0 &&
+    releasesMeta.other > 0
+  ) {
+    authors = "others";
+    releases = scopeReleases(
+      await api.repo.getAllReleases(route.repo, releasesQuery(authors, 0)),
+      repo,
+      authors,
+    );
+  }
+
+  // Offer the author filter only where both scopes hold releases.
   const showFilters =
     typeof releasesMeta === "number"
-      ? await legacyShowFilters(api, route.repo, repo, releases, allAuthors)
-      : releasesMeta.other > 0;
+      ? await legacyShowFilters(api, route.repo, repo)
+      : releasesMeta.delegate > 0 && releasesMeta.other > 0;
 
   return {
     resource: "repo.releases",
@@ -553,7 +589,7 @@ async function loadReleasesView(
       baseUrl: route.node,
       repoId: route.repo,
       releases,
-      allAuthors,
+      authors,
       showFilters,
       repo,
       nodeId: node.id,
@@ -563,49 +599,38 @@ async function loadReleasesView(
 }
 
 // Older nodes report a single release count without the delegate and
-// non-delegate buckets, so the filter is decided by comparing the first page of
-// each scope. The delegate scope is a subset of every author, so the
-// all-authors view sizes both scopes from its own page, while the delegate view
-// has to fetch the other scope. A full page means the list may go on, so keep
-// the filter rather than have it appear or vanish as the user pages. Remove
-// this once nodes without the buckets are no longer supported.
+// non-delegate buckets, so the filter is decided from the first page of every
+// author. A full page means the list may go on, so keep the filter rather than
+// have it appear or vanish as the user pages. Remove this once nodes without
+// the buckets are no longer supported.
 async function legacyShowFilters(
   api: HttpdClient,
   repoId: string,
   repo: Repo,
-  releases: Release[],
-  allAuthors: boolean,
 ): Promise<boolean> {
   const delegateIds = new Set(repo.delegates.map(d => d.id));
-  const delegateCount = allAuthors
-    ? releases.filter(r => delegateIds.has(r.creator.id)).length
-    : releases.length;
-  const everyAuthorCount = allAuthors
-    ? releases.length
-    : await api.repo
-        .getAllReleases(repoId, {
-          allAuthors: true,
-          page: 0,
-          perPage: RELEASES_PER_PAGE,
-        })
-        .then(
-          page => page.length,
-          // Only the filter depends on this, so a failure must not take the
-          // page down with it.
-          () => undefined,
-        );
-  return (
-    everyAuthorCount === undefined ||
-    everyAuthorCount === RELEASES_PER_PAGE ||
-    delegateCount !== everyAuthorCount
-  );
+  const everyAuthor = await api.repo
+    .getAllReleases(repoId, {
+      allAuthors: true,
+      page: 0,
+      perPage: RELEASES_PER_PAGE,
+    })
+    .catch(
+      // Only the filter depends on this, so a failure must not take the page
+      // down with it.
+      () => undefined,
+    );
+  if (everyAuthor === undefined || everyAuthor.length === RELEASES_PER_PAGE) {
+    return true;
+  }
+  const byDelegate = everyAuthor.filter(r => delegateIds.has(r.creator.id));
+  return byDelegate.length > 0 && byDelegate.length < everyAuthor.length;
 }
 
 async function loadReleaseView(
   route: RepoReleaseRoute,
 ): Promise<RepoLoadedRoute | NotFoundRoute> {
   const api = new HttpdClient(route.node);
-  const allAuthors = route.allAuthors || false;
 
   const [repo, releaseResult, node] = await Promise.all([
     api.repo.getByRid(route.repo),
@@ -630,7 +655,7 @@ async function loadReleaseView(
       repoId: route.repo,
       repo,
       release: releaseResult.release,
-      allAuthors,
+      authors: route.authors,
       nodeId: node.id,
       nodeAvatarUrl: node.avatarUrl,
     },
@@ -1167,23 +1192,25 @@ export function resolveRepoRoute(
     return resolvePatchesRoute(node, repo, segments, urlSearch);
   } else if (content === "releases") {
     const release = segments.shift();
-    const allAuthors =
-      new URLSearchParams(sanitizeQueryString(urlSearch)).get("allAuthors") ===
-      "true";
+    const authors =
+      new URLSearchParams(sanitizeQueryString(urlSearch)).get("authors") ===
+      "others"
+        ? "others"
+        : undefined;
     if (release) {
       return {
         resource: "repo.release",
         node,
         repo,
         release,
-        allAuthors,
+        authors,
       };
     } else {
       return {
         resource: "repo.releases",
         node,
         repo,
-        allAuthors,
+        authors,
       };
     }
   } else {
@@ -1309,14 +1336,14 @@ export function repoRouteToPath(route: RepoRoute): string {
     return patchRouteToPath(route);
   } else if (route.resource === "repo.releases") {
     let url = [...pathSegments, "releases"].join("/");
-    if (route.allAuthors) {
-      url += "?allAuthors=true";
+    if (route.authors === "others") {
+      url += "?authors=others";
     }
     return url;
   } else if (route.resource === "repo.release") {
     let url = [...pathSegments, "releases", route.release].join("/");
-    if (route.allAuthors) {
-      url += "?allAuthors=true";
+    if (route.authors === "others") {
+      url += "?authors=others";
     }
     return url;
   } else {

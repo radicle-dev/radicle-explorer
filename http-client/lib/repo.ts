@@ -63,6 +63,10 @@ const releaseCountsSchema = object({
 
 export type ReleaseCounts = z.infer<typeof releaseCountsSchema>;
 
+// The two disjoint author scopes of the releases list: releases created by a
+// delegate, or by anyone else.
+export type ReleaseAuthors = "delegates" | "others";
+
 const repoSchema = object({
   rid: string(),
   payloads: object({
@@ -613,6 +617,9 @@ export class Client {
     query?: {
       page?: number;
       perPage?: number;
+      authors?: ReleaseAuthors;
+      // Older nodes ignore `authors` and only know this superset of both
+      // scopes.
       allAuthors?: boolean;
       showRedacted?: boolean;
     },
