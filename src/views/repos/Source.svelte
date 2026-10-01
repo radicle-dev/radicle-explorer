@@ -16,7 +16,6 @@
   import Header from "./Source/Header.svelte";
   import Layout from "./Layout.svelte";
   import Placeholder from "@app/components/Placeholder.svelte";
-  import RepoNameHeader from "./Source/RepoNameHeader.svelte";
   import Separator from "./Separator.svelte";
   import TreeComponent from "./Source/Tree.svelte";
 
@@ -132,7 +131,11 @@
   {nodeAvatarUrl}
   {repo}
   {repoId}
-  activeTab="source"
+  {seedingPolicy}
+  {commit}
+  {peer}
+  {revision}
+  activeTab="files"
   stylePaddingBottom="0">
   <svelte:fragment slot="breadcrumb">
     {#if path !== "/"}
@@ -140,31 +143,18 @@
       <FilePath filenameWithPath={path} />
     {/if}
   </svelte:fragment>
-  <svelte:fragment slot="actions">
-    <CloneButton
-      {baseUrl}
-      {currentRefname}
-      id={repo.rid}
-      alias={repo.alias}
-      name={repo.payloads["xyz.radicle.project"].data.name} />
-  </svelte:fragment>
-  <RepoNameHeader {repo} {repoId} {baseUrl} {seedingPolicy} slot="header" />
-
   <div
     style:padding="1rem"
     style:border-bottom="1px solid var(--color-border-subtle)"
     slot="subheader">
-    <Header
-      filesLinkActive={true}
-      historyLinkActive={false}
-      node={baseUrl}
-      {commit}
-      {baseRoute}
-      {peer}
-      {repo}
-      {repoId}
-      {revision}
-      {tree} />
+    <Header node={baseUrl} {baseRoute} {peer} {repo} {repoId} {revision} {tree}>
+      <CloneButton
+        {baseUrl}
+        {currentRefname}
+        id={repo.rid}
+        alias={repo.alias}
+        name={repo.payloads["xyz.radicle.project"].data.name} />
+    </Header>
   </div>
   <div class="global-hide-on-medium-desktop-up">
     {#if tree.entries.length > 0}

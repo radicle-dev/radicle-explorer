@@ -1,11 +1,5 @@
 <script lang="ts">
-  import type {
-    BaseUrl,
-    CommitHeader,
-    Repo,
-    SeedingPolicy,
-    Tree,
-  } from "@http-client";
+  import type { BaseUrl, CommitHeader, Repo, Tree } from "@http-client";
   import type { RepoRoute } from "./router";
 
   import config from "@app/lib/config";
@@ -26,11 +20,9 @@
   import Link from "@app/components/Link.svelte";
   import List from "@app/components/List.svelte";
   import Loading from "@app/components/Loading.svelte";
-  import RepoNameHeader from "./Source/RepoNameHeader.svelte";
   import Separator from "./Separator.svelte";
 
   export let baseUrl: BaseUrl;
-  export let seedingPolicy: SeedingPolicy;
   export let commit: string;
   export let commitHeaders: CommitHeader[];
   export let peer: string | undefined;
@@ -110,7 +102,16 @@
   }
 </style>
 
-<Layout {nodeId} {nodeAvatarUrl} {baseUrl} {repo} {repoId} activeTab="source">
+<Layout
+  {nodeId}
+  {nodeAvatarUrl}
+  {baseUrl}
+  {repo}
+  {repoId}
+  {commit}
+  {peer}
+  {revision}
+  activeTab="commits">
   <svelte:fragment slot="breadcrumb">
     <Separator />
     <Link
@@ -122,31 +123,19 @@
       Commits
     </Link>
   </svelte:fragment>
-  <svelte:fragment slot="actions">
-    <CloneButton
-      {baseUrl}
-      {currentRefname}
-      id={repo.rid}
-      alias={repo.alias}
-      name={repo.payloads["xyz.radicle.project"].data.name} />
-  </svelte:fragment>
-  <RepoNameHeader {repo} {repoId} {baseUrl} {seedingPolicy} slot="header" />
-
   <div
     style:padding="1rem"
     style:border-bottom="1px solid var(--color-border-subtle)"
+    style:background-color="var(--color-surface-canvas)"
     slot="subheader">
-    <Header
-      {baseRoute}
-      {commit}
-      {peer}
-      {repo}
-      {repoId}
-      {revision}
-      {tree}
-      node={baseUrl}
-      filesLinkActive={false}
-      historyLinkActive={true} />
+    <Header {baseRoute} {peer} {repo} {repoId} {revision} {tree} node={baseUrl}>
+      <CloneButton
+        {baseUrl}
+        {currentRefname}
+        id={repo.rid}
+        alias={repo.alias}
+        name={repo.payloads["xyz.radicle.project"].data.name} />
+    </Header>
   </div>
 
   <div>

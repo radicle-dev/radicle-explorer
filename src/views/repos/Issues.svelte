@@ -66,6 +66,11 @@
     gap: 0.25rem;
     padding: 1rem;
     border-bottom: 1px solid var(--color-border-subtle);
+    background-color: var(--color-surface-canvas);
+  }
+  .header :global(.gray),
+  .header :global(.background:not([disabled]):hover) {
+    background-color: var(--color-surface-subtle);
   }
   .more {
     margin-top: 2rem;

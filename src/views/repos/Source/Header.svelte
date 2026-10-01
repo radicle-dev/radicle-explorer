@@ -5,9 +5,6 @@
   import { cached } from "@app/lib/cache";
   import { peerHasBranches, remoteToPeerRefs } from "../router";
 
-  // Cache commit counts across component remounts (tab navigation).
-  const commitCountCache: Record<string, number> = {};
-
   // The remote listing behind the peer selector is expensive on repositories
   // with many peers. Going through `cached` shares a single request across
   // every Header instance for the same repo, including instances that mount
@@ -34,9 +31,6 @@
 
   import PeerBranchSelector from "./PeerBranchSelector.svelte";
 
-  export let commit: string;
-  export let filesLinkActive: boolean;
-  export let historyLinkActive: boolean;
   export let node: BaseUrl;
   export let peer: string | undefined;
   export let repo: Repo;
@@ -47,23 +41,6 @@
   >;
   export let revision: string | undefined;
   export let tree: Tree;
-
-  const api = new HttpdClient(node);
-  let commitCount: number | undefined = commitCountCache[commit];
-
-  function fetchCommitCount(rid: string, sha: string) {
-    const cached = commitCountCache[sha];
-    if (cached !== undefined) {
-      commitCount = cached;
-    } else {
-      void api.repo.getCommitCountBySha(rid, sha).then(commits => {
-        commitCountCache[sha] = commits;
-        commitCount = commits;
-      });
-    }
-  }
-
-  $: fetchCommitCount(repo.rid, commit);
 
   // Enumerating remotes requires reading and verifying signed refs for every
   // peer, which is slow on large repositories. It only feeds the peer selector
@@ -133,31 +110,14 @@
     align-items: center;
     flex-wrap: wrap;
   }
+  .actions {
+    margin-left: auto;
+  }
   .mobile-branch {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
     margin-bottom: 0.5rem;
-  }
-
-  .counter {
-    border-radius: var(--border-radius-sm);
-    background-color: var(--color-surface-mid);
-    color: var(--color-text-tertiary);
-    padding: 0 0.25rem;
-    min-width: 1.5rem;
-    text-align: center;
-  }
-
-  .title-counter {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .selected {
-    background-color: var(--color-surface-mid);
-    color: var(--color-text-primary);
   }
 </style>
 
@@ -195,42 +155,6 @@
 </div>
 
 <div class="header">
-  <div style="display: flex; gap: 0.375rem;">
-    <Link
-      route={{
-        resource: "repo.source",
-        repo: repoId,
-        node: node,
-        peer,
-        revision,
-      }}>
-      <Button variant={filesLinkActive ? "gray" : "background"}>
-        <Icon name="document" />Files
-      </Button>
-    </Link>
-
-    <Link
-      route={{
-        resource: "repo.history",
-        repo: repoId,
-        node: node,
-        peer,
-        revision,
-      }}>
-      <Button variant={historyLinkActive ? "gray" : "background"}>
-        <Icon name="commit" />
-        <div class="title-counter">
-          Commits
-          {#if commitCount !== undefined}
-            <div class="counter" class:selected={historyLinkActive}>
-              {commitCount}
-            </div>
-          {/if}
-        </div>
-      </Button>
-    </Link>
-  </div>
-
   <div class="branch-commit global-hide-on-mobile-down" style:gap="1px">
     {#if selectedBranch}
       <PeerBranchSelector
@@ -260,5 +184,8 @@
     <div style:margin-left="0.5rem">
       <JobCob baseUrl={node} rid={repo.rid} commit={lastCommit.id} />
     </div>
+  </div>
+  <div class="actions global-hide-on-mobile-down">
+    <slot />
   </div>
 </div>

@@ -1,13 +1,13 @@
 <script lang="ts">
   import type { ActiveTab } from "./Header.svelte";
-  import type { BaseUrl, Repo } from "@http-client";
+  import type { BaseUrl, Repo, SeedingPolicy } from "@http-client";
 
-  import Button from "@app/components/Button.svelte";
+  import CopyLinkButton from "./Header/CopyLinkButton.svelte";
   import Header from "@app/components/Header.svelte";
-  import Icon from "@app/components/Icon.svelte";
   import Link from "@app/components/Link.svelte";
-  import MobileFooter from "@app/App/MobileFooter.svelte";
   import RepoHeader from "./Header.svelte";
+  import RepoNameHeader from "./Source/RepoNameHeader.svelte";
+  import SeedButton from "./Header/SeedButton.svelte";
   import SeedPicker from "@app/views/explore/SeedPicker.svelte";
   import Separator from "./Separator.svelte";
   import NodeAvatar from "@app/components/NodeAvatar.svelte";
@@ -19,6 +19,10 @@
   export let stylePaddingBottom: string = "2.5rem";
   export let nodeId: string;
   export let nodeAvatarUrl: string | undefined;
+  export let seedingPolicy: SeedingPolicy | undefined = undefined;
+  export let commit: string | undefined = undefined;
+  export let peer: string | undefined = undefined;
+  export let revision: string | undefined = undefined;
 </script>
 
 <style>
@@ -31,14 +35,6 @@
   .content {
     overflow: scroll;
     flex: 1;
-  }
-
-  .tab-bar {
-    display: block;
-  }
-
-  .mobile-footer {
-    display: none;
   }
 
   .breadcrumbs {
@@ -58,19 +54,12 @@
     color: var(--color-text-brand);
   }
   @media (max-width: 719.98px) {
-    .tab-bar {
-      display: none;
-    }
     .breadcrumbs {
       display: none;
     }
     .content {
       overflow-y: scroll;
       overflow-x: hidden;
-    }
-    .mobile-footer {
-      margin-top: auto;
-      display: grid;
     }
   }
 </style>
@@ -116,90 +105,27 @@
     </Header>
   </div>
 
-  <div class="tab-bar">
-    <RepoHeader {activeTab} {baseUrl} {repo} {repoId}>
-      <svelte:fragment slot="actions">
-        <slot name="actions" />
-      </svelte:fragment>
-    </RepoHeader>
-  </div>
-
   <div class="content" style:padding-bottom={stylePaddingBottom}>
+    {#if activeTab === "files" && seedingPolicy}
+      <RepoNameHeader {repo} {repoId} {baseUrl} {seedingPolicy}>
+        <svelte:fragment slot="actions">
+          <CopyLinkButton {baseUrl} {repoId} />
+          <SeedButton seedCount={repo.seeding} repoId={repo.rid} />
+        </svelte:fragment>
+      </RepoNameHeader>
+    {/if}
+    <div class="tab-bar">
+      <RepoHeader
+        {activeTab}
+        {baseUrl}
+        {repo}
+        {repoId}
+        {commit}
+        {peer}
+        {revision} />
+    </div>
     <slot name="header" />
     <slot name="subheader" />
     <slot />
-  </div>
-
-  <div class="mobile-footer">
-    <MobileFooter>
-      <div style:width="100%">
-        <Link
-          title="Home"
-          route={{
-            resource: "repo.source",
-            repo: repoId,
-            node: baseUrl,
-            path: "/",
-          }}>
-          <Button
-            variant={activeTab === "source" ? "secondary" : "secondary-mobile"}
-            styleWidth="100%">
-            <Icon name="chevron-left-right" />
-          </Button>
-        </Link>
-      </div>
-
-      <div style:width="100%">
-        <Link
-          title={`${repo.payloads["xyz.radicle.project"].meta.issues.open} Issues`}
-          route={{
-            resource: "repo.issues",
-            repo: repoId,
-            node: baseUrl,
-          }}>
-          <Button
-            variant={activeTab === "issues" ? "secondary" : "secondary-mobile"}
-            styleWidth="100%">
-            <Icon name="issue" />
-          </Button>
-        </Link>
-      </div>
-
-      <div style:width="100%">
-        <Link
-          title={`${repo.payloads["xyz.radicle.project"].meta.patches.open} Patches`}
-          route={{
-            resource: "repo.patches",
-            repo: repoId,
-            node: baseUrl,
-          }}>
-          <Button
-            variant={activeTab === "patches" ? "secondary" : "secondary-mobile"}
-            styleWidth="100%">
-            <Icon name="patch" />
-          </Button>
-        </Link>
-      </div>
-
-      {#if repo.payloads["xyz.radicle.project"].meta.releases !== undefined}
-        <div style:width="100%">
-          <Link
-            title="Releases"
-            route={{
-              resource: "repo.releases",
-              repo: repoId,
-              node: baseUrl,
-            }}>
-            <Button
-              variant={activeTab === "releases"
-                ? "secondary"
-                : "secondary-mobile"}
-              styleWidth="100%">
-              <Icon name="parcel" />
-            </Button>
-          </Link>
-        </div>
-      {/if}
-    </MobileFooter>
   </div>
 </div>

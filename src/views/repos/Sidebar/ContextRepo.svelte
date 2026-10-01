@@ -17,9 +17,10 @@
 <style>
   .context-repo {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1.25rem;
   }
   .row {
     display: flex;
@@ -32,6 +33,12 @@
   }
   .value {
     color: var(--color-text-primary);
+  }
+  .term {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: help;
   }
   .avatars {
     display: flex;
@@ -46,17 +53,31 @@
     white-space: nowrap;
   }
   .description {
-    font: var(--txt-body-s-medium);
-    color: var(--color-text-quaternary);
+    width: 16rem;
+    font: var(--txt-body-s-regular);
+    color: var(--color-text-secondary);
   }
 </style>
 
 <div class="context-repo">
   <div class="row">
-    <span class="label txt-body-m-medium">Delegates</span>
-    <span class="value txt-body-m-medium">
-      {repoThreshold}/{repoDelegates.length}
-    </span>
+    <HoverPopover stylePopoverPositionTop="0.5rem" stylePopoverPositionLeft="0">
+      <div slot="toggle" class="term">
+        <span class="label txt-body-m-medium">Delegates</span>
+        <span class="value txt-body-m-medium">
+          {repoThreshold}/{repoDelegates.length}
+        </span>
+      </div>
+      <div slot="popover" class="description">
+        {#if repoDelegates.length === 1}
+          Any changes accepted by the sole delegate will be included in the
+          canonical branch.
+        {:else}
+          {repoThreshold} out of {repoDelegates.length} delegates have to accept changes
+          to be included in the canonical branch.
+        {/if}
+      </div>
+    </HoverPopover>
     <div class="avatars">
       {#each repoDelegates as delegate}
         <HoverPopover>
@@ -73,31 +94,24 @@
       {/each}
     </div>
   </div>
-  <div class="description">
-    {#if repoDelegates.length === 1}
-      Any changes accepted by the sole delegate will be included in the
-      canonical branch.
-    {:else}
-      {repoThreshold} out of {repoDelegates.length} delegates have to accept changes
-      to be included in the canonical branch.
-    {/if}
-  </div>
-  <div class="row">
-    <span class="label txt-body-m-medium">Seeding Scope</span>
-    <span class="value txt-body-m-medium">
-      {capitalize(
-        "scope" in seedingPolicy ? seedingPolicy.scope : "not defined",
-      )}
-    </span>
-  </div>
-  <div class="description">
-    {#if seedingPolicy.policy === "block"}
-      Seeding scope only has an effect when a repository is seeded. This repo
-      isn’t seeded by the seed node.
-    {:else if seedingPolicy.scope === "all"}
-      This repository tracks changes by any peer.
-    {:else}
-      This repository tracks only peers followed by the seed node.
-    {/if}
-  </div>
+  <HoverPopover alignRight stylePopoverPositionTop="0.5rem">
+    <div slot="toggle" class="term">
+      <span class="label txt-body-m-medium">Seeding Scope</span>
+      <span class="value txt-body-m-medium">
+        {capitalize(
+          "scope" in seedingPolicy ? seedingPolicy.scope : "not defined",
+        )}
+      </span>
+    </div>
+    <div slot="popover" class="description">
+      {#if seedingPolicy.policy === "block"}
+        Seeding scope only has an effect when a repository is seeded. This repo
+        isn’t seeded by the seed node.
+      {:else if seedingPolicy.scope === "all"}
+        This repository tracks changes by any peer.
+      {:else}
+        This repository tracks only peers followed by the seed node.
+      {/if}
+    </div>
+  </HoverPopover>
 </div>

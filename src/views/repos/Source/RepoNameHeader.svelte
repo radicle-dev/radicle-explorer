@@ -41,14 +41,18 @@
     flex: 1;
     min-width: 0;
     padding: 1rem 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
   .info {
-    flex: 1;
-    min-width: 0;
+    flex-shrink: 0;
     padding: 1rem;
-    border-left: 1px solid var(--color-border-subtle);
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 0.75rem;
   }
   .title {
     align-items: center;
@@ -59,6 +63,12 @@
     justify-content: left;
     text-align: left;
     text-overflow: ellipsis;
+  }
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
   }
   .repo-name:hover {
     color: inherit;
@@ -94,8 +104,8 @@
     }
     .info {
       flex-basis: 100%;
+      align-items: flex-start;
       padding: 0;
-      border-left: none;
       border-top: 1px solid var(--color-border-subtle);
       padding-top: 0.5rem;
     }
@@ -149,6 +159,9 @@
     {@html render(project.data.description)}
   </div>
   <div class="info">
+    <div class="actions global-hide-on-mobile-down">
+      <slot name="actions" />
+    </div>
     <ContextRepo
       {baseUrl}
       repoThreshold={repo.threshold}

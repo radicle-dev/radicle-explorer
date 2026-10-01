@@ -72,12 +72,12 @@
 
   .background {
     color: var(--color-text-primary);
-    background-color: var(--color-surface-base);
+    background-color: transparent;
     font: var(--txt-body-m-regular);
   }
   .background[disabled] {
     color: var(--color-text-disabled);
-    background-color: var(--color-surface-base);
+    background-color: transparent;
   }
   .background:not([disabled]):hover {
     color: var(--color-text-primary);

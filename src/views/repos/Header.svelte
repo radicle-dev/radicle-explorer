@@ -1,67 +1,49 @@
 <script lang="ts" context="module">
   export type ActiveTab =
-    "source" | "issues" | "patches" | "releases" | undefined;
+    "files" | "commits" | "issues" | "patches" | "releases" | undefined;
+
+  // Cache commit counts across component remounts (tab navigation).
+  const commitCountCache: Record<string, number> = {};
 </script>
 
 <script lang="ts">
   import type { BaseUrl, Repo } from "@http-client";
 
-  import config from "@app/lib/config";
-  import debounce from "lodash/debounce";
-  import { routeToPath } from "@app/lib/router";
-  import { toClipboard } from "@app/lib/utils";
+  import { HttpdClient } from "@http-client";
 
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Link from "@app/components/Link.svelte";
-  import SeedButton from "@app/views/repos/Header/SeedButton.svelte";
 
   export let baseUrl: BaseUrl;
   export let activeTab: ActiveTab = undefined;
   export let repo: Repo;
   export let repoId: string;
+  export let commit: string | undefined = undefined;
+  export let peer: string | undefined = undefined;
+  export let revision: string | undefined = undefined;
 
-  let shareIcon: "link" | "checkmark" = "link";
+  const api = new HttpdClient(baseUrl);
+  let commitCount: number | undefined = undefined;
 
-  const restoreIcon = debounce(() => {
-    shareIcon = "link";
-  }, 1000);
-
-  function tabRoute(): string {
-    if (activeTab === "issues") {
-      return routeToPath({
-        resource: "repo.issues",
-        repo: repoId,
-        node: baseUrl,
-      });
-    } else if (activeTab === "patches") {
-      return routeToPath({
-        resource: "repo.patches",
-        repo: repoId,
-        node: baseUrl,
-      });
-    } else if (activeTab === "releases") {
-      return routeToPath({
-        resource: "repo.releases",
-        repo: repoId,
-        node: baseUrl,
-      });
+  function fetchCommitCount(rid: string, sha: string) {
+    const cached = commitCountCache[sha];
+    if (cached !== undefined) {
+      commitCount = cached;
     } else {
-      return routeToPath({
-        resource: "repo.source",
-        repo: repoId,
-        node: baseUrl,
-        path: "/",
+      commitCount = undefined;
+      void api.repo.getCommitCountBySha(rid, sha).then(commits => {
+        commitCountCache[sha] = commits;
+        if (sha === countedCommit) {
+          commitCount = commits;
+        }
       });
     }
   }
 
-  async function copyLink() {
-    const origin = new URL(config.nodes.fallbackPublicExplorer).origin;
-    await toClipboard(origin.concat(tabRoute()));
-    shareIcon = "checkmark";
-    restoreIcon();
-  }
+  $: countedCommit = commit ?? repo.payloads["xyz.radicle.project"].meta.head;
+  $: fetchCommitCount(repo.rid, countedCommit);
+  $: sourceTab = activeTab === "files" || activeTab === "commits";
 </script>
 
 <style>
@@ -96,14 +78,19 @@
     gap: 0.5rem;
   }
 
-  .spacer {
-    flex: 1;
-  }
-
-  .actions {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+  @media (max-width: 719.98px) {
+    .container {
+      padding: 0.75rem 1rem;
+      overflow-x: auto;
+      scrollbar-width: none;
+      white-space: nowrap;
+    }
+    .container::-webkit-scrollbar {
+      display: none;
+    }
+    .container :global(button svg) {
+      display: none;
+    }
   }
 </style>
 
@@ -113,13 +100,39 @@
       resource: "repo.source",
       repo: repoId,
       node: baseUrl,
-      path: "/",
+      peer: sourceTab ? peer : undefined,
+      revision: sourceTab ? revision : undefined,
     }}>
-    <Button variant={activeTab === "source" ? "gray" : "background"}>
-      <Icon name="chevron-left-right" />
-      Source
+    <Button variant={activeTab === "files" ? "gray" : "background"}>
+      <Icon name="document" />
+      Files
     </Button>
   </Link>
+
+  <Link
+    route={{
+      resource: "repo.history",
+      repo: repoId,
+      node: baseUrl,
+      peer: sourceTab ? peer : undefined,
+      revision: sourceTab ? revision : undefined,
+    }}>
+    <Button let:hover variant={activeTab === "commits" ? "gray" : "background"}>
+      <Icon name="commit" />
+      <div class="title-counter">
+        Commits
+        {#if commitCount !== undefined}
+          <span
+            class="counter"
+            class:selected={activeTab === "commits"}
+            class:hover={hover && activeTab !== "commits"}>
+            {commitCount}
+          </span>
+        {/if}
+      </div>
+    </Button>
+  </Link>
+
   <Link
     route={{
       resource: "repo.issues",
@@ -185,17 +198,4 @@
       </Button>
     </Link>
   {/if}
-
-  <div class="spacer"></div>
-
-  <div class="actions">
-    {#if activeTab !== "issues" && activeTab !== "patches" && activeTab !== "releases"}
-      <Button variant="outline" size="regular" on:click={copyLink}>
-        <Icon name={shareIcon} />
-        <span class="global-hide-on-small-desktop-down">Copy link</span>
-      </Button>
-    {/if}
-    <slot name="actions" />
-    <SeedButton seedCount={repo.seeding} repoId={repo.rid} />
-  </div>
 </div>
