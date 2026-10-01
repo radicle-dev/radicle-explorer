@@ -151,7 +151,7 @@ test("expand commit message", async ({ page }) => {
   await expect(expandedCommit).toBeHidden();
 });
 
-test("relative timestamps", async ({ page }) => {
+test("commit timestamps", async ({ page }) => {
   await page.clock.setFixedTime(new Date("December 21 2022 12:00:00"));
   await page.goto(sourceBrowsingUrl);
   await page
@@ -165,12 +165,12 @@ test("relative timestamps", async ({ page }) => {
   ).toHaveText(/bob/);
   const latestCommit = page.locator(".teaser").first();
   await expect(latestCommit).toContainText(
-    `Bob Belcher committed ${shortBobHead} now`,
+    `Bob Belcher committed ${shortBobHead} 1:00 PM`,
   );
   await expect(latestCommit).toContainText(shortBobHead);
   const earliestCommit = page.locator(".teaser").last();
   await expect(earliestCommit).toContainText(
-    "Alice Liddell committed 36d5bbe last month",
+    "Alice Liddell committed 36d5bbe 4:01 PM",
   );
 });
 
