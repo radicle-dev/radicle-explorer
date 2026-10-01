@@ -17,7 +17,7 @@ use radicle_artifact::{cache_db_path, Artifact, Cid, Filters, Release, ReleaseId
 use crate::api;
 use crate::api::error::Error;
 use crate::api::json::Author;
-use crate::api::query::{Authors, ReleasesQuery, MAX_PER_PAGE};
+use crate::api::query::{ReleaseScope, ReleasesQuery, MAX_PER_PAGE};
 use crate::api::Context;
 use crate::axum_extra::{Path, Query};
 
@@ -127,7 +127,7 @@ fn listed_filters<'a>(release: &Release, filters: Filters<'a>) -> Filters<'a> {
 /// `GET /repos/:rid/releases`
 ///
 /// Scoped to releases created by a delegate and artifacts authored by a
-/// delegate, or with `authors=others` to those by non-delegates, so the two
+/// delegate, or with `scope=untrusted` to those by non-delegates, so the two
 /// scopes never overlap. Artifacts redacted by a trusted party are hidden
 /// unless `showRedacted=true`. A release with no artifact in scope shows every
 /// author's. A release whose artifacts were all redacted is hidden
@@ -145,7 +145,7 @@ pub async fn list_handler(
         let ReleasesQuery {
             page,
             per_page,
-            authors,
+            scope,
             show_redacted,
         } = qs;
         let page = page.unwrap_or(0);
@@ -159,9 +159,9 @@ pub async fn list_handler(
         // widened.
         let filters = Filters {
             trust: Trust::new(store.delegates(), None),
-            scope: match authors.unwrap_or_default() {
-                Authors::Delegates => Scope::Trusted,
-                Authors::Others => Scope::Untrusted,
+            scope: match scope.unwrap_or_default() {
+                ReleaseScope::Trusted => Scope::Trusted,
+                ReleaseScope::Untrusted => Scope::Untrusted,
             },
             include_redacted: show_redacted.unwrap_or(false),
         };
@@ -379,8 +379,8 @@ mod routes {
         let response = get(&app, format!("/repos/{RID}/releases")).await;
         assert_eq!(ids(response.json().await), [delegate_id]);
 
-        // `authors=others` shows only non-delegate creators.
-        let response = get(&app, format!("/repos/{RID}/releases?authors=others")).await;
+        // `scope=untrusted` shows only non-delegate creators.
+        let response = get(&app, format!("/repos/{RID}/releases?scope=untrusted")).await;
         assert_eq!(ids(response.json().await), [other_id]);
     }
 
@@ -421,7 +421,7 @@ mod routes {
         assert_eq!(artifacts[0]["cid"], json!(CID));
 
         // A delegate created it, so it is not among the others' releases.
-        let response = get(&app, format!("/repos/{RID}/releases?authors=others")).await;
+        let response = get(&app, format!("/repos/{RID}/releases?scope=untrusted")).await;
         assert_eq!(response.json().await, json!([]));
     }
 
