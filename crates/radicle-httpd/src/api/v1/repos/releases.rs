@@ -1,9 +1,12 @@
+use std::collections::BTreeSet;
+
 use axum::extract::State;
 use axum::response::IntoResponse;
 use axum::Json;
 use serde_json::{json, Value};
 
 use radicle::git::Oid;
+use radicle::identity::Did;
 use radicle::node::AliasStore;
 use radicle::storage::git::Repository;
 
@@ -23,8 +26,14 @@ const DEFAULT_PER_PAGE: usize = 30;
 
 /// Serialize a single artifact. Locations are flattened across contributors
 /// into `{ user, url }` entries; attestations are the attesting nodes;
-/// redactions carry the flagging user and its reason.
-fn artifact_json(cid: &Cid, artifact: &Artifact, aliases: &impl AliasStore) -> Value {
+/// redactions carry the flagging user and its reason; metadata is only what
+/// its author or a delegate wrote.
+fn artifact_json(
+    cid: &Cid,
+    artifact: &Artifact,
+    delegates: &BTreeSet<Did>,
+    aliases: &impl AliasStore,
+) -> Value {
     let locations = artifact
         .locations()
         .iter()
@@ -51,7 +60,7 @@ fn artifact_json(cid: &Cid, artifact: &Artifact, aliases: &impl AliasStore) -> V
         "locations": locations,
         "attestations": attestations,
         "redactions": redactions,
-        "metadata": artifact.metadata(),
+        "metadata": artifact.trusted_metadata(delegates),
     })
 }
 
@@ -64,6 +73,7 @@ fn release_json(
     release: &Release,
     repo: &Repository,
     aliases: &impl AliasStore,
+    delegates: &BTreeSet<Did>,
     filters: Option<Filters>,
 ) -> Value {
     let title = release
@@ -72,12 +82,17 @@ fn release_json(
         .or_else(|| repo.title(release.oid()));
     let tag_name = release.tag().and_then(|tag| repo.tag_name(tag));
 
-    let artifacts = release
-        .artifacts()
-        .iter()
-        .filter(|(_, artifact)| filters.is_none_or(|filters| filters.shows_artifact(artifact)))
-        .map(|(cid, artifact)| artifact_json(cid, artifact, aliases))
-        .collect::<Vec<_>>();
+    let artifacts = match filters {
+        Some(filters) => filters
+            .artifacts(release)
+            .map(|(cid, artifact)| artifact_json(cid, artifact, delegates, aliases))
+            .collect::<Vec<_>>(),
+        None => release
+            .artifacts()
+            .iter()
+            .map(|(cid, artifact)| artifact_json(cid, artifact, delegates, aliases))
+            .collect::<Vec<_>>(),
+    };
 
     json!({
         "id": id.to_string(),
@@ -121,13 +136,14 @@ pub async fn list_handler(
         // with other release reads on this node. `list` is sorted newest
         // first and lazy, so only the rows up to the requested page are read.
         let store = Releases::open_cached(&repo, cache_db_path(ctx.profile.cobs()))?;
+        // A web node has no local user, so only delegates are trusted unless
+        // widened.
         let filters = Filters {
             trust: Trust {
-                delegates: store.delegates(),
-                local: None,
                 all_authors: all_authors.unwrap_or(false),
+                ..Trust::new(store.delegates(), None)
             },
-            redacted: show_redacted.unwrap_or(false),
+            include_redacted: show_redacted.unwrap_or(false),
         };
         let releases = store
             .list()?
@@ -141,6 +157,7 @@ pub async fn list_handler(
                     &release,
                     &repo,
                     &aliases,
+                    store.delegates(),
                     Some(filters),
                 )
             })
@@ -164,7 +181,8 @@ pub async fn get_handler(
         let (repo, _) = ctx.repo(rid)?;
         let aliases = ctx.profile.aliases();
         let cache = cache_db_path(ctx.profile.cobs());
-        let release = Releases::open_cached(&repo, cache)?
+        let store = Releases::open_cached(&repo, cache)?;
+        let release = store
             .get(&ReleaseId::from(release_id))?
             .ok_or(Error::NotFound)?;
 
@@ -173,6 +191,7 @@ pub async fn get_handler(
             &release,
             &repo,
             &aliases,
+            store.delegates(),
             None,
         ))
     })
