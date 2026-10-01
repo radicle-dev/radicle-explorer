@@ -59,10 +59,20 @@ pub struct CobsQuery<T> {
 pub struct ReleasesQuery {
     pub page: Option<usize>,
     pub per_page: Option<usize>,
-    /// Include releases and artifacts authored by non-delegates.
-    pub all_authors: Option<bool>,
+    /// Whose releases and artifacts to show. Defaults to delegates.
+    pub authors: Option<Authors>,
     /// Include artifacts redacted by their author or a delegate.
     pub show_redacted: Option<bool>,
+}
+
+/// The two disjoint author scopes of the releases list.
+#[cfg(feature = "artifacts")]
+#[derive(Default, Serialize, Deserialize, Clone, Copy)]
+#[serde(rename_all = "camelCase")]
+pub enum Authors {
+    #[default]
+    Delegates,
+    Others,
 }
 
 #[derive(Default, Serialize, Deserialize, Clone)]

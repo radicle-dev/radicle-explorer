@@ -17,7 +17,7 @@ use radicle_artifact::{cache_db_path, Artifact, Cid, Filters, Release, ReleaseId
 use crate::api;
 use crate::api::error::Error;
 use crate::api::json::Author;
-use crate::api::query::{ReleasesQuery, MAX_PER_PAGE};
+use crate::api::query::{Authors, ReleasesQuery, MAX_PER_PAGE};
 use crate::api::Context;
 use crate::axum_extra::{Path, Query};
 
@@ -127,9 +127,10 @@ fn listed_filters<'a>(release: &Release, filters: Filters<'a>) -> Filters<'a> {
 /// `GET /repos/:rid/releases`
 ///
 /// Scoped to releases created by a delegate and artifacts authored by a
-/// delegate (hiding those redacted by a trusted party) unless widened with
-/// `allAuthors=true` / `showRedacted=true`. A release with no delegate artifact
-/// shows every author's. A release whose artifacts were all redacted is hidden
+/// delegate, or with `authors=others` to those by non-delegates, so the two
+/// scopes never overlap. Artifacts redacted by a trusted party are hidden
+/// unless `showRedacted=true`. A release with no artifact in scope shows every
+/// author's. A release whose artifacts were all redacted is hidden
 /// with them; a release with no artifacts is shown. This is the view
 /// `rad-artifact list` gives.
 pub async fn list_handler(
@@ -144,7 +145,7 @@ pub async fn list_handler(
         let ReleasesQuery {
             page,
             per_page,
-            all_authors,
+            authors,
             show_redacted,
         } = qs;
         let page = page.unwrap_or(0);
@@ -158,10 +159,9 @@ pub async fn list_handler(
         // widened.
         let filters = Filters {
             trust: Trust::new(store.delegates(), None),
-            scope: if all_authors.unwrap_or(false) {
-                Scope::All
-            } else {
-                Scope::Trusted
+            scope: match authors.unwrap_or_default() {
+                Authors::Delegates => Scope::Trusted,
+                Authors::Others => Scope::Untrusted,
             },
             include_redacted: show_redacted.unwrap_or(false),
         };
@@ -361,20 +361,27 @@ mod routes {
     }
 
     #[tokio::test]
-    async fn test_repos_releases_hides_non_delegate_creator() {
+    async fn test_repos_releases_scopes_are_disjoint() {
         let tmp = tempfile::tempdir().unwrap();
         let ctx = seed(tmp.path());
-        create_release(&ctx, NON_DELEGATE_SEED);
+        let delegate_id = create_release(&ctx, DELEGATE_SEED);
+        let other_id = create_release(&ctx, NON_DELEGATE_SEED);
         let app = app(ctx);
+        let ids = |body: serde_json::Value| {
+            body.as_array()
+                .unwrap()
+                .iter()
+                .map(|release| release["id"].as_str().unwrap().to_owned())
+                .collect::<Vec<_>>()
+        };
 
         // Default view is scoped to delegate creators.
         let response = get(&app, format!("/repos/{RID}/releases")).await;
-        assert_eq!(response.json().await, json!([]));
+        assert_eq!(ids(response.json().await), [delegate_id]);
 
-        // `allAuthors=true` widens it to include non-delegate creators.
-        let response = get(&app, format!("/repos/{RID}/releases?allAuthors=true")).await;
-        let body = response.json().await;
-        assert_eq!(body.as_array().unwrap().len(), 1);
+        // `authors=others` shows only non-delegate creators.
+        let response = get(&app, format!("/repos/{RID}/releases?authors=others")).await;
+        assert_eq!(ids(response.json().await), [other_id]);
     }
 
     #[tokio::test]
@@ -413,11 +420,9 @@ mod routes {
         assert_eq!(artifacts.len(), 1);
         assert_eq!(artifacts[0]["cid"], json!(CID));
 
-        // `allAuthors=true` widens it to include the non-delegate's artifact.
-        let response = get(&app, format!("/repos/{RID}/releases?allAuthors=true")).await;
-        let body = response.json().await;
-        let artifacts = body[0]["artifacts"].as_array().unwrap();
-        assert_eq!(artifacts.len(), 2);
+        // A delegate created it, so it is not among the others' releases.
+        let response = get(&app, format!("/repos/{RID}/releases?authors=others")).await;
+        assert_eq!(response.json().await, json!([]));
     }
 
     #[tokio::test]
