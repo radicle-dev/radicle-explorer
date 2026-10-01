@@ -11,7 +11,7 @@ use radicle::node::AliasStore;
 use radicle::storage::git::Repository;
 
 use radicle_artifact::display::{CommitTitle, TagName};
-use radicle_artifact::trust::Trust;
+use radicle_artifact::trust::{Scope, Trust};
 use radicle_artifact::{cache_db_path, Artifact, Cid, Filters, Release, ReleaseId, Releases};
 
 use crate::api;
@@ -107,21 +107,18 @@ fn release_json(
 }
 
 /// The filters a listed release shows its artifacts under. With no artifact by
-/// a trusted author, every author's are shown, as the release page does, so a
-/// teaser never counts fewer artifacts than its page lists.
+/// an author in scope, every author's are shown, as the release page does, so
+/// a teaser never counts fewer artifacts than its page lists.
 fn listed_filters<'a>(release: &Release, filters: Filters<'a>) -> Filters<'a> {
     if release
         .artifacts()
         .values()
-        .any(|artifact| filters.trust.trusts(artifact.author()))
+        .any(|artifact| filters.trust.admits(filters.scope, artifact.author()))
     {
         return filters;
     }
     Filters {
-        trust: Trust {
-            all_authors: true,
-            ..filters.trust
-        },
+        scope: Scope::All,
         ..filters
     }
 }
@@ -160,9 +157,11 @@ pub async fn list_handler(
         // A web node has no local user, so only delegates are trusted unless
         // widened.
         let filters = Filters {
-            trust: Trust {
-                all_authors: all_authors.unwrap_or(false),
-                ..Trust::new(store.delegates(), None)
+            trust: Trust::new(store.delegates(), None),
+            scope: if all_authors.unwrap_or(false) {
+                Scope::All
+            } else {
+                Scope::Trusted
             },
             include_redacted: show_redacted.unwrap_or(false),
         };
