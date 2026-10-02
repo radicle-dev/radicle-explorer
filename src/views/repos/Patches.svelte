@@ -55,10 +55,14 @@
     }
   }
 
+  // Without a count, offer more while every loaded page came back full.
+  $: patchCount = repo.cobs?.patches?.[status];
   $: showMoreButton =
     !loading &&
     !error &&
-    allPatches.length < (repo.cobs?.patches?.[status] ?? 0);
+    (patchCount === undefined
+      ? allPatches.length === (page + 1) * PATCHES_PER_PAGE
+      : allPatches.length < patchCount);
 </script>
 
 <style>

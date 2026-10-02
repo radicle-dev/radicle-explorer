@@ -54,8 +54,14 @@
     }
   }
 
+  // Without a count, offer more while every loaded page came back full.
+  $: issueCount = repo.cobs?.issues?.[status];
   $: showMoreButton =
-    !loading && !error && allIssues.length < (repo.cobs?.issues?.[status] ?? 0);
+    !loading &&
+    !error &&
+    (issueCount === undefined
+      ? allIssues.length === (page + 1) * ISSUES_PER_PAGE
+      : allIssues.length < issueCount);
 </script>
 
 <style>
