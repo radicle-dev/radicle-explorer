@@ -24,7 +24,7 @@
   export let baseUrl: BaseUrl;
   export let blobResult: BlobResult;
   export let commit: string;
-  export let defaultBranch: string;
+  export let defaultBranch: string | undefined = undefined;
   export let path: string;
   export let peer: string | undefined;
   export let repo: Repo;
@@ -57,7 +57,7 @@
   // and this refname reaches the user as part of the clone popover's archive
   // command.
   $: currentRefname = formatQualifiedRefname(
-    revision ? safeDecodeURIComponent(revision) : defaultBranch,
+    revision ? safeDecodeURIComponent(revision) : (defaultBranch ?? ""),
     peer,
   );
 

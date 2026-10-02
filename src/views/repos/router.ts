@@ -194,7 +194,7 @@ export type RepoLoadedRoute =
         commit: string;
         repo: Repo;
         repoId: string;
-        defaultBranch: string;
+        defaultBranch: string | undefined;
         peer: string | undefined;
         revision: string | undefined;
         tree: Tree;
@@ -213,7 +213,7 @@ export type RepoLoadedRoute =
         commit: string;
         repo: Repo;
         repoId: string;
-        defaultBranch: string;
+        defaultBranch: string | undefined;
         peer: string | undefined;
         revision: string | undefined;
         tree: Tree;
@@ -369,24 +369,17 @@ export const cachedGetDiffStats = cached(
 );
 
 function parseRevisionToOid(
-  revision: string | undefined,
-  defaultBranch: string,
+  revision: string,
   branches: Record<string, string>,
 ): string {
-  if (revision) {
-    if (isOid(revision)) {
-      return revision;
-    } else {
-      const oid = branches[revision];
-      if (oid) {
-        return oid;
-      } else {
-        throw new Error(`Revision ${revision} not found`);
-      }
-    }
-  } else {
-    return branches[defaultBranch];
+  if (isOid(revision)) {
+    return revision;
   }
+  const oid = branches[revision];
+  if (oid) {
+    return oid;
+  }
+  throw new Error(`Revision ${revision} not found`);
 }
 
 export async function loadRepoRoute(
@@ -745,10 +738,6 @@ async function loadTreeView(
     nodePromise,
   ]);
 
-  if (!repo.defaultBranch) {
-    return sourceUnavailable(route, repo, seedingPolicy, node);
-  }
-
   let branchMap = canonicalBranchMap(repo);
 
   if (route.peer) {
@@ -771,11 +760,15 @@ async function loadTreeView(
     route.path = path;
   }
 
-  const commit = parseRevisionToOid(
-    route.revision,
-    unqualifyBranch(repo.defaultBranch),
-    branchMap,
-  );
+  const defaultBranch = repo.defaultBranch
+    ? unqualifyBranch(repo.defaultBranch)
+    : undefined;
+  const revision = route.revision || defaultBranch;
+  if (!revision) {
+    return sourceUnavailable(route, repo, seedingPolicy, node);
+  }
+
+  const commit = parseRevisionToOid(revision, branchMap);
   const path = route.path || "/";
   const [tree, blobResult] = await Promise.all([
     api.repo.getTree(route.repo, commit),
@@ -789,7 +782,7 @@ async function loadTreeView(
       seedingPolicy,
       commit,
       repo,
-      defaultBranch: unqualifyBranch(repo.defaultBranch),
+      defaultBranch,
       peer: route.peer,
       rawPath,
       revision: route.revision,
@@ -854,7 +847,7 @@ async function loadBlob(
 async function loadHistoryView(
   route: RepoHistoryRoute,
   previousLoaded: LoadedRoute,
-): Promise<RepoLoadedRoute | NotFoundRoute> {
+): Promise<RepoLoadedRoute> {
   const api = new HttpdClient(route.node);
 
   let repoPromise: Promise<Repo>;
@@ -891,14 +884,15 @@ async function loadHistoryView(
     ? await getPeerBranchMap(api, route.repo, route.peer)
     : canonicalBranchMap(repo);
 
-  if (!repo.defaultBranch) {
+  const defaultBranch = repo.defaultBranch
+    ? unqualifyBranch(repo.defaultBranch)
+    : undefined;
+  const revision = route.revision || defaultBranch;
+  if (!revision) {
     return sourceUnavailable(route, repo, seedingPolicy, node);
   }
 
-  const commitId =
-    route.revision && isOid(route.revision)
-      ? route.revision
-      : branchMap[route.revision || unqualifyBranch(repo.defaultBranch)];
+  const commitId = isOid(revision) ? revision : branchMap[revision];
 
   if (!commitId) {
     throw new Error(
@@ -938,7 +932,7 @@ async function loadHistoryView(
       seedingPolicy,
       commit: commitId,
       repo,
-      defaultBranch: unqualifyBranch(repo.defaultBranch),
+      defaultBranch,
       peer: route.peer,
       revision: route.revision,
       tree,
