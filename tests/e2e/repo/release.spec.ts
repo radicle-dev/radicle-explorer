@@ -184,11 +184,13 @@ test.describe(() => {
     await expect(page.getByText("delegate-artifact")).toBeVisible();
     await expect(page.getByText("eve-artifact")).toBeHidden();
 
-    await page.getByRole("link", { name: "All 2" }).click();
+    // The scopes don't overlap: others shows only Eve's artifact.
+    await page.getByRole("link", { name: "Others 1" }).click();
     await expect(page).toHaveURL(
-      `${peer.uiUrl()}/${rid}/releases/${releaseId}?allAuthors=true`,
+      `${peer.uiUrl()}/${rid}/releases/${releaseId}?scope=untrusted`,
     );
     await expect(page.getByText("eve-artifact")).toBeVisible();
+    await expect(page.getByText("delegate-artifact")).toBeHidden();
 
     await page.getByRole("link", { name: "Delegates 1" }).click();
     await expect(page).toHaveURL(
