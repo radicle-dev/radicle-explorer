@@ -1,4 +1,11 @@
 steps:
+  # An image layer keeps whole-second mtimes, but cargo fingerprints the
+  # nanoseconds it saw at build time, so every crate with a build script
+  # rebuilt on every run. Building from whole-second mtimes keeps the warm
+  # target/ fresh. Image builds only: at run time this would hide the files
+  # the run's checkout changed.
+  - name: pin source mtimes to the commit time (image builds only)
+    run: '[ "$RYPH_SETUP_PHASE" != image ] || git ls-files -z | xargs -0 touch -d "@$(git log -1 --format=%ct)"'
   - name: install npm dependencies
     run: npm install --prefer-offline
   - name: install the pinned Radicle binaries for http-client and e2e tests
@@ -7,3 +14,7 @@ steps:
     run: RUSTFLAGS="-D warnings" cargo clippy --workspace --all-features --tests --locked
   - name: warm the Rust test build (check-rust test)
     run: cargo test --workspace --all-features --no-run --locked
+  # rustc's incremental cache only speeds up rebuilding this repo's own
+  # crates after an edit, and it is gigabytes. Image builds only.
+  - name: drop the incremental cache (image builds only)
+    run: '[ "$RYPH_SETUP_PHASE" != image ] || rm -rf target/debug/incremental'
