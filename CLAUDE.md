@@ -119,6 +119,13 @@ crates and files in each.
 - Loading states: `{#await promise}` blocks for inline async;
   local `loading` boolean with `try/catch` for imperative fetches
 
+### `{@html}` and untrusted data (XSS)
+
+- Avoid `{@html}` with backend-derived data (branch/ref names, aliases,
+  descriptions); when unavoidable, its argument must be DOMPurify-sanitized
+  (`sanitizeConfig` in `lib/markdown.ts`) or built from `escape()`'d parts, in
+  the component that renders it.
+
 ### TypeScript / HTTP client
 
 - Derive types from Zod schemas (`z.infer<typeof fooSchema>`), never
