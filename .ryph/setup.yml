@@ -1,0 +1,9 @@
+steps:
+  - name: install npm dependencies
+    run: npm install --prefer-offline
+  - name: install the pinned Radicle binaries for http-client and e2e tests
+    run: ./scripts/install-binaries
+  - name: warm clippy (check-rust lint)
+    run: RUSTFLAGS="-D warnings" cargo clippy --workspace --all-features --tests --locked
+  - name: warm the Rust test build (check-rust test)
+    run: cargo test --workspace --all-features --no-run --locked
