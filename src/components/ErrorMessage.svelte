@@ -11,6 +11,9 @@
   export let description: string;
   export let error: ErrorParam = undefined;
   export let icon: ComponentProps<IconLarge>["name"] = "alert";
+  // An optional seed address shown below the description, e.g. the node the
+  // failed request targeted. Rendered as plain text, never as markup.
+  export let seed: string | undefined = undefined;
 </script>
 
 <style>
@@ -27,8 +30,9 @@
   .label {
     font: var(--txt-body-m-regular);
     max-width: 36rem;
+    white-space: pre-line;
   }
-  .error :global(code) {
+  .error code {
     font: var(--txt-code-regular);
     background-color: var(--color-surface-mid);
     border-radius: var(--border-radius-sm);
@@ -54,8 +58,10 @@
   <div class="txt-heading-m">
     {title}
   </div>
-  <!-- description is rendered as HTML; callers must escape any interpolated user input. -->
-  <div class="label">{@html description}</div>
+  <div class="label">{description}</div>
+  {#if seed}
+    <div class="label"><code>{seed}</code></div>
+  {/if}
   {#if error}
     <div class="help">
       If you need help resolving this issue, copy the error message

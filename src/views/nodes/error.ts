@@ -1,18 +1,12 @@
 import type { BaseUrl } from "@http-client";
 import type { ErrorRoute, NotFoundRoute } from "@app/lib/router/definitions";
 
-import escape from "lodash/escape";
-
 import { ResponseParseError, ResponseError } from "@http-client/lib/fetcher";
-import { baseUrlToString } from "@app/lib/utils";
 
 export function handleError(
   error: Error | ResponseParseError | ResponseError,
   baseUrl: BaseUrl,
 ): NotFoundRoute | ErrorRoute {
-  const url = baseUrlToString(baseUrl);
-  const safeUrl = escape(url);
-
   if (error instanceof ResponseParseError) {
     return {
       resource: "error",
@@ -29,7 +23,8 @@ export function handleError(
       params: {
         error,
         title: "Could not load this node",
-        description: `You’re trying to access a node that is not reachable, make sure the address <a href="${safeUrl}">${safeUrl}</a> is correct and the right ports are exposed if its your node.`,
+        description:
+          "You’re trying to access a node that is not reachable. Make sure the address below is correct and the right ports are exposed if it’s your node.",
         baseUrl,
       },
     };

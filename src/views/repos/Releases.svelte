@@ -194,9 +194,8 @@
   {#if error}
     <ErrorMessage
       title="Couldn't load releases"
-      description="Please make sure you are able to connect to the seed <code>{baseUrlToString(
-        api.baseUrl,
-      )}</code>"
+      description="Please make sure you are able to connect to the seed:"
+      seed={baseUrlToString(api.baseUrl)}
       {error} />
   {/if}
 

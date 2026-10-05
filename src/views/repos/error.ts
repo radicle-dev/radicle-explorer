@@ -1,14 +1,12 @@
 import type { ErrorRoute, NotFoundRoute } from "@app/lib/router/definitions";
 import type { RepoRoute } from "@app/views/repos/router";
 
-import { baseUrlToString } from "@app/lib/utils";
 import { ResponseParseError, ResponseError } from "@http-client/lib/fetcher";
 
 export function handleError(
   error: Error | ResponseParseError | ResponseError,
   route: RepoRoute,
 ): NotFoundRoute | ErrorRoute {
-  const url = baseUrlToString(route.node);
   if (error instanceof ResponseError && error.status === 404) {
     let subject;
 
@@ -36,7 +34,7 @@ export function handleError(
       params: {
         error,
         title: "Could not load this repository",
-        description: `Make sure you are able to connect to the seed <a href="${url}">${url}</a>.`,
+        description: "Make sure you are able to connect to the seed:",
         baseUrl: route.node,
       },
     };

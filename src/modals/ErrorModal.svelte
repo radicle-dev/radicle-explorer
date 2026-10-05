@@ -16,7 +16,9 @@
   <IconLarge name="alert" slot="icon" />
 
   <div slot="subtitle">
-    {@html subtitle.join("<br />")}
+    {#each subtitle as line, i}
+      {#if i > 0}<br />{/if}{line}
+    {/each}
 
     <br />
     <br />

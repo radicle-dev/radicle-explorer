@@ -464,9 +464,8 @@
           style:border-radius="var(--border-radius-md)">
           <ErrorMessage
             title="Failed to load diff for this revision"
-            description="Make sure you are able to connect to the seed <code>{utils.baseUrlToString(
-              api.baseUrl,
-            )}</code>"
+            description="Make sure you are able to connect to the seed:"
+            seed={utils.baseUrlToString(api.baseUrl)}
             {error} />
         </div>
       {/if}
