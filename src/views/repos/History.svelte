@@ -24,7 +24,6 @@
   import Header from "./Source/Header.svelte";
   import Layout from "./Layout.svelte";
   import Link from "@app/components/Link.svelte";
-  import List from "@app/components/List.svelte";
   import Loading from "@app/components/Loading.svelte";
   import RepoNameHeader from "./Source/RepoNameHeader.svelte";
   import Separator from "./Separator.svelte";
@@ -103,11 +102,35 @@
     align-items: center;
     justify-content: center;
   }
-  .group-header {
-    padding: 1.25rem 1.25rem 0;
+  .commits {
+    padding-bottom: 2rem;
     background-color: var(--color-surface-canvas);
+  }
+  .timeline {
+    max-width: calc(68rem + 1.5rem);
+    margin: 0 auto;
+    padding: 0.5rem 0.75rem 0;
+  }
+  .group-header {
+    padding: 1rem 0.5rem 0.25rem;
     font: var(--txt-body-s-semibold);
     color: var(--color-text-primary);
+  }
+  .list {
+    position: relative;
+  }
+  .list::before {
+    content: "";
+    position: absolute;
+    top: 1.25rem;
+    bottom: 1.25rem;
+    left: calc(1rem - 0.5px);
+    width: 1px;
+    background-color: var(--color-border-subtle);
+    pointer-events: none;
+  }
+  .list :global(.icon) {
+    position: relative;
   }
 </style>
 
@@ -150,32 +173,38 @@
       historyLinkActive={true} />
   </div>
 
-  <div>
-    {#each groupCommits(allCommitHeaders) as group (group.time)}
-      <div class="group-header">{group.date}</div>
-      <List items={group.commits}>
-        <CommitTeaser slot="item" let:item {repoId} {baseUrl} commit={item} />
-      </List>
-    {/each}
+  <div class="commits">
+    <div class="timeline">
+      {#each groupCommits(allCommitHeaders) as group (group.time)}
+        <div class="group-header">{group.date}</div>
+        <div class="list">
+          {#each group.commits as commit (commit.id)}
+            <CommitTeaser {repoId} {baseUrl} {commit} />
+          {/each}
+        </div>
+      {/each}
+    </div>
+
+    {#if totalCommits === undefined || loading || allCommitHeaders.length < totalCommits}
+      <div class="more">
+        {#if totalCommits === undefined || loading}
+          <Loading small={page !== 0} center />
+        {:else if allCommitHeaders.length < totalCommits}
+          <Button size="large" variant="outline" on:click={loadMore}>
+            More
+          </Button>
+        {/if}
+      </div>
+    {/if}
+
+    {#if error}
+      <div class="message">
+        <ErrorMessage
+          title="Couldn’t load commits"
+          description="Make sure you are able to connect to the seed:"
+          seed={baseUrlToString(api.baseUrl)}
+          {error} />
+      </div>
+    {/if}
   </div>
-
-  {#if totalCommits === undefined || loading || allCommitHeaders.length < totalCommits}
-    <div class="more">
-      {#if totalCommits === undefined || loading}
-        <Loading small={page !== 0} center />
-      {:else if allCommitHeaders.length < totalCommits}
-        <Button size="large" variant="outline" on:click={loadMore}>More</Button>
-      {/if}
-    </div>
-  {/if}
-
-  {#if error}
-    <div class="message">
-      <ErrorMessage
-        title="Couldn’t load commits"
-        description="Make sure you are able to connect to the seed:"
-        seed={baseUrlToString(api.baseUrl)}
-        {error} />
-    </div>
-  {/if}
 </Layout>

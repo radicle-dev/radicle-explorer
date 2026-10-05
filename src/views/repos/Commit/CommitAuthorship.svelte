@@ -8,14 +8,6 @@
   } from "@app/lib/utils";
 
   export let header: CommitHeader;
-  export let timeOnly: boolean = false;
-
-  function formatTime(time: number) {
-    return new Date(time * 1000).toLocaleTimeString(undefined, {
-      hour: "numeric",
-      minute: "2-digit",
-    });
-  }
 </script>
 
 <style>
@@ -51,9 +43,7 @@
     committed
     <slot />
     <span title={absoluteTimestamp(header.committer.time)}>
-      {timeOnly
-        ? formatTime(header.committer.time)
-        : formatTimestamp(header.committer.time)}
+      {formatTimestamp(header.committer.time)}
     </span>
     <slot name="after-timestamp" />
   {:else}
@@ -72,9 +62,7 @@
     committed
     <slot />
     <span title={absoluteTimestamp(header.committer.time)}>
-      {timeOnly
-        ? formatTime(header.committer.time)
-        : formatTimestamp(header.committer.time)}
+      {formatTimestamp(header.committer.time)}
     </span>
     <slot name="after-timestamp" />
   {/if}

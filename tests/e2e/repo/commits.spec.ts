@@ -138,7 +138,7 @@ test("expand commit message", async ({ page }) => {
   await page
     .getByRole("link", { name: `Commits ${aliceMainCommitCount}` })
     .click();
-  const commitToggle = page.getByRole("button", { name: "expand" }).first();
+  const commitToggle = page.locator(".teaser.toggleable .icon-cell").first();
 
   await commitToggle.click();
   const expandedCommit = page.getByText(
@@ -164,14 +164,13 @@ test("commit timestamps", async ({ page }) => {
     page.locator('[title="Change branch"]:visible').first(),
   ).toHaveText(/bob/);
   const latestCommit = page.locator(".teaser").first();
-  await expect(latestCommit).toContainText(
-    `Bob Belcher committed ${shortBobHead} 1:00 PM`,
-  );
+  await expect(latestCommit).toContainText("Bob Belcher");
   await expect(latestCommit).toContainText(shortBobHead);
+  await expect(latestCommit).toContainText("1:00 pm");
   const earliestCommit = page.locator(".teaser").last();
-  await expect(earliestCommit).toContainText(
-    "Alice Liddell committed 36d5bbe 4:01 PM",
-  );
+  await expect(earliestCommit).toContainText("Alice Liddell");
+  await expect(earliestCommit).toContainText("36d5bbe");
+  await expect(earliestCommit).toContainText("4:01 pm");
 });
 
 test("pushing changes while viewing history", async ({ page, peerManager }) => {
