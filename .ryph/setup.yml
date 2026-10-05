@@ -1,11 +1,11 @@
 steps:
   # An image layer keeps whole-second mtimes, but cargo fingerprints the
-  # nanoseconds it saw at build time, so every crate with a build script
-  # rebuilt on every run. Building from whole-second mtimes keeps the warm
-  # target/ fresh. Image builds only: at run time this would hide the files
-  # the run's checkout changed.
-  - name: pin source mtimes to the commit time (image builds only)
-    run: '[ "$RYPH_SETUP_PHASE" != image ] || git ls-files -z | xargs -0 touch -d "@$(git log -1 --format=%ct)"'
+  # nanoseconds it saw at build time. Rounding tracked files down to the
+  # second before building keeps the warm target/ fresh at run time. Never
+  # set them to the commit time: on an incremental image build that can make
+  # a changed file older than its stale build output.
+  - name: round source mtimes down to whole seconds (image builds only)
+    run: '[ "$RYPH_SETUP_PHASE" != image ] || git ls-files -z | xargs -0 perl -e ''for (@ARGV) { next if -l; my $m = (lstat)[9]; utime $m, $m, $_ }'''
   - name: install npm dependencies
     run: npm install --prefer-offline
   - name: install the pinned Radicle binaries for http-client and e2e tests
