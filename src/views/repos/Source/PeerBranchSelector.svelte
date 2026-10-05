@@ -42,10 +42,6 @@
 
   const subgridStyle =
     "display: grid; grid-template-columns: subgrid; grid-column: span 2;";
-  const highlightSearchStyle = [
-    '<span style="background: var(--color-feedback-warning-bg); color: var(--color-text-primary);">',
-    "</span>",
-  ];
   let searchInput = "";
   let selectedTab: "branches" | "tags" = "branches";
 
@@ -229,6 +225,10 @@
 </script>
 
 <style>
+  .highlight {
+    background: var(--color-feedback-warning-bg);
+    color: var(--color-text-primary);
+  }
   .dropdown {
     border-radius: var(--border-radius-sm);
     width: 40rem;
@@ -473,7 +473,12 @@
                       <span class="global-flex-item">
                         {#if result[0].target}
                           <span>
-                            {@html result[0].highlight(...highlightSearchStyle)}
+                            {#each result[0].highlight( m => ({ match: m }) ) as part}
+                              {#if typeof part === "string"}{part}{:else}<span
+                                  class="highlight">
+                                  {part.match}
+                                </span>{/if}
+                            {/each}
                           </span>
                         {:else if peer.alias}
                           {peer.alias}
@@ -488,9 +493,12 @@
                         <span class="txt-overflow">
                           {#if result[1].target}
                             <span>
-                              {@html result[1].highlight(
-                                ...highlightSearchStyle,
-                              )}
+                              {#each result[1].highlight( m => ({ match: m }) ) as part}
+                                {#if typeof part === "string"}{part}{:else}<span
+                                    class="highlight">
+                                    {part.match}
+                                  </span>{/if}
+                              {/each}
                             </span>
                           {:else}
                             {revision}
