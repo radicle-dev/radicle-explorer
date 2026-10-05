@@ -1018,20 +1018,32 @@ async fn activity_handler(
     Path(rid): Path<String>,
 ) -> impl IntoResponse {
     let rid = ctx.resolve_repo(&rid)?;
+    let current_date = chrono::Utc::now().timestamp();
+    // SAFETY: The number of weeks is static and not out of bounds.
+    #[allow(clippy::unwrap_used)]
+    let cutoff = current_date - chrono::Duration::try_weeks(52).unwrap().num_seconds();
+    let head = {
+        let ctx = ctx.clone();
+        api::blocking(move || {
+            let (repo, _) = ctx.repo(rid)?;
+            Ok::<_, Error>(Repository::open(repo.path())?.head()?)
+        })
+        .await?
+    };
+
+    if let Some(timestamps) = indexed_activity(&ctx, rid, head, cutoff).await {
+        return Ok::<_, Error>(cached_response(json!({ "activity": timestamps }), 3600));
+    }
+
     let timestamps = api::blocking(move || {
         let (repo, _) = ctx.repo(rid)?;
-        let current_date = chrono::Utc::now().timestamp();
-        // SAFETY: The number of weeks is static and not out of bounds.
-        #[allow(clippy::unwrap_used)]
-        let one_year_ago = chrono::Duration::try_weeks(52).unwrap();
         let repo = Repository::open(repo.path())?;
-        let head = repo.head()?;
         let timestamps = repo
             .history(head)?
             .filter_map(|a| {
                 if let Ok(a) = a {
                     let seconds = a.committer.time.seconds();
-                    if seconds > current_date - one_year_ago.num_seconds() {
+                    if seconds > cutoff {
                         return Some(seconds);
                     }
                 }
@@ -1043,6 +1055,31 @@ async fn activity_handler(
     .await?;
 
     Ok::<_, Error>(cached_response(json!({ "activity": timestamps }), 3600))
+}
+
+async fn indexed_activity(
+    ctx: &Context,
+    rid: radicle::identity::RepoId,
+    head: Oid,
+    cutoff: i64,
+) -> Option<Vec<i64>> {
+    if ctx.source() != crate::Source::Meilisearch {
+        return None;
+    }
+    let doc = match ctx.search()?.get_repo_doc(rid).await {
+        Ok(doc) => doc?,
+        Err(e) => {
+            tracing::warn!("reading activity for {rid} from the search index: {e:#}");
+            return None;
+        }
+    };
+    (doc.activity.head == Some(head)).then(|| {
+        doc.activity
+            .activity_timestamps
+            .into_iter()
+            .filter(|&seconds| seconds > cutoff)
+            .collect()
+    })
 }
 
 /// Get repo source tree for '/' path.
