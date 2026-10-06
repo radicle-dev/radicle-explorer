@@ -10,10 +10,12 @@ steps:
     run: npm install --prefer-offline
   - name: install the pinned Radicle binaries for http-client and e2e tests
     run: ./scripts/install-binaries
-  - name: warm clippy (check-rust lint)
-    run: RUSTFLAGS="-D warnings" cargo clippy --workspace --all-features --tests --locked
-  - name: warm the Rust test build (check-rust test)
-    run: cargo test --workspace --all-features --no-run --locked
+  # The cargo warm steps only fill the image's target/. At run time cargo
+  # builds what a command needs when it runs.
+  - name: warm clippy (check-rust lint, image builds only)
+    run: '[ "$RYPH_SETUP_PHASE" != image ] || RUSTFLAGS="-D warnings" cargo clippy --workspace --all-features --tests --locked'
+  - name: warm the Rust test build (check-rust test, image builds only)
+    run: '[ "$RYPH_SETUP_PHASE" != image ] || cargo test --workspace --all-features --no-run --locked'
   # rustc's incremental cache only speeds up rebuilding this repo's own
   # crates after an edit, and it is gigabytes. Image builds only.
   - name: drop the incremental cache (image builds only)
