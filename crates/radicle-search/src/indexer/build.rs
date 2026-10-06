@@ -24,12 +24,18 @@ pub(crate) fn document(
     rid: RepoId,
     doc: &Doc,
 ) -> Result<Option<repo::Document>> {
-    document_with(profile, db, rid, doc, |repo| match repo_activity(repo) {
-        Ok(activity) => activity,
-        Err(e) => {
-            tracing::debug!("{rid}: head/activity unavailable ({e:#})");
-            repo::Activity::empty()
-        }
+    let Some(mut document) = document_with(profile, db, rid, doc, |repo| activity(rid, repo))?
+    else {
+        return Ok(None);
+    };
+    document.release_count = release_count(&profile.storage.repository(rid)?);
+    Ok(Some(document))
+}
+
+pub(crate) fn activity(rid: RepoId, repo: &radicle::storage::git::Repository) -> repo::Activity {
+    repo_activity(repo).unwrap_or_else(|e| {
+        tracing::debug!("{rid}: head/activity unavailable ({e:#})");
+        repo::Activity::empty()
     })
 }
 
@@ -62,7 +68,7 @@ pub(crate) fn document_with(
         seeding_count,
         issue_counts,
         patch_counts,
-        release_count(&repo),
+        0,
     ))
 }
 

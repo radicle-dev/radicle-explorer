@@ -159,15 +159,15 @@ impl Indexer {
                         .and_then(|repo| build::head(&repo).ok())
                         .is_some_and(|current| &current == stored)
                 });
-                let built = if head_unchanged {
-                    build::document_with(&profile, &db, info.rid, &info.doc, |_| {
+                let built = build::document_with(&profile, &db, info.rid, &info.doc, |repo| {
+                    if head_unchanged {
                         repo::Activity::empty()
-                    })
-                } else {
-                    build::document(&profile, &db, info.rid, &info.doc)
-                };
+                    } else {
+                        build::activity(info.rid, repo)
+                    }
+                });
                 match built {
-                    Ok(Some(doc)) => {
+                    Ok(Some(mut doc)) => {
                         let repo = match profile.storage.repository(info.rid) {
                             Ok(r) => r,
                             Err(e) => {
@@ -196,6 +196,7 @@ impl Indexer {
                             }
                         }
                         let cob_docs = build_cob_docs(&profile, &repo, info.rid);
+                        doc.release_count = cob_docs.releases.len() as u64;
                         issue_docs.extend(cob_docs.issues);
                         patch_docs.extend(cob_docs.patches);
                         release_docs.extend(cob_docs.releases);
@@ -398,11 +399,13 @@ impl Indexer {
                 repo.identity_doc()?
             };
             match build::document(&profile, &db, rid, &doc)? {
-                Some(repo_doc) => {
+                Some(mut repo_doc) => {
                     let repo = profile.storage.repository(rid)?;
+                    let cob_docs = build_cob_docs(&profile, &repo, rid);
+                    repo_doc.release_count = cob_docs.releases.len() as u64;
                     Ok(ReindexAction::Upsert {
                         repo_doc: Box::new(repo_doc),
-                        cob_docs: build_cob_docs(&profile, &repo, rid),
+                        cob_docs,
                     })
                 }
                 None => Ok(ReindexAction::Delete),
