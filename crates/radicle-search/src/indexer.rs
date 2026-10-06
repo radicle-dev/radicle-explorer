@@ -549,11 +549,14 @@ impl Indexer {
             res = self.bootstrap() => res?,
         }
 
+        let mut rescan_timer = tokio::time::interval(self.config.rescan_interval);
+        rescan_timer.tick().await;
+
         loop {
             let sub_shutdown = shutdown.clone();
             tokio::select! {
                 _ = shutdown.changed() => return Ok(()),
-                res = self.subscribe_loop(sub_shutdown) => match res {
+                res = self.subscribe_loop(sub_shutdown, &mut rescan_timer) => match res {
                     Ok(()) => tracing::warn!("event stream ended without error; reconnecting"),
                     Err(e) => tracing::warn!("event stream error: {e:#}; reconnecting"),
                 },
@@ -562,18 +565,14 @@ impl Indexer {
                 _ = shutdown.changed() => return Ok(()),
                 _ = tokio::time::sleep(self.config.reconnect_backoff) => {}
             }
-            tokio::select! {
-                _ = shutdown.changed() => return Ok(()),
-                res = self.bootstrap() => {
-                    if let Err(e) = res {
-                        tracing::error!("rescan after disconnect failed: {e:#}");
-                    }
-                }
-            }
         }
     }
 
-    async fn subscribe_loop(&self, mut shutdown: watch::Receiver<bool>) -> Result<()> {
+    async fn subscribe_loop(
+        &self,
+        mut shutdown: watch::Receiver<bool>,
+        rescan_timer: &mut tokio::time::Interval,
+    ) -> Result<()> {
         let socket = self.profile.home().socket_from_env();
         tracing::info!("subscribing to node events at {}", socket.display());
         let node = radicle::Node::new(&socket);
@@ -601,9 +600,6 @@ impl Indexer {
             }
             Ok(())
         });
-
-        let mut rescan_timer = tokio::time::interval(self.config.rescan_interval);
-        rescan_timer.tick().await;
 
         loop {
             tokio::select! {
