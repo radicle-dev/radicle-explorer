@@ -12,8 +12,19 @@ steps:
     run: ./scripts/install-binaries
   - name: warm clippy (check-rust lint)
     run: RUSTFLAGS="-D warnings" cargo clippy --workspace --all-features --tests --locked
+  - name: warm clippy without default features (check-rust lint)
+    run: RUSTFLAGS="-D warnings" cargo clippy -p radicle-httpd --no-default-features --tests --locked
   - name: warm the Rust test build (check-rust test)
     run: cargo test --workspace --all-features --no-run --locked
+  - name: warm the httpd-only test build (check-rust test)
+    run: cargo test -p radicle-httpd --no-run --locked
+  - name: warm the workspace docs (check-rust docs)
+    run: RUSTDOCFLAGS="-D warnings" cargo doc --workspace --all-features --no-deps --locked
+  # The e2e check needs Chromium's headless shell, which downloads from
+  # storage.googleapis.com. Without that host on the egress allowlist the
+  # image goes without it, and the e2e check fails on its own install.
+  - name: install Playwright's Chromium (image builds only)
+    run: '[ "$RYPH_SETUP_PHASE" != image ] || npx playwright install --only-shell chromium || echo "Chromium not installed: is storage.googleapis.com allowed?"'
   # rustc's incremental cache only speeds up rebuilding this repo's own
   # crates after an edit, and it is gigabytes. Image builds only.
   - name: drop the incremental cache (image builds only)
