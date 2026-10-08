@@ -35,26 +35,7 @@ export interface PrinciplesRoute {
   params: undefined;
 }
 
-export type DocsPage =
-  | "glossary"
-  | "download"
-  | "guides/getting-started"
-  | "guides/protocol"
-  | "guides/seeder"
-  | "guides/user";
-
-const docsPages: DocsPage[] = [
-  "glossary",
-  "download",
-  "guides/getting-started",
-  "guides/protocol",
-  "guides/seeder",
-  "guides/user",
-];
-
-export function isDocsPage(page: string): page is DocsPage {
-  return (docsPages as string[]).includes(page);
-}
+export type DocsPage = "glossary" | "download";
 
 export interface DocsRoute {
   resource: "docs";

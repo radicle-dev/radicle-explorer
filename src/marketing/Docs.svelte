@@ -7,28 +7,6 @@
   export let page: DocsPage;
   export let component: ComponentType;
 
-  const guideHeroes: Record<string, { src: string; alt: string }> = {
-    "guides/getting-started": {
-      src: "/marketing/images/learn/getting-started.jpg",
-      alt: "Getting Started",
-    },
-    "guides/protocol": {
-      src: "/marketing/images/learn/protocol.jpg",
-      alt: "Protocol Guide",
-    },
-    "guides/seeder": {
-      src: "/marketing/images/learn/seeder.jpg",
-      alt: "Seeder Guide",
-    },
-    "guides/user": {
-      src: "/marketing/images/learn/user.jpg",
-      alt: "User Guide",
-    },
-  };
-
-  $: isGuide = page.startsWith("guides/");
-  $: hero = guideHeroes[page];
-
   $: isGlossary = page === "glossary";
 
   // Copy a term's permalink to the clipboard instead of navigating to it, and
@@ -195,16 +173,7 @@
   }
 </style>
 
-{#if isGuide}
-  <div class="guides-markdown">
-    <MarkdownLayout>
-      {#if hero}
-        <img class="guide-hero" src={hero.src} alt={hero.alt} />
-      {/if}
-      <svelte:component this={component} />
-    </MarkdownLayout>
-  </div>
-{:else if isGlossary}
+{#if isGlossary}
   <div class="doc-glossary" use:copyTermLinks>
     <MarkdownLayout>
       <svelte:component this={component} />

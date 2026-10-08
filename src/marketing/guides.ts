@@ -14,35 +14,35 @@ export const guides: Guide[] = [
     title: "Getting started",
     description:
       "New to Radicle? This quick-start walks you through installing the stack, creating your identity, and opening your first patch.",
-    href: "/guides/getting-started",
+    href: "https://radicle.dev/guides/quick-start/",
     image: "/marketing/images/learn/getting-started.jpg",
-    external: false,
+    external: true,
     video: false,
   },
   {
     title: "Protocol guide",
     description:
       "Gossip, replication, identity, and the data structures behind it all.",
-    href: "/guides/protocol",
+    href: "https://radicle.dev/guides/protocol/",
     image: "/marketing/images/learn/protocol.jpg",
-    external: false,
+    external: true,
     video: false,
   },
   {
     title: "Seeder guide",
     description: "Run a public seed node to keep repositories available 24/7.",
-    href: "/guides/seeder",
+    href: "https://radicle.dev/guides/seeder/",
     image: "/marketing/images/learn/seeder.jpg",
-    external: false,
+    external: true,
     video: false,
   },
   {
     title: "User guide",
     description:
       "Create an identity, open patches, manage issues, and collaborate from the CLI.",
-    href: "/guides/user",
+    href: "https://radicle.dev/guides/user/",
     image: "/marketing/images/learn/user.jpg",
-    external: false,
+    external: true,
     video: false,
   },
   {

@@ -3,7 +3,6 @@
   import CopyCommand from "@app/marketing/CopyCommand.svelte";
   import Meta from "@app/marketing/Meta.svelte";
   import PlatformBadges from "@app/marketing/PlatformBadges.svelte";
-  import { link } from "@app/marketing/link";
 
   const features = [
     {
@@ -125,8 +124,12 @@
     <h2 class="txt-bold-22 get-started-heading">Get started</h2>
     <CopyCommand />
     <PlatformBadges />
-    <a href="/guides/user" class="product-link arrow-link" use:link>
-      Read the user guide <span class="link-arrow link-arrow-right">→</span>
+    <a
+      href="https://radicle.dev/guides/user/"
+      class="product-link arrow-link"
+      target="_blank"
+      rel="noopener noreferrer">
+      Read the user guide <span class="link-arrow link-arrow-up-right">↗</span>
     </a>
   </section>
 

@@ -496,7 +496,7 @@ export function extractBaseUrl(hostAndPort: string): BaseUrl {
 // identifiers are decoded: revision and path segments are deliberately kept
 // encoded, because branch and tag lookups are keyed on the encoded name.
 function urlToRoute(url: URL): Route | null {
-  // Normalize a trailing slash (`/guides/protocol/` → `/guides/protocol`) so
+  // Normalize a trailing slash (`/glossary/` → `/glossary`) so
   // both the strict marketing resolver and the lenient repo resolver agree.
   // Without this the residual empty segment makes marketing routes 404 while
   // repo routes silently absorb it. `|| "/"` keeps the root path intact.

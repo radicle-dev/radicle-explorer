@@ -205,7 +205,7 @@
 }
 
 /* On section-based pages, each top-level block rises and fades in, staggered,
-   when the page mounts. Markdown docs (glossary, guides) are a flat list
+   when the page mounts. Markdown docs (glossary, download) are a flat list
    of paragraphs, so they rise in as a single block instead. */
 @keyframes section-rise {
   from {
@@ -233,7 +233,7 @@
   animation-delay: 350ms;
 }
 
-/* Markdown docs (glossary, guides) are a flat element list. Animate the
+/* Markdown docs (glossary, download) are a flat element list. Animate the
    elements with the same timing (no stagger) so the doc rises in as one block.
    This lives on the children, not the reused .markdown-content container, so it
    replays on client-side navigation and not only on hard reload. */
@@ -347,90 +347,6 @@
 .marketing .markdown-content aside p {
   font: var(--txt-medium-14);
   line-height: 1.6;
-}
-
-.marketing .guide-hero {
-  height: 20rem;
-  object-fit: cover;
-  border-radius: var(--border-radius-small);
-  margin-bottom: 2rem;
-}
-
-.marketing .guides-markdown .markdown-content {
-  max-width: min(66rem, 100%);
-}
-
-.marketing .guides-markdown .markdown-content > :not(aside) {
-  max-width: none;
-  width: min(42rem, calc(100% - clamp(15rem, 26vw, 20rem) - 2rem));
-}
-
-.marketing .guides-markdown .markdown-content aside {
-  position: static;
-  float: right;
-  clear: right;
-  margin-left: 0;
-  margin-right: 0;
-  margin-bottom: 1rem;
-  margin-inline-start: 0;
-  width: clamp(15rem, 26vw, 20rem);
-  font: var(--txt-medium-14);
-  line-height: 1.6;
-  color: var(--color-text-tertiary);
-  background: none !important;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
-
-@media (max-width: 72rem) {
-  .marketing .guides-markdown .markdown-content {
-    max-width: min(62rem, 100%);
-  }
-
-  .marketing .guides-markdown .markdown-content > :not(aside) {
-    width: min(38rem, calc(100% - clamp(13.5rem, 30vw, 17rem) - 1.25rem));
-  }
-
-  .marketing .guides-markdown .markdown-content aside {
-    width: clamp(13.5rem, 30vw, 17rem);
-    margin-inline-start: 1.25rem;
-  }
-}
-
-@media (max-width: 56rem) {
-  .marketing .guides-markdown .markdown-content > :not(aside) {
-    width: min(36rem, calc(100% - clamp(12rem, 32vw, 15rem) - 1rem));
-  }
-
-  .marketing .guides-markdown .markdown-content aside {
-    width: clamp(12rem, 32vw, 15rem);
-    margin-inline-start: 1rem;
-  }
-}
-
-@media (max-width: 44rem) {
-  .marketing .guides-markdown .markdown-content {
-    max-width: 48rem;
-  }
-
-  .marketing .guides-markdown .markdown-content > :not(aside) {
-    max-width: 100%;
-    width: 100%;
-  }
-
-  .marketing .guides-markdown .markdown-content aside {
-    float: none;
-    clear: none;
-    width: auto;
-    margin: 1rem 0;
-    padding: 0.75rem 1rem;
-    background: var(--color-surface-subtle) !important;
-    overflow-wrap: anywhere;
-  }
-
-  .marketing .guides-markdown .markdown-content aside p {
-    margin: 0;
-  }
 }
 
 .marketing .markdown-content h1 {

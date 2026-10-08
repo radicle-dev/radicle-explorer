@@ -1,8 +1,6 @@
 import type { ComponentType } from "svelte";
 import type { DocsLoadedRoute, DocsPage, DocsRoute } from "./types";
 
-import { isDocsPage } from "./types";
-
 export type {
   CliRoute,
   DesktopRoute,
@@ -24,19 +22,11 @@ const docsLoaders = new Map<
 >([
   ["glossary", () => import("./docs/glossary.md")],
   ["download", () => import("./docs/download.md")],
-  ["guides/getting-started", () => import("./docs/guides/getting-started.md")],
-  ["guides/protocol", () => import("./docs/guides/protocol.md")],
-  ["guides/seeder", () => import("./docs/guides/seeder.md")],
-  ["guides/user", () => import("./docs/guides/user.md")],
 ]);
 
 const docsTitles = new Map<DocsPage, string>([
   ["glossary", "Glossary"],
   ["download", "Download"],
-  ["guides/getting-started", "Getting started"],
-  ["guides/protocol", "Protocol guide"],
-  ["guides/seeder", "Seeder guide"],
-  ["guides/user", "User guide"],
 ]);
 
 export function docsTitle(page: DocsPage): string[] {
@@ -84,18 +74,10 @@ export function marketingRoute(
       return segments.length === 0
         ? { resource: "docs", params: { page: resource } }
         : null;
-    case "guides": {
-      // Bare `/guides` is the all-guides index; `/guides/<page>` is a doc.
-      if (segments.length === 0) {
-        return { resource: "guides", params: undefined };
-      }
-      const guide = segments.shift();
-      const page = guide ? `guides/${guide}` : undefined;
-      if (page && isDocsPage(page) && segments.length === 0) {
-        return { resource: "docs", params: { page } };
-      }
-      return null;
-    }
+    case "guides":
+      return segments.length === 0
+        ? { resource: "guides", params: undefined }
+        : null;
     default:
       return null;
   }

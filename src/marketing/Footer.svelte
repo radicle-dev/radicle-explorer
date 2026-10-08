@@ -73,7 +73,11 @@
   <div class="footer-links">
     <div class="link-column">
       <span class="column-header txt-medium-14">Learn</span>
-      <a href="/guides/getting-started" class="txt-medium-14" use:link>
+      <a
+        href="https://radicle.dev/guides/quick-start/"
+        class="txt-medium-14"
+        target="_blank"
+        rel="noopener noreferrer">
         Get started
       </a>
       <a href="/learn#guides" class="txt-medium-14" use:link>Guides</a>
