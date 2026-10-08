@@ -456,6 +456,7 @@ fn seed_with_signer(dir: &Path, profile: radicle::Profile, signer: &SigningKey) 
         cache: Some(crate::DEFAULT_CACHE_SIZE),
         search: None,
         source: crate::Source::Sqlite,
+        inline_blob_limits: crate::InlineBlobLimits::default(),
     };
 
     let web_config = crate::api::WebConfig::from_profile(&profile);
@@ -761,6 +762,7 @@ pub fn seed_merge(dir: &Path) -> MergeFixture {
         cache: Some(crate::DEFAULT_CACHE_SIZE),
         search: None,
         source: crate::Source::Sqlite,
+        inline_blob_limits: crate::InlineBlobLimits::default(),
     };
     let web_config = crate::api::WebConfig::from_profile(&profile);
     let ctx = Context::new(Arc::new(profile), web_config, &options)

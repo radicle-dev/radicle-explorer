@@ -66,6 +66,22 @@ pub struct Options {
     pub search: Option<SearchOptions>,
     /// Data source for derived state (repos, cobs, nodes, policies).
     pub source: Source,
+    pub inline_blob_limits: InlineBlobLimits,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct InlineBlobLimits {
+    pub per_file: usize,
+    pub per_response: usize,
+}
+
+impl Default for InlineBlobLimits {
+    fn default() -> Self {
+        Self {
+            per_file: 512 * 1024,
+            per_response: 8 * 1024 * 1024,
+        }
+    }
 }
 
 /// The data source httpd reads derived state from.
@@ -260,6 +276,7 @@ mod routes {
             cache: None,
             search: None,
             source: crate::Source::Sqlite,
+            inline_blob_limits: super::InlineBlobLimits::default(),
         };
         let profile = test::profile(tmp.path(), [0xff; 32]);
         let web_config = crate::api::WebConfig::from_profile(&profile);
