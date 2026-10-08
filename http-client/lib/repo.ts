@@ -114,6 +114,8 @@ const legacyMetaSchema = object({
 const repoSchema = object({
   rid: string(),
   payloads: object({
+    // Optional: a repo may declare its default branch in `xyz.radicle.crefs`
+    // instead, and carry no project payload at all.
     "xyz.radicle.project": object({
       data: object({
         name: string(),
@@ -121,8 +123,9 @@ const repoSchema = object({
         // Unqualified, unlike the top-level `defaultBranch`.
         defaultBranch: string(),
       }),
-      meta: legacyMetaSchema,
-    }),
+      // Optional so this client survives the 0.30.0 contract.
+      meta: legacyMetaSchema.optional(),
+    }).optional(),
   }),
   // Both absent on nodes older than 0.30.0, which report the counts inside the
   // project payload and the default branch nowhere else.
@@ -144,10 +147,19 @@ const repoSchema = object({
   // answered. The legacy default branch is unqualified, so qualify it.
 }).transform(repo => {
   const project = repo.payloads["xyz.radicle.project"];
+  const meta = project?.meta;
 
   return {
     ...repo,
-    cobs: repo.cobs ?? project?.meta,
+    cobs:
+      repo.cobs ??
+      (meta
+        ? {
+            patches: meta.patches,
+            issues: meta.issues,
+            releases: meta.releases,
+          }
+        : undefined),
     defaultBranch:
       repo.defaultBranch ??
       (project ? `refs/heads/${project.data.defaultBranch}` : undefined),

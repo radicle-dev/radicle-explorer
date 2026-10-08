@@ -6,6 +6,7 @@
 
   import {
     formatQualifiedRefname,
+    repoName,
     safeDecodeURIComponent,
   } from "@app/lib/utils";
 
@@ -145,7 +146,7 @@
       {currentRefname}
       id={repo.rid}
       alias={repo.alias}
-      name={repo.payloads["xyz.radicle.project"].data.name} />
+      name={repoName(repo)} />
   </svelte:fragment>
   <RepoNameHeader {repo} {repoId} {baseUrl} {seedingPolicy} slot="header" />
 

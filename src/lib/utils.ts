@@ -16,7 +16,7 @@ export function defaultBranchTip(repo: Repo): string | undefined {
 
   return (
     repo.refs?.refs[repo.defaultBranch] ??
-    repo.payloads["xyz.radicle.project"]?.meta.head
+    repo.payloads["xyz.radicle.project"]?.meta?.head
   );
 }
 
@@ -25,7 +25,7 @@ export function defaultBranchTip(repo: Repo): string | undefined {
 // node doesn't report releases at all, which is how the release API is
 // detected.
 export function visibleReleaseCount(repo: Repo): number | undefined {
-  const releases = repo.payloads["xyz.radicle.project"].meta.releases;
+  const releases = repo.cobs?.releases;
   if (releases === undefined) {
     return undefined;
   }
@@ -110,6 +110,15 @@ export function formatRepositoryId(id: string): string {
 
 export function truncateId(pubkey: string): string {
   return `${pubkey.substring(0, 6)}…${pubkey.slice(-6)}`;
+}
+
+// A repo only has a name if it carries a project payload. Fall back to the RID,
+// which every repo has.
+export function repoName(repo: Repo): string {
+  return (
+    repo.payloads["xyz.radicle.project"]?.data.name ??
+    formatRepositoryId(repo.rid)
+  );
 }
 
 // The URL path segment to use for a repo: its configured alias when the node
