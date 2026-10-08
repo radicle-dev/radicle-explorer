@@ -40,9 +40,9 @@ export const guides: Guide[] = [
     title: "User guide",
     description:
       "Create an identity, open patches, manage issues, and collaborate from the CLI.",
-    href: "/guides/user",
+    href: "https://radicle.dev/guides/user",
     image: "/marketing/images/learn/user.jpg",
-    external: false,
+    external: true,
     video: false,
   },
   {
