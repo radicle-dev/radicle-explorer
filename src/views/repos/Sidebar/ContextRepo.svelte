@@ -50,20 +50,24 @@
     font: var(--txt-body-s-medium);
     color: var(--color-text-quaternary);
   }
-  .identity-link {
-    font: var(--txt-body-s-medium);
-    color: var(--color-text-tertiary);
+  .identity-link :global(a) {
+    display: flex;
+    gap: 0.5rem;
   }
   .identity-link :global(a:hover) {
-    color: var(--color-text-primary);
+    text-decoration: underline;
   }
 </style>
 
 <div class="context-repo">
   <div class="row">
-    <span class="label txt-body-m-medium">Delegates</span>
-    <span class="value txt-body-m-medium">
-      {repoThreshold}/{repoDelegates.length}
+    <span class="identity-link" title="View identity document">
+      <Link route={{ resource: "repo.identity", repo: repoId, node: baseUrl }}>
+        <span class="label txt-body-m-medium">Delegates</span>
+        <span class="value txt-body-m-medium">
+          {repoThreshold}/{repoDelegates.length}
+        </span>
+      </Link>
     </span>
     <div class="avatars">
       {#each repoDelegates as delegate}
@@ -89,11 +93,6 @@
       {repoThreshold} out of {repoDelegates.length} delegates have to accept changes
       to be included in the canonical branch.
     {/if}
-  </div>
-  <div class="identity-link">
-    <Link route={{ resource: "repo.identity", repo: repoId, node: baseUrl }}>
-      View identity document
-    </Link>
   </div>
   <div class="row">
     <span class="label txt-body-m-medium">Seeding Scope</span>
