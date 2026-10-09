@@ -8,6 +8,7 @@
   import UserAvatar from "@app/components/UserAvatar.svelte";
 
   export let baseUrl: BaseUrl;
+  export let repoId: string;
 
   export let repoThreshold: number;
   export let repoDelegates: Repo["delegates"];
@@ -49,6 +50,13 @@
     font: var(--txt-body-s-medium);
     color: var(--color-text-quaternary);
   }
+  .identity-link {
+    font: var(--txt-body-s-medium);
+    color: var(--color-text-tertiary);
+  }
+  .identity-link :global(a:hover) {
+    color: var(--color-text-primary);
+  }
 </style>
 
 <div class="context-repo">
@@ -81,6 +89,11 @@
       {repoThreshold} out of {repoDelegates.length} delegates have to accept changes
       to be included in the canonical branch.
     {/if}
+  </div>
+  <div class="identity-link">
+    <Link route={{ resource: "repo.identity", repo: repoId, node: baseUrl }}>
+      View identity document
+    </Link>
   </div>
   <div class="row">
     <span class="label txt-body-m-medium">Seeding Scope</span>

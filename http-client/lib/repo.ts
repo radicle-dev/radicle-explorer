@@ -76,6 +76,19 @@ const repoSchema = object({
         releases: optional(number()),
       }),
     }),
+    "xyz.radicle.crefs": optional(
+      object({
+        data: object({
+          rules: record(
+            string(),
+            object({
+              allow: union([literal("delegates"), array(string())]),
+              threshold: number(),
+            }),
+          ),
+        }),
+      }),
+    ),
   }),
   delegates: array(authorSchema),
   threshold: number(),

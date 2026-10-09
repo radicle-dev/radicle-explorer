@@ -298,7 +298,8 @@ function setTitle(loadedRoute: LoadedRoute) {
     loadedRoute.resource === "repo.patches" ||
     loadedRoute.resource === "repo.patch" ||
     loadedRoute.resource === "repo.releases" ||
-    loadedRoute.resource === "repo.release"
+    loadedRoute.resource === "repo.release" ||
+    loadedRoute.resource === "repo.identity"
   ) {
     title.push(...repoTitle(loadedRoute));
   } else if (loadedRoute.resource === "nodes") {
@@ -373,6 +374,7 @@ export function withBaseUrl(route: Route, baseUrl: BaseUrl): Route {
     case "repo.patch":
     case "repo.releases":
     case "repo.release":
+    case "repo.identity":
       return { ...route, node: baseUrl };
     case "notFound":
       return {
@@ -427,6 +429,7 @@ export function routeBaseUrl(route: Route): BaseUrl | undefined {
     case "repo.patch":
     case "repo.releases":
     case "repo.release":
+    case "repo.identity":
       return route.node;
     case "notFound":
     case "error":
@@ -627,7 +630,8 @@ export function routeToPath(route: Route): string {
     route.resource === "repo.patches" ||
     route.resource === "repo.patch" ||
     route.resource === "repo.releases" ||
-    route.resource === "repo.release"
+    route.resource === "repo.release" ||
+    route.resource === "repo.identity"
   ) {
     return repoRouteToPath(route);
   } else if (

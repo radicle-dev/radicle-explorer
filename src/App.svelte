@@ -17,6 +17,7 @@
   import Explore from "@app/views/explore/View.svelte";
   import ExploreRepos from "@app/views/explore/ReposView.svelte";
   import History from "@app/views/repos/History.svelte";
+  import Identity from "@app/views/repos/Identity.svelte";
   import Issue from "@app/views/repos/Issue.svelte";
   import Issues from "@app/views/repos/Issues.svelte";
   import Marketing from "@app/marketing/Marketing.svelte";
@@ -106,6 +107,8 @@
   <Releases {...$activeRouteStore.params} />
 {:else if $activeRouteStore.resource === "repo.release"}
   <Release {...$activeRouteStore.params} />
+{:else if $activeRouteStore.resource === "repo.identity"}
+  <Identity {...$activeRouteStore.params} />
 {:else if $activeRouteStore.resource === "error"}
   <Error {...$activeRouteStore.params} />
 {:else if $activeRouteStore.resource === "notFound"}

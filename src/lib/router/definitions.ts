@@ -116,7 +116,8 @@ export async function loadRoute(
     route.resource === "repo.patches" ||
     route.resource === "repo.patch" ||
     route.resource === "repo.releases" ||
-    route.resource === "repo.release"
+    route.resource === "repo.release" ||
+    route.resource === "repo.identity"
   ) {
     return await loadRepoRoute(route, previousLoaded);
   } else {

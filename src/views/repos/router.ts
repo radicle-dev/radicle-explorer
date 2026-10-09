@@ -98,7 +98,14 @@ export type RepoRoute =
   | RepoPatchesRoute
   | RepoPatchRoute
   | RepoReleasesRoute
-  | RepoReleaseRoute;
+  | RepoReleaseRoute
+  | RepoIdentityRoute;
+
+interface RepoIdentityRoute {
+  resource: "repo.identity";
+  node: BaseUrl;
+  repo: string;
+}
 
 interface RepoIssuesRoute {
   resource: "repo.issues";
@@ -301,6 +308,16 @@ export type RepoLoadedRoute =
         nodeId: string;
         nodeAvatarUrl: string | undefined;
       };
+    }
+  | {
+      resource: "repo.identity";
+      params: {
+        baseUrl: BaseUrl;
+        repo: Repo;
+        repoId: string;
+        nodeId: string;
+        nodeAvatarUrl: string | undefined;
+      };
     };
 
 export type BlobResult =
@@ -413,6 +430,21 @@ export async function loadRepoRoute(
       return await loadReleasesView(route);
     } else if (route.resource === "repo.release") {
       return await loadReleaseView(route);
+    } else if (route.resource === "repo.identity") {
+      const [repo, node] = await Promise.all([
+        api.repo.getByRid(route.repo),
+        api.getNode(),
+      ]);
+      return {
+        resource: "repo.identity",
+        params: {
+          baseUrl: route.node,
+          repoId: route.repo,
+          repo,
+          nodeId: node.id,
+          nodeAvatarUrl: node.avatarUrl,
+        },
+      };
     } else {
       return unreachable(route);
     }
@@ -1151,6 +1183,8 @@ export function resolveRepoRoute(
     }
   } else if (content === "patches") {
     return resolvePatchesRoute(node, repo, segments, urlSearch);
+  } else if (content === "identity") {
+    return { resource: "repo.identity", node, repo };
   } else if (content === "releases") {
     const release = segments.shift();
     const allAuthors =
@@ -1305,6 +1339,8 @@ export function repoRouteToPath(route: RepoRoute): string {
       url += "?allAuthors=true";
     }
     return url;
+  } else if (route.resource === "repo.identity") {
+    return [...pathSegments, "identity"].join("/");
   } else {
     return unreachable(route);
   }
@@ -1384,6 +1420,9 @@ export function repoTitle(loadedRoute: RepoLoadedRoute) {
   } else if (loadedRoute.resource === "repo.releases") {
     title.push(project.data.name);
     title.push("releases");
+  } else if (loadedRoute.resource === "repo.identity") {
+    title.push(project.data.name);
+    title.push("identity");
   } else {
     return unreachable(loadedRoute);
   }

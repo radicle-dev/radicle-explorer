@@ -151,6 +151,7 @@
   <div class="info">
     <ContextRepo
       {baseUrl}
+      {repoId}
       repoThreshold={repo.threshold}
       repoDelegates={repo.delegates}
       {seedingPolicy} />
