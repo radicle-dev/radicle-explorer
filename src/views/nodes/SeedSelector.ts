@@ -6,6 +6,7 @@ import * as z from "zod";
 import { derived, get, writable } from "svelte/store";
 
 import config from "@app/lib/config";
+import { baseUrlKey, onNodeMoved } from "@http-client/lib/fetcher";
 
 const seedSchema = z.object({
   hostname: z.string(),
@@ -78,6 +79,32 @@ export function removeBookmark(seed: BaseUrl) {
 export function addBookmark(seed: BaseUrl) {
   bookmarkedSeeds.update(previous => [...previous, seed]);
 }
+
+export function followMovedSeed(from: BaseUrl, to: BaseUrl) {
+  const fromKey = baseUrlKey(from);
+  const explicit = get(explicitSeed);
+  if (explicit && baseUrlKey(explicit) === fromKey) {
+    explicitSeed.set(to);
+  }
+  const bookmarks = get(bookmarkedSeeds);
+  if (bookmarks.some(seed => baseUrlKey(seed) === fromKey)) {
+    const seen = new Set<string>();
+    bookmarkedSeeds.set(
+      bookmarks
+        .map(seed => (baseUrlKey(seed) === fromKey ? to : seed))
+        .filter(seed => {
+          const key = baseUrlKey(seed);
+          if (seen.has(key)) {
+            return false;
+          }
+          seen.add(key);
+          return true;
+        }),
+    );
+  }
+}
+
+onNodeMoved(followMovedSeed);
 
 function getOrCreateBucketRandom(): number {
   let value = get(seedBucketRandom);

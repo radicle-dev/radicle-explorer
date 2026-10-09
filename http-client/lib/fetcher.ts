@@ -12,6 +12,89 @@ export interface BaseUrl {
   scheme: string;
 }
 
+const movedNodes = new Map<string, BaseUrl>();
+const movedNodeListeners = new Set<(from: BaseUrl, to: BaseUrl) => void>();
+
+export function baseUrlKey(baseUrl: BaseUrl): string {
+  return `${baseUrl.scheme}://${baseUrl.hostname.toLowerCase()}:${baseUrl.port}`;
+}
+
+export function movedNode(baseUrl: BaseUrl): BaseUrl | undefined {
+  return movedNodes.get(baseUrlKey(baseUrl));
+}
+
+export function onNodeMoved(
+  listener: (from: BaseUrl, to: BaseUrl) => void,
+): () => void {
+  movedNodeListeners.add(listener);
+  return () => movedNodeListeners.delete(listener);
+}
+
+export function forgetMovedNodes(): void {
+  movedNodes.clear();
+}
+
+function recordMovedNode(from: BaseUrl, to: BaseUrl): void {
+  const fromKey = baseUrlKey(from);
+  const toKey = baseUrlKey(to);
+  if (fromKey === toKey) {
+    return;
+  }
+  for (const [key, target] of movedNodes) {
+    if (baseUrlKey(target) === fromKey) {
+      movedNodes.set(key, to);
+    }
+  }
+  movedNodes.delete(toKey);
+  movedNodes.set(fromKey, to);
+  for (const listener of movedNodeListeners) {
+    listener(from, to);
+  }
+}
+
+export function redirectTarget(
+  requestUrl: string,
+  response: Pick<Response, "redirected" | "url">,
+): BaseUrl | undefined {
+  if (!response.redirected || !response.url) {
+    return undefined;
+  }
+
+  let requested: URL;
+  let final: URL;
+  try {
+    requested = new URL(requestUrl);
+    final = new URL(response.url);
+  } catch {
+    return undefined;
+  }
+
+  if (
+    final.origin === requested.origin ||
+    final.pathname !== requested.pathname ||
+    final.search !== requested.search ||
+    final.username !== "" ||
+    final.password !== ""
+  ) {
+    return undefined;
+  }
+
+  if (final.protocol !== "https:" && final.protocol !== requested.protocol) {
+    return undefined;
+  }
+
+  const scheme = final.protocol.slice(0, -1);
+  if (scheme !== "https" && scheme !== "http") {
+    return undefined;
+  }
+
+  return {
+    scheme,
+    hostname: final.hostname,
+    port: final.port ? Number(final.port) : scheme === "https" ? 443 : 80,
+  };
+}
+
 // Error that is thrown by `Fetcher` methods.
 export class ResponseError extends Error {
   public method: string;
@@ -163,18 +246,26 @@ export class Fetcher {
     }
 
     const pathSegment = path === undefined ? "" : `/${path}`;
+    const baseUrl = movedNode(this.#baseUrl) ?? this.#baseUrl;
 
-    let url = `${this.#baseUrl.scheme}://${this.#baseUrl.hostname}:${this.#baseUrl.port}/api/v1${pathSegment}`;
+    let url = `${baseUrl.scheme}://${baseUrl.hostname}:${baseUrl.port}/api/v1${pathSegment}`;
 
     if (query) {
       const searchparams = new URLSearchParams(query as Record<string, string>);
       url = `${url}?${searchparams.toString()}`;
     }
-    return globalThis.fetch(url, {
+    const response = await globalThis.fetch(url, {
       method,
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),
       signal: options.abort,
     });
+
+    const target = redirectTarget(url, response);
+    if (target) {
+      recordMovedNode(baseUrl, target);
+    }
+
+    return response;
   }
 }

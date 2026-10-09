@@ -13,6 +13,7 @@ import {
   resolveRepoRoute,
 } from "@app/views/repos/router";
 import { loadRoute } from "@app/lib/router/definitions";
+import { movedNode } from "@http-client/lib/fetcher";
 import { nodePath } from "@app/views/nodes/router";
 import { determineSeed } from "@app/views/nodes/SeedSelector";
 import { userRouteToPath, userTitle } from "@app/views/users/router";
@@ -145,7 +146,7 @@ window.addEventListener("popstate", event => {
 const loadExecutor = mutexExecutor.create();
 
 async function navigate(
-  action: "push" | "replace",
+  action: "push" | "replace" | "redirect",
   newRoute: Route,
   // Optional URL fragment to preserve, so links like `/glossary#delegate`
   // land on the right section. `routeToPath` builds only the path, so the
@@ -179,13 +180,17 @@ async function navigate(
       "",
       path,
     );
-  } else if (action === "replace") {
+  } else {
     let key = readScrollKey(window.history.state);
     if (key === undefined) {
       nextScrollKey += 1;
       key = nextScrollKey;
     }
-    window.history.replaceState({ route: newRoute, scrollKey: key }, "");
+    window.history.replaceState(
+      { route: newRoute, scrollKey: key },
+      "",
+      action === "redirect" ? path : undefined,
+    );
   }
   currentUrl = new URL(window.location.href);
   const currentLoadedRoute = get(activeRouteStore);
@@ -196,6 +201,12 @@ async function navigate(
 
   // Only let the last request through.
   if (loadedRoute === undefined) {
+    return;
+  }
+
+  const movedTo = movedRouteNode(newRoute);
+  if (movedTo) {
+    await navigate("redirect", withBaseUrl(newRoute, movedTo), hash);
     return;
   }
 
@@ -396,6 +407,14 @@ export function withBaseUrl(route: Route, baseUrl: BaseUrl): Route {
     default:
       return utils.unreachable(route);
   }
+}
+
+function movedRouteNode(route: Route): BaseUrl | undefined {
+  if (route.resource === "nodes" && !route.params) {
+    return undefined;
+  }
+  const baseUrl = routeBaseUrl(route);
+  return baseUrl && movedNode(baseUrl);
 }
 
 // The node named by the current URL, or `undefined` on routes that name none

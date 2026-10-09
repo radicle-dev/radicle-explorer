@@ -1,3 +1,5 @@
+import type { Route } from "@playwright/test";
+
 import {
   defaultConfig,
   expect,
@@ -111,8 +113,14 @@ test("unreachable seed on repo page shows error with seed selector", async ({
   ).toBeVisible();
 });
 
-test("edit seed bookmarks", async ({ page }) => {
-  // Proxy requests to seed.example.tld to the local test api.
+async function proxyToLocalhost(route: Route) {
+  const response = await route.fetch({
+    url: route.request().url().replace("seed.example.tld", "localhost"),
+  });
+  await route.fulfill({ response });
+}
+
+test("follows a node that moved to another address", async ({ page }) => {
   await page.route(
     url => url.hostname === "seed.example.tld",
     route =>
@@ -125,6 +133,23 @@ test("edit seed bookmarks", async ({ page }) => {
             .replace("seed.example.tld", "localhost"),
         },
       }),
+  );
+
+  await page.goto(`/nodes/seed.example.tld/${sourceBrowsingRid}`, {
+    waitUntil: "networkidle",
+  });
+
+  await expect(page).toHaveURL(`/nodes/localhost/${sourceBrowsingRid}`);
+  await expect(
+    page.getByRole("button", { name: "Current node selector" }),
+  ).toContainText("localhost");
+});
+
+test("edit seed bookmarks", async ({ page }) => {
+  // Proxy requests to seed.example.tld to the local test api.
+  await page.route(
+    url => url.hostname === "seed.example.tld",
+    proxyToLocalhost,
   );
 
   await page.goto("/");
@@ -204,16 +229,7 @@ test("breadcrumb picker lists a seed that isn't bookmarked", async ({
   // be served by a seed that is neither bookmarked nor a preferred one.
   await page.route(
     url => url.hostname === "seed.example.tld",
-    route =>
-      route.fulfill({
-        status: 301,
-        headers: {
-          Location: route
-            .request()
-            .url()
-            .replace("seed.example.tld", "localhost"),
-        },
-      }),
+    proxyToLocalhost,
   );
 
   await page.goto(`/nodes/seed.example.tld/${sourceBrowsingRid}`, {
