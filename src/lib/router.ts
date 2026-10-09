@@ -220,7 +220,7 @@ async function navigate(
       return;
     }
     if (hash.length > 1) {
-      const el = document.querySelector(hash);
+      const el = document.getElementById(decodeURIComponent(hash.slice(1)));
       if (el) {
         const top =
           el.getBoundingClientRect().top +

@@ -55,7 +55,24 @@
   export let previousRevOid: string | undefined = undefined;
   export let first: boolean;
 
-  let expanded = initiallyExpanded;
+  function timelinesContain(commentId: string): boolean {
+    const inThread = (thread: { root: Comment; replies: Comment[] }) =>
+      thread.root.id === commentId ||
+      thread.replies.some(reply => reply.id === commentId);
+    return timelines.some(element => {
+      if (element.type === "thread") {
+        return inThread(element.inner);
+      } else if (element.type === "review") {
+        const review = element.inner[1];
+        return review.id === commentId || review.threads.some(inThread);
+      }
+      return false;
+    });
+  }
+
+  let expanded =
+    initiallyExpanded ||
+    timelinesContain(decodeURIComponent(window.location.hash.slice(1)));
   const api = new HttpdClient(baseUrl);
   const lastEdit = revisionEdits.at(-1);
 
